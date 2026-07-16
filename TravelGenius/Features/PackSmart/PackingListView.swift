@@ -57,6 +57,11 @@ struct PackingListView: View {
                     Button("回程模式", systemImage: "arrow.uturn.left.circle") {
                         confirmReturnMode = true
                     }
+                    if !items.isEmpty {
+                        ShareLink(item: PackingShareText.make(for: trip)) {
+                            Label("分享清單", systemImage: "square.and.arrow.up")
+                        }
+                    }
                 } label: {
                     Label("更多", systemImage: "ellipsis.circle")
                 }

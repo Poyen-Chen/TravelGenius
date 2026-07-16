@@ -6,6 +6,21 @@
 import SwiftUI
 import SwiftData
 
+/// 首次啟動顯示 onboarding，完成後進入主畫面
+struct RootGateView: View {
+    @AppStorage("hasOnboarded") private var hasOnboarded = false
+
+    var body: some View {
+        if hasOnboarded {
+            RootTabView()
+        } else {
+            OnboardingView {
+                hasOnboarded = true
+            }
+        }
+    }
+}
+
 struct RootTabView: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(AppState.self) private var appState
@@ -23,6 +38,11 @@ struct RootTabView: View {
         if arguments.contains("-openMoneyTab") { return .money }
         if arguments.contains("-openPackTab") { return .packing }
         if arguments.contains("-openMedTab") || arguments.contains("-showEmergency") || arguments.contains("-showLargePrint") { return .medical }
+        // Onboarding 剛完成：直接落在行李分頁看清單
+        if UserDefaults.standard.bool(forKey: "startOnPackingTab") {
+            UserDefaults.standard.removeObject(forKey: "startOnPackingTab")
+            return .packing
+        }
         return .trips
     }()
 

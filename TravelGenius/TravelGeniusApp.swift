@@ -27,6 +27,23 @@ struct TravelGeniusApp: App {
         if ProcessInfo.processInfo.arguments.contains("-exportDemo") {
             exportDemoReport()
         }
+        configureOnboardingGate()
+    }
+
+    /// 首次啟動顯示 onboarding；已有行程（升級用戶）或帶開發引數時自動略過
+    private func configureOnboardingGate() {
+        let defaults = UserDefaults.standard
+        let arguments = ProcessInfo.processInfo.arguments
+        if arguments.contains("-resetOnboarding") {
+            defaults.set(false, forKey: "hasOnboarded")
+            return
+        }
+        guard !defaults.bool(forKey: "hasOnboarded") else { return }
+        let hasDebugArgs = arguments.contains { $0.hasPrefix("-seedDemo") || $0.hasPrefix("-open") || $0.hasPrefix("-show") || $0.hasPrefix("-exportDemo") }
+        let tripCount = (try? container.mainContext.fetchCount(FetchDescriptor<Trip>())) ?? 0
+        if hasDebugArgs || tripCount > 0 {
+            defaults.set(true, forKey: "hasOnboarded")
+        }
     }
 
     /// 開發驗證用：啟動時直接產出報帳文件並印出路徑
@@ -49,7 +66,7 @@ struct TravelGeniusApp: App {
 
     var body: some Scene {
         WindowGroup {
-            RootTabView()
+            RootGateView()
                 .environment(appState)
         }
         .modelContainer(container)
