@@ -19,6 +19,10 @@ struct TripDetailView: View {
         StaticDataStore.shared.country(code: trip.countryCode)
     }
 
+    private var originCountry: Country? {
+        StaticDataStore.shared.country(code: trip.originCountryCode)
+    }
+
     private var isActive: Bool {
         appState.activeTrip(in: trips) === trip
     }
@@ -26,6 +30,9 @@ struct TripDetailView: View {
     var body: some View {
         List {
             Section("基本資料") {
+                LabeledContent("出發地") {
+                    Text("\(originCountry?.flagEmoji ?? "") \(originCountry?.nameZh ?? trip.originCountryCode)\(trip.originCity.isEmpty ? "" : "・\(trip.originCity)")")
+                }
                 LabeledContent("目的地") {
                     Text("\(country?.flagEmoji ?? "") \(country?.nameZh ?? trip.countryCode)\(trip.city.isEmpty ? "" : "・\(trip.city)")")
                 }
