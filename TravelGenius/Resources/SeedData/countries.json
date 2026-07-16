@@ -1,0 +1,92 @@
+[
+  {
+    "code": "JP",
+    "nameZh": "日本",
+    "nameEn": "Japan",
+    "currencyCode": "JPY",
+    "languageCode": "ja",
+    "emergency": { "police": "110", "ambulance": "119", "fire": "119" },
+    "plugTypes": ["A", "B"],
+    "voltage": "100V"
+  },
+  {
+    "code": "KR",
+    "nameZh": "韓國",
+    "nameEn": "South Korea",
+    "currencyCode": "KRW",
+    "languageCode": "ko",
+    "emergency": { "police": "112", "ambulance": "119", "fire": "119" },
+    "plugTypes": ["C", "F"],
+    "voltage": "220V"
+  },
+  {
+    "code": "TH",
+    "nameZh": "泰國",
+    "nameEn": "Thailand",
+    "currencyCode": "THB",
+    "languageCode": "th",
+    "emergency": { "police": "191", "ambulance": "1669", "fire": "199" },
+    "plugTypes": ["A", "B", "C", "O"],
+    "voltage": "230V"
+  },
+  {
+    "code": "US",
+    "nameZh": "美國",
+    "nameEn": "United States",
+    "currencyCode": "USD",
+    "languageCode": "en",
+    "emergency": { "police": "911", "ambulance": "911", "fire": "911" },
+    "plugTypes": ["A", "B"],
+    "voltage": "120V"
+  },
+  {
+    "code": "VN",
+    "nameZh": "越南",
+    "nameEn": "Vietnam",
+    "currencyCode": "VND",
+    "languageCode": "vi",
+    "emergency": { "police": "113", "ambulance": "115", "fire": "114" },
+    "plugTypes": ["A", "C", "D"],
+    "voltage": "220V"
+  },
+  {
+    "code": "SG",
+    "nameZh": "新加坡",
+    "nameEn": "Singapore",
+    "currencyCode": "SGD",
+    "languageCode": "en",
+    "emergency": { "police": "999", "ambulance": "995", "fire": "995" },
+    "plugTypes": ["G"],
+    "voltage": "230V"
+  },
+  {
+    "code": "TW",
+    "nameZh": "台灣",
+    "nameEn": "Taiwan",
+    "currencyCode": "TWD",
+    "languageCode": "zh-Hant",
+    "emergency": { "police": "110", "ambulance": "119", "fire": "119" },
+    "plugTypes": ["A", "B"],
+    "voltage": "110V"
+  },
+  {
+    "code": "GB",
+    "nameZh": "英國",
+    "nameEn": "United Kingdom",
+    "currencyCode": "GBP",
+    "languageCode": "en",
+    "emergency": { "police": "999", "ambulance": "999", "fire": "999" },
+    "plugTypes": ["G"],
+    "voltage": "230V"
+  },
+  {
+    "code": "IT",
+    "nameZh": "義大利",
+    "nameEn": "Italy",
+    "currencyCode": "EUR",
+    "languageCode": "it",
+    "emergency": { "police": "112", "ambulance": "118", "fire": "115" },
+    "plugTypes": ["C", "F", "L"],
+    "voltage": "230V"
+  }
+]

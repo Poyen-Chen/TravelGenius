@@ -1,0 +1,11 @@
+[
+  { "countryCode": "JP", "currencyCode": "JPY", "caps": { "food": 5000, "transport": 3000, "lodging": 15000 } },
+  { "countryCode": "KR", "currencyCode": "KRW", "caps": { "food": 60000, "transport": 30000, "lodging": 180000 } },
+  { "countryCode": "TH", "currencyCode": "THB", "caps": { "food": 1200, "transport": 800, "lodging": 3500 } },
+  { "countryCode": "US", "currencyCode": "USD", "caps": { "food": 80, "transport": 50, "lodging": 250 } },
+  { "countryCode": "VN", "currencyCode": "VND", "caps": { "food": 800000, "transport": 500000, "lodging": 2500000 } },
+  { "countryCode": "SG", "currencyCode": "SGD", "caps": { "food": 100, "transport": 60, "lodging": 300 } },
+  { "countryCode": "TW", "currencyCode": "TWD", "caps": { "food": 1200, "transport": 800, "lodging": 3500 } },
+  { "countryCode": "GB", "currencyCode": "GBP", "caps": { "food": 60, "transport": 40, "lodging": 200 } },
+  { "countryCode": "IT", "currencyCode": "EUR", "caps": { "food": 70, "transport": 45, "lodging": 220 } }
+]

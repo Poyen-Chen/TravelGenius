@@ -1,0 +1,143 @@
+[
+  {
+    "layer": "base",
+    "reasonZh": "基本必備",
+    "items": [
+      { "nameZh": "護照＋簽證影本", "category": "documents", "quantity": 1 },
+      { "nameZh": "換洗衣物", "category": "clothing", "perDay": true },
+      { "nameZh": "行動電源", "category": "electronics", "quantity": 1 },
+      { "nameZh": "充電線與充電頭", "category": "electronics", "quantity": 1 },
+      { "nameZh": "牙刷盥洗組", "category": "toiletries", "quantity": 1 },
+      { "nameZh": "常用藥（含處方箋）", "category": "health", "quantity": 1 }
+    ]
+  },
+  {
+    "layer": "regulation",
+    "match": { "countries": ["JP", "US", "TW"] },
+    "reasonZh": "因為是當地插座 Type-A/B",
+    "items": [
+      { "nameZh": "轉接頭 Type-A/B", "category": "electronics", "quantity": 1 }
+    ]
+  },
+  {
+    "layer": "regulation",
+    "match": { "countries": ["GB", "SG"] },
+    "reasonZh": "因為是當地插座 Type-G",
+    "items": [
+      { "nameZh": "轉接頭 Type-G", "category": "electronics", "quantity": 1 }
+    ]
+  },
+  {
+    "layer": "regulation",
+    "match": { "countries": ["KR", "IT"] },
+    "reasonZh": "因為是當地插座 Type-C/F",
+    "items": [
+      { "nameZh": "轉接頭 Type-C/F", "category": "electronics", "quantity": 1 }
+    ]
+  },
+  {
+    "layer": "regulation",
+    "match": { "countries": ["TH", "VN"] },
+    "reasonZh": "因為是多種插座規格",
+    "items": [
+      { "nameZh": "萬用轉接頭", "category": "electronics", "quantity": 1 }
+    ]
+  },
+  {
+    "layer": "culture",
+    "match": { "countries": ["JP"] },
+    "reasonZh": "因為是日本",
+    "items": [
+      { "nameZh": "現金（多現金支付）", "category": "documents", "quantity": 1 },
+      { "nameZh": "方便穿脫的鞋（室內脫鞋）", "category": "clothing", "quantity": 1 },
+      { "nameZh": "小方巾（廁所常無擦手紙）", "category": "toiletries", "quantity": 1 }
+    ]
+  },
+  {
+    "layer": "culture",
+    "match": { "countries": ["TH"] },
+    "reasonZh": "因為是泰國",
+    "items": [
+      { "nameZh": "遮肩披巾（寺廟著裝）", "category": "clothing", "quantity": 1 },
+      { "nameZh": "過膝長褲或長裙", "category": "clothing", "quantity": 1 },
+      { "nameZh": "防蚊液", "category": "health", "quantity": 1 }
+    ]
+  },
+  {
+    "layer": "culture",
+    "match": { "countries": ["IT"] },
+    "reasonZh": "因為是義大利",
+    "items": [
+      { "nameZh": "教堂參觀端莊衣著", "category": "clothing", "quantity": 1 },
+      { "nameZh": "防扒斜背包", "category": "other", "quantity": 1 }
+    ]
+  },
+  {
+    "layer": "weather",
+    "match": { "months": [6, 7, 8, 9] },
+    "reasonZh": "因為是夏季",
+    "items": [
+      { "nameZh": "防曬乳", "category": "toiletries", "quantity": 1 },
+      { "nameZh": "摺疊傘", "category": "other", "quantity": 1 },
+      { "nameZh": "太陽眼鏡", "category": "other", "quantity": 1 }
+    ]
+  },
+  {
+    "layer": "weather",
+    "match": { "months": [12, 1, 2] },
+    "reasonZh": "因為是冬季",
+    "items": [
+      { "nameZh": "保暖外套", "category": "clothing", "quantity": 1 },
+      { "nameZh": "圍巾手套", "category": "clothing", "quantity": 1 },
+      { "nameZh": "暖暖包", "category": "other", "quantity": 5 }
+    ]
+  },
+  {
+    "layer": "weather",
+    "match": { "months": [3, 4, 5, 10, 11] },
+    "reasonZh": "因為是換季天氣",
+    "items": [
+      { "nameZh": "薄外套", "category": "clothing", "quantity": 1 },
+      { "nameZh": "摺疊傘", "category": "other", "quantity": 1 }
+    ]
+  },
+  {
+    "layer": "tripType",
+    "match": { "tripTypes": ["business"] },
+    "reasonZh": "因為是商務行程",
+    "items": [
+      { "nameZh": "西裝／正式服裝", "category": "clothing", "quantity": 1 },
+      { "nameZh": "名片", "category": "documents", "quantity": 1 },
+      { "nameZh": "筆電與充電器", "category": "electronics", "quantity": 1 }
+    ]
+  },
+  {
+    "layer": "tripType",
+    "match": { "tripTypes": ["backpacking"] },
+    "reasonZh": "因為是背包旅行",
+    "items": [
+      { "nameZh": "快乾毛巾", "category": "toiletries", "quantity": 1 },
+      { "nameZh": "行李鎖", "category": "other", "quantity": 1 },
+      { "nameZh": "輕便睡袋內襯", "category": "other", "quantity": 1 }
+    ]
+  },
+  {
+    "layer": "tripType",
+    "match": { "tripTypes": ["family"] },
+    "reasonZh": "因為是家庭旅行",
+    "items": [
+      { "nameZh": "兒童常備藥", "category": "health", "quantity": 1 },
+      { "nameZh": "濕紙巾", "category": "toiletries", "quantity": 2 },
+      { "nameZh": "小點心", "category": "other", "quantity": 1 }
+    ]
+  },
+  {
+    "layer": "tripType",
+    "match": { "tripTypes": ["leisure"] },
+    "reasonZh": "因為是觀光行程",
+    "items": [
+      { "nameZh": "相機與記憶卡", "category": "electronics", "quantity": 1 },
+      { "nameZh": "好走的鞋", "category": "clothing", "quantity": 1 }
+    ]
+  }
+]
