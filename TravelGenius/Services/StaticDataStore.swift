@@ -117,6 +117,48 @@ struct ProhibitedItem: Codable, Identifiable {
     var id: String { "\(countryCode)-\(itemZh)" }
 }
 
+enum AviationRestriction: String, Codable {
+    case banned
+    case carryOnOnly
+    case checkedOnly
+    case limited
+
+    var label: String {
+        switch self {
+        case .banned: "禁止"
+        case .carryOnOnly: "限隨身"
+        case .checkedOnly: "限托運"
+        case .limited: "限量"
+        }
+    }
+
+    var symbolName: String {
+        switch self {
+        case .banned: "xmark.octagon.fill"
+        case .carryOnOnly: "airplane"
+        case .checkedOnly: "suitcase.rolling.fill"
+        case .limited: "exclamationmark.triangle.fill"
+        }
+    }
+}
+
+struct AviationRule: Codable, Identifiable {
+    let itemZh: String
+    let restriction: AviationRestriction
+    let detailZh: String
+    let lastVerified: String
+    let sourceName: String?
+    let sourceUrl: String?
+    /// nil = 所有航班通用；有值 = 僅特定目的地國家顯示
+    let countries: [String]?
+
+    var id: String { itemZh }
+
+    func applies(countryCode: String) -> Bool {
+        countries?.contains(countryCode) ?? true
+    }
+}
+
 struct EtiquetteCard: Codable, Identifiable {
     let countryCode: String
     /// nil = 全國通用；有值 = 城市限定（例如「東京」）
@@ -182,6 +224,7 @@ final class StaticDataStore {
     private(set) lazy var prohibitedItems: [ProhibitedItem] = load("prohibited_items")
     private(set) lazy var etiquetteCards: [EtiquetteCard] = load("etiquette")
     private(set) lazy var drugMap: [DrugEntry] = load("drug_map")
+    private(set) lazy var aviationRules: [AviationRule] = load("aviation_rules")
     private(set) lazy var medicalTranslations: MedicalTranslations = load("medical_translations")
 
     func country(code: String) -> Country? {
@@ -198,6 +241,10 @@ final class StaticDataStore {
 
     func prohibitedItems(countryCode: String) -> [ProhibitedItem] {
         prohibitedItems.filter { $0.countryCode == countryCode }
+    }
+
+    func aviationRules(countryCode: String) -> [AviationRule] {
+        aviationRules.filter { $0.applies(countryCode: countryCode) }
     }
 
     func etiquetteCards(countryCode: String) -> [EtiquetteCard] {

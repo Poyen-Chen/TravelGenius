@@ -14,6 +14,8 @@ struct PackingListView: View {
     @State private var showingNightMode = false
     @State private var showingEtiquette = false
     @State private var showingProhibited = false
+    @State private var showingReturnMode = false
+    @State private var confirmReturnMode = false
     @State private var packToggle = false
 
     private var items: [PackingItem] {
@@ -52,13 +54,29 @@ struct PackingListView: View {
                     Button("重新產生清單", systemImage: "arrow.clockwise") {
                         PackingListGenerator.sync(trip: trip, context: context)
                     }
+                    Button("回程模式", systemImage: "arrow.uturn.left.circle") {
+                        confirmReturnMode = true
+                    }
                 } label: {
                     Label("更多", systemImage: "ellipsis.circle")
                 }
             }
         }
         .sheet(isPresented: $showingAddItem) { AddPackingItemView(trip: trip) }
-        .fullScreenCover(isPresented: $showingNightMode) { NightBeforeModeView(trip: trip) }
+        .fullScreenCover(isPresented: $showingNightMode) { NightBeforeModeView(trip: trip, mode: .nightBefore) }
+        .fullScreenCover(isPresented: $showingReturnMode) { NightBeforeModeView(trip: trip, mode: .returnTrip) }
+        .confirmationDialog(
+            "回程模式會將全部項目重設為未打包，用同一份清單反向檢查，避免把東西留在住宿處。",
+            isPresented: $confirmReturnMode,
+            titleVisibility: .visible
+        ) {
+            Button("開始回程打包") {
+                for item in (trip.packingItems ?? []) {
+                    item.isPacked = false
+                }
+                showingReturnMode = true
+            }
+        }
         .navigationDestination(isPresented: $showingEtiquette) { EtiquetteCardsView(trip: trip) }
         .navigationDestination(isPresented: $showingProhibited) { ProhibitedItemsView(trip: trip) }
         .sensoryFeedback(.impact, trigger: packToggle)
@@ -171,7 +189,7 @@ struct PackingListView: View {
                                 .font(.footnote.weight(.medium))
                         }
                     }
-                    Text("共 \(banned.count) 項禁止・\(otherCount) 項需許可或申報，點入看原因與查證日期。")
+                    Text("海關 \(banned.count) 項禁止・\(otherCount) 項需許可或申報，另有 \(StaticDataStore.shared.aviationRules(countryCode: trip.countryCode).count) 條航空安檢規定。")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }

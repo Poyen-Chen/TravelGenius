@@ -1,0 +1,59 @@
+[
+  {
+    "itemZh": "行動電源／備用鋰電池",
+    "restriction": "carryOnOnly",
+    "detailZh": "禁止托運，僅限隨身。100Wh 以下可攜帶；100–160Wh 需航空公司同意（多數限 2 顆）；160Wh 以上禁止。記得出發前充飽電。",
+    "lastVerified": "2026-06",
+    "sourceName": "國際航空運輸協會 IATA",
+    "sourceUrl": "https://www.iata.org/en/programs/cargo/dgr/lithium-batteries/"
+  },
+  {
+    "itemZh": "行動電源（韓國航線加嚴）",
+    "restriction": "carryOnOnly",
+    "detailZh": "2025 年 3 月起：端子需絕緣包裝（原廠盒、膠帶或獨立夾鏈袋），機上須隨身保管、不得放置頂行李櫃；建議使用明確標示 Wh 容量的產品，否則可能被拒絕登機。",
+    "lastVerified": "2026-06",
+    "sourceName": "韓國國土交通部",
+    "sourceUrl": "https://www.molit.go.kr",
+    "countries": ["KR"]
+  },
+  {
+    "itemZh": "隨身液體、膠狀與噴霧",
+    "restriction": "limited",
+    "detailZh": "單瓶不得逾 100ml，全部裝入 1 公升以內的透明夾鏈袋，每人限一袋；超過的請放托運。",
+    "lastVerified": "2026-06",
+    "sourceName": "交通部民用航空局",
+    "sourceUrl": "https://www.caa.gov.tw"
+  },
+  {
+    "itemZh": "托運噴霧與液態日用品",
+    "restriction": "limited",
+    "detailZh": "托運行李內單件不得逾 500ml（0.5kg），每人總量不得逾 2L（2kg）。",
+    "lastVerified": "2026-06",
+    "sourceName": "交通部民用航空局",
+    "sourceUrl": "https://www.caa.gov.tw"
+  },
+  {
+    "itemZh": "打火機",
+    "restriction": "limited",
+    "detailZh": "隨身限攜帶 1 枚（藍焰與雪茄打火機禁止），不得托運。",
+    "lastVerified": "2026-06",
+    "sourceName": "交通部民用航空局",
+    "sourceUrl": "https://www.caa.gov.tw"
+  },
+  {
+    "itemZh": "刀具與尖銳物品",
+    "restriction": "checkedOnly",
+    "detailZh": "小刀、剪刀、指甲剪等尖銳物禁止隨身，必須放入托運行李。",
+    "lastVerified": "2026-06",
+    "sourceName": "交通部民用航空局",
+    "sourceUrl": "https://www.caa.gov.tw"
+  },
+  {
+    "itemZh": "電子煙與加熱菸主機",
+    "restriction": "carryOnOnly",
+    "detailZh": "含鋰電池，禁止托運、僅限隨身；機上禁止使用與充電。目的地是否可攜入另見海關規定。",
+    "lastVerified": "2026-06",
+    "sourceName": "國際航空運輸協會 IATA",
+    "sourceUrl": "https://www.iata.org"
+  }
+]
