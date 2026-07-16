@@ -1,24 +1,252 @@
 [
-  { "countryCode": "JP", "itemZh": "感冒藥（含偽麻黃鹼）", "severity": "banned", "reasonZh": "含偽麻黃鹼成分違反日本覺醒劑取締法，攜帶恐涉刑責。", "lastVerified": "2026-06", "sourceName": "日本厚生勞動省", "sourceUrl": "https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/kenkou_iryou/iyakuhin/yunyu/" },
-  { "countryCode": "JP", "itemZh": "肉類製品（火腿、香腸等）", "severity": "banned", "reasonZh": "動物檢疫規定禁止攜入，違者高額罰款。", "lastVerified": "2026-06", "sourceName": "日本動物檢疫所", "sourceUrl": "https://www.maff.go.jp/aqs/" },
-  { "countryCode": "JP", "itemZh": "電子煙油（含尼古丁）", "severity": "permit", "reasonZh": "屬醫藥品，個人進口有數量限制，超量需許可。", "lastVerified": "2026-06", "sourceName": "日本厚生勞動省", "sourceUrl": "https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/kenkou_iryou/iyakuhin/yunyu/" },
-  { "countryCode": "JP", "itemZh": "現金逾 ¥100 萬", "severity": "declare", "reasonZh": "出入境攜帶等值 100 萬日圓以上須申報。", "lastVerified": "2026-06", "sourceName": "日本稅關", "sourceUrl": "https://www.customs.go.jp" },
-  { "countryCode": "TH", "itemZh": "電子煙與煙油", "severity": "banned", "reasonZh": "泰國全面禁止電子煙，攜帶或使用可處罰款甚至拘留。", "lastVerified": "2026-06", "sourceName": "泰國觀光局", "sourceUrl": "https://www.tatnews.org" },
-  { "countryCode": "TH", "itemZh": "大型佛像", "severity": "permit", "reasonZh": "佛像出口需泰國藝術廳許可。", "lastVerified": "2026-06", "sourceName": "泰國藝術廳", "sourceUrl": "https://www.finearts.go.th" },
-  { "countryCode": "TH", "itemZh": "現金逾 USD 15,000", "severity": "declare", "reasonZh": "入境攜帶等值 15,000 美元以上須申報。", "lastVerified": "2026-06", "sourceName": "泰國海關", "sourceUrl": "https://www.customs.go.th" },
-  { "countryCode": "SG", "itemZh": "口香糖", "severity": "banned", "reasonZh": "新加坡禁止進口口香糖（醫療用途除外）。", "lastVerified": "2026-06", "sourceName": "新加坡海關", "sourceUrl": "https://www.customs.gov.sg" },
-  { "countryCode": "SG", "itemZh": "電子煙", "severity": "banned", "reasonZh": "禁止持有與使用，入境攜帶即違法。", "lastVerified": "2026-06", "sourceName": "新加坡衛生科學局", "sourceUrl": "https://www.hsa.gov.sg" },
-  { "countryCode": "SG", "itemZh": "現金逾 SGD 20,000", "severity": "declare", "reasonZh": "攜帶等值 20,000 新幣以上現金須申報。", "lastVerified": "2026-06", "sourceName": "新加坡海關", "sourceUrl": "https://www.customs.gov.sg" },
-  { "countryCode": "US", "itemZh": "新鮮蔬果與肉類", "severity": "banned", "reasonZh": "農業檢疫規定禁止攜入，違者罰款。", "lastVerified": "2026-06", "sourceName": "美國海關暨邊境保護局", "sourceUrl": "https://www.cbp.gov/travel/us-citizens/know-before-you-go/prohibited-and-restricted-items" },
-  { "countryCode": "US", "itemZh": "健達出奇蛋", "severity": "banned", "reasonZh": "內含玩具之夾心巧克力蛋因兒童安全法規禁止輸入。", "lastVerified": "2026-06", "sourceName": "美國海關暨邊境保護局", "sourceUrl": "https://www.cbp.gov/travel/us-citizens/know-before-you-go/prohibited-and-restricted-items" },
-  { "countryCode": "US", "itemZh": "現金逾 USD 10,000", "severity": "declare", "reasonZh": "出入境攜帶逾 10,000 美元須申報。", "lastVerified": "2026-06", "sourceName": "美國海關暨邊境保護局", "sourceUrl": "https://www.cbp.gov" },
-  { "countryCode": "KR", "itemZh": "肉類製品", "severity": "banned", "reasonZh": "動植物檢疫禁止攜入，違者最高千萬韓元罰款。", "lastVerified": "2026-06", "sourceName": "韓國農林畜產檢疫本部", "sourceUrl": "https://www.qia.go.kr" },
-  { "countryCode": "KR", "itemZh": "現金逾 USD 10,000", "severity": "declare", "reasonZh": "攜帶等值 10,000 美元以上須申報。", "lastVerified": "2026-06", "sourceName": "韓國關稅廳", "sourceUrl": "https://www.customs.go.kr" },
-  { "countryCode": "GB", "itemZh": "肉類與乳製品（非歐盟）", "severity": "banned", "reasonZh": "自非歐盟國家入境禁止攜帶肉類與乳製品。", "lastVerified": "2026-06", "sourceName": "英國政府", "sourceUrl": "https://www.gov.uk/bringing-food-into-great-britain" },
-  { "countryCode": "GB", "itemZh": "現金逾 £10,000", "severity": "declare", "reasonZh": "攜帶 10,000 英鎊以上現金入境須申報。", "lastVerified": "2026-06", "sourceName": "英國政府", "sourceUrl": "https://www.gov.uk/bringing-cash-into-uk" },
-  { "countryCode": "VN", "itemZh": "現金逾 USD 5,000", "severity": "declare", "reasonZh": "入境攜帶等值 5,000 美元以上須申報。", "lastVerified": "2026-06", "sourceName": "越南海關", "sourceUrl": "https://www.customs.gov.vn" },
-  { "countryCode": "IT", "itemZh": "肉類與乳製品（非歐盟）", "severity": "banned", "reasonZh": "自非歐盟國家入境禁止攜帶肉類與乳製品。", "lastVerified": "2026-06", "sourceName": "歐盟執委會", "sourceUrl": "https://food.ec.europa.eu" },
-  { "countryCode": "IT", "itemZh": "現金逾 €10,000", "severity": "declare", "reasonZh": "出入境歐盟攜帶逾 10,000 歐元須申報。", "lastVerified": "2026-06", "sourceName": "義大利海關暨專賣總署", "sourceUrl": "https://www.adm.gov.it" },
-  { "countryCode": "TW", "itemZh": "肉類製品", "severity": "banned", "reasonZh": "非洲豬瘟防疫，攜帶肉品入境最高罰 100 萬元。", "lastVerified": "2026-06", "sourceName": "動植物防疫檢疫署", "sourceUrl": "https://www.aphia.gov.tw" },
-  { "countryCode": "TW", "itemZh": "現金逾 NT$10 萬", "severity": "declare", "reasonZh": "攜帶逾 10 萬新臺幣或等值 1 萬美元外幣須申報。", "lastVerified": "2026-06", "sourceName": "財政部關務署", "sourceUrl": "https://web.customs.gov.tw" }
+  {
+    "countryCode": "JP",
+    "itemZh": "感冒藥（含偽麻黃鹼）",
+    "severity": "banned",
+    "reasonZh": "含偽麻黃鹼成分違反日本覺醒劑取締法，攜帶恐涉刑責。",
+    "lastVerified": "2026-06",
+    "sourceName": "日本厚生勞動省",
+    "sourceUrl": "https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/kenkou_iryou/iyakuhin/yunyu/",
+    "aliases": [
+      "感冒藥",
+      "伏冒",
+      "斯斯",
+      "綜合感冒藥",
+      "鼻塞藥",
+      "普拿疼伏冒"
+    ]
+  },
+  {
+    "countryCode": "JP",
+    "itemZh": "肉類製品（火腿、香腸等）",
+    "severity": "banned",
+    "reasonZh": "動物檢疫規定禁止攜入，違者高額罰款。",
+    "lastVerified": "2026-06",
+    "sourceName": "日本動物檢疫所",
+    "sourceUrl": "https://www.maff.go.jp/aqs/",
+    "aliases": [
+      "肉鬆",
+      "香腸",
+      "火腿",
+      "肉乾",
+      "培根",
+      "牛肉乾",
+      "豬肉乾",
+      "含肉泡麵",
+      "肉燥"
+    ]
+  },
+  {
+    "countryCode": "JP",
+    "itemZh": "電子煙油（含尼古丁）",
+    "severity": "permit",
+    "reasonZh": "屬醫藥品，個人進口有數量限制，超量需許可。",
+    "lastVerified": "2026-06",
+    "sourceName": "日本厚生勞動省",
+    "sourceUrl": "https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/kenkou_iryou/iyakuhin/yunyu/",
+    "aliases": [
+      "電子煙",
+      "煙油",
+      "加熱菸",
+      "vape"
+    ]
+  },
+  {
+    "countryCode": "JP",
+    "itemZh": "現金逾 ¥100 萬",
+    "severity": "declare",
+    "reasonZh": "出入境攜帶等值 100 萬日圓以上須申報。",
+    "lastVerified": "2026-06",
+    "sourceName": "日本稅關",
+    "sourceUrl": "https://www.customs.go.jp",
+    "aliases": [
+      "現金",
+      "日圓現鈔"
+    ]
+  },
+  {
+    "countryCode": "TH",
+    "itemZh": "電子煙與煙油",
+    "severity": "banned",
+    "reasonZh": "泰國全面禁止電子煙，攜帶或使用可處罰款甚至拘留。",
+    "lastVerified": "2026-06",
+    "sourceName": "泰國觀光局",
+    "sourceUrl": "https://www.tatnews.org"
+  },
+  {
+    "countryCode": "TH",
+    "itemZh": "大型佛像",
+    "severity": "permit",
+    "reasonZh": "佛像出口需泰國藝術廳許可。",
+    "lastVerified": "2026-06",
+    "sourceName": "泰國藝術廳",
+    "sourceUrl": "https://www.finearts.go.th"
+  },
+  {
+    "countryCode": "TH",
+    "itemZh": "現金逾 USD 15,000",
+    "severity": "declare",
+    "reasonZh": "入境攜帶等值 15,000 美元以上須申報。",
+    "lastVerified": "2026-06",
+    "sourceName": "泰國海關",
+    "sourceUrl": "https://www.customs.go.th"
+  },
+  {
+    "countryCode": "SG",
+    "itemZh": "口香糖",
+    "severity": "banned",
+    "reasonZh": "新加坡禁止進口口香糖（醫療用途除外）。",
+    "lastVerified": "2026-06",
+    "sourceName": "新加坡海關",
+    "sourceUrl": "https://www.customs.gov.sg"
+  },
+  {
+    "countryCode": "SG",
+    "itemZh": "電子煙",
+    "severity": "banned",
+    "reasonZh": "禁止持有與使用，入境攜帶即違法。",
+    "lastVerified": "2026-06",
+    "sourceName": "新加坡衛生科學局",
+    "sourceUrl": "https://www.hsa.gov.sg"
+  },
+  {
+    "countryCode": "SG",
+    "itemZh": "現金逾 SGD 20,000",
+    "severity": "declare",
+    "reasonZh": "攜帶等值 20,000 新幣以上現金須申報。",
+    "lastVerified": "2026-06",
+    "sourceName": "新加坡海關",
+    "sourceUrl": "https://www.customs.gov.sg"
+  },
+  {
+    "countryCode": "US",
+    "itemZh": "新鮮蔬果與肉類",
+    "severity": "banned",
+    "reasonZh": "農業檢疫規定禁止攜入，違者罰款。",
+    "lastVerified": "2026-06",
+    "sourceName": "美國海關暨邊境保護局",
+    "sourceUrl": "https://www.cbp.gov/travel/us-citizens/know-before-you-go/prohibited-and-restricted-items"
+  },
+  {
+    "countryCode": "US",
+    "itemZh": "健達出奇蛋",
+    "severity": "banned",
+    "reasonZh": "內含玩具之夾心巧克力蛋因兒童安全法規禁止輸入。",
+    "lastVerified": "2026-06",
+    "sourceName": "美國海關暨邊境保護局",
+    "sourceUrl": "https://www.cbp.gov/travel/us-citizens/know-before-you-go/prohibited-and-restricted-items"
+  },
+  {
+    "countryCode": "US",
+    "itemZh": "現金逾 USD 10,000",
+    "severity": "declare",
+    "reasonZh": "出入境攜帶逾 10,000 美元須申報。",
+    "lastVerified": "2026-06",
+    "sourceName": "美國海關暨邊境保護局",
+    "sourceUrl": "https://www.cbp.gov"
+  },
+  {
+    "countryCode": "KR",
+    "itemZh": "肉類製品",
+    "severity": "banned",
+    "reasonZh": "動植物檢疫禁止攜入，違者最高千萬韓元罰款。",
+    "lastVerified": "2026-06",
+    "sourceName": "韓國農林畜產檢疫本部",
+    "sourceUrl": "https://www.qia.go.kr",
+    "aliases": [
+      "肉鬆",
+      "香腸",
+      "火腿",
+      "肉乾",
+      "牛肉乾",
+      "含肉泡麵"
+    ]
+  },
+  {
+    "countryCode": "KR",
+    "itemZh": "現金逾 USD 10,000",
+    "severity": "declare",
+    "reasonZh": "攜帶等值 10,000 美元以上須申報。",
+    "lastVerified": "2026-06",
+    "sourceName": "韓國關稅廳",
+    "sourceUrl": "https://www.customs.go.kr",
+    "aliases": [
+      "現金"
+    ]
+  },
+  {
+    "countryCode": "GB",
+    "itemZh": "肉類與乳製品（非歐盟）",
+    "severity": "banned",
+    "reasonZh": "自非歐盟國家入境禁止攜帶肉類與乳製品。",
+    "lastVerified": "2026-06",
+    "sourceName": "英國政府",
+    "sourceUrl": "https://www.gov.uk/bringing-food-into-great-britain"
+  },
+  {
+    "countryCode": "GB",
+    "itemZh": "現金逾 £10,000",
+    "severity": "declare",
+    "reasonZh": "攜帶 10,000 英鎊以上現金入境須申報。",
+    "lastVerified": "2026-06",
+    "sourceName": "英國政府",
+    "sourceUrl": "https://www.gov.uk/bringing-cash-into-uk"
+  },
+  {
+    "countryCode": "VN",
+    "itemZh": "現金逾 USD 5,000",
+    "severity": "declare",
+    "reasonZh": "入境攜帶等值 5,000 美元以上須申報。",
+    "lastVerified": "2026-06",
+    "sourceName": "越南海關",
+    "sourceUrl": "https://www.customs.gov.vn"
+  },
+  {
+    "countryCode": "IT",
+    "itemZh": "肉類與乳製品（非歐盟）",
+    "severity": "banned",
+    "reasonZh": "自非歐盟國家入境禁止攜帶肉類與乳製品。",
+    "lastVerified": "2026-06",
+    "sourceName": "歐盟執委會",
+    "sourceUrl": "https://food.ec.europa.eu"
+  },
+  {
+    "countryCode": "IT",
+    "itemZh": "現金逾 €10,000",
+    "severity": "declare",
+    "reasonZh": "出入境歐盟攜帶逾 10,000 歐元須申報。",
+    "lastVerified": "2026-06",
+    "sourceName": "義大利海關暨專賣總署",
+    "sourceUrl": "https://www.adm.gov.it"
+  },
+  {
+    "countryCode": "TW",
+    "itemZh": "肉類製品",
+    "severity": "banned",
+    "reasonZh": "非洲豬瘟防疫，攜帶肉品入境最高罰 100 萬元。",
+    "lastVerified": "2026-06",
+    "sourceName": "動植物防疫檢疫署",
+    "sourceUrl": "https://www.aphia.gov.tw",
+    "aliases": [
+      "肉鬆",
+      "香腸",
+      "火腿",
+      "肉乾",
+      "牛肉乾",
+      "豬肉製品",
+      "含肉月餅"
+    ]
+  },
+  {
+    "countryCode": "TW",
+    "itemZh": "現金逾 NT$10 萬",
+    "severity": "declare",
+    "reasonZh": "攜帶逾 10 萬新臺幣或等值 1 萬美元外幣須申報。",
+    "lastVerified": "2026-06",
+    "sourceName": "財政部關務署",
+    "sourceUrl": "https://web.customs.gov.tw",
+    "aliases": [
+      "現金"
+    ]
+  }
 ]

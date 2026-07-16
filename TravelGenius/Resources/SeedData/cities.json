@@ -1,0 +1,8 @@
+[
+  { "countryCode": "TW", "cityZh": "台北", "lat": 25.033, "lon": 121.5654, "isDefault": true },
+  { "countryCode": "JP", "cityZh": "東京", "lat": 35.6762, "lon": 139.6503, "isDefault": true },
+  { "countryCode": "JP", "cityZh": "大阪", "lat": 34.6937, "lon": 135.5023, "isDefault": false },
+  { "countryCode": "JP", "cityZh": "京都", "lat": 35.0116, "lon": 135.7681, "isDefault": false },
+  { "countryCode": "KR", "cityZh": "首爾", "lat": 37.5665, "lon": 126.978, "isDefault": true },
+  { "countryCode": "KR", "cityZh": "釜山", "lat": 35.1796, "lon": 129.0756, "isDefault": false }
+]

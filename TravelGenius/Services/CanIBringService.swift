@@ -1,0 +1,132 @@
+//
+//  CanIBringService.swift
+//  TravelGenius
+//
+//  亮點功能「這個能帶嗎」：離線比對海關違禁品與航空安檢規則（含口語別名），
+//  即問即答並附官方來源。
+//
+
+import Foundation
+
+struct BringVerdict: Identifiable {
+    enum Kind: Int {
+        case banned = 0
+        case permit
+        case declare
+        case carryOnOnly
+        case checkedOnly
+        case limited
+        case unrestricted
+
+        var label: String {
+            switch self {
+            case .banned: "禁止攜帶"
+            case .permit: "需事先許可"
+            case .declare: "需申報"
+            case .carryOnOnly: "限隨身・禁托運"
+            case .checkedOnly: "限托運・禁隨身"
+            case .limited: "有限量規定"
+            case .unrestricted: "查無限制"
+            }
+        }
+
+        var symbolName: String {
+            switch self {
+            case .banned: "xmark.octagon.fill"
+            case .permit: "exclamationmark.triangle.fill"
+            case .declare: "doc.text.magnifyingglass"
+            case .carryOnOnly: "airplane"
+            case .checkedOnly: "suitcase.rolling.fill"
+            case .limited: "exclamationmark.triangle.fill"
+            case .unrestricted: "checkmark.seal.fill"
+            }
+        }
+    }
+
+    let kind: Kind
+    /// 命中的規則名稱（例如「肉類製品（火腿、香腸等）」）
+    let matchedName: String
+    let reason: String
+    let sourceName: String?
+    let sourceUrl: String?
+    let lastVerified: String?
+
+    var id: String { "\(kind.rawValue)-\(matchedName)" }
+}
+
+enum CanIBringService {
+    /// 回傳最嚴重的前兩筆判定；查無命中時回傳單筆「查無限制」
+    static func check(_ query: String, countryCode: String) -> [BringVerdict] {
+        let normalized = query
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased()
+        guard !normalized.isEmpty else { return [] }
+
+        var verdicts: [BringVerdict] = []
+
+        for item in StaticDataStore.shared.prohibitedItems(countryCode: countryCode)
+        where matches(query: normalized, name: item.itemZh, aliases: item.aliases) {
+            verdicts.append(BringVerdict(
+                kind: kind(for: item.severity),
+                matchedName: item.itemZh,
+                reason: item.reasonZh,
+                sourceName: item.sourceName,
+                sourceUrl: item.sourceUrl,
+                lastVerified: item.lastVerified
+            ))
+        }
+
+        for rule in StaticDataStore.shared.aviationRules(countryCode: countryCode)
+        where matches(query: normalized, name: rule.itemZh, aliases: rule.aliases) {
+            verdicts.append(BringVerdict(
+                kind: kind(for: rule.restriction),
+                matchedName: rule.itemZh,
+                reason: rule.detailZh,
+                sourceName: rule.sourceName,
+                sourceUrl: rule.sourceUrl,
+                lastVerified: rule.lastVerified
+            ))
+        }
+
+        if verdicts.isEmpty {
+            return [BringVerdict(
+                kind: .unrestricted,
+                matchedName: query.trimmingCharacters(in: .whitespacesAndNewlines),
+                reason: "在目的地海關與航空安檢的收錄規則中查無此物品的限制。一般個人用品通常可以攜帶，特殊物品出發前仍建議向航空公司或海關確認。",
+                sourceName: nil,
+                sourceUrl: nil,
+                lastVerified: nil
+            )]
+        }
+
+        return Array(verdicts.sorted { $0.kind.rawValue < $1.kind.rawValue }.prefix(2))
+    }
+
+    /// 雙向包含比對：查詢詞含規則名（「日本的感冒藥」）或規則名/別名含查詢詞（「肉」不算，至少 2 字）
+    private static func matches(query: String, name: String, aliases: [String]?) -> Bool {
+        let candidates = [name] + (aliases ?? [])
+        for candidate in candidates {
+            let lowered = candidate.lowercased()
+            if query.contains(lowered) { return true }
+            if query.count >= 2 && lowered.contains(query) { return true }
+        }
+        return false
+    }
+
+    private static func kind(for severity: ProhibitedSeverity) -> BringVerdict.Kind {
+        switch severity {
+        case .banned: .banned
+        case .permit: .permit
+        case .declare: .declare
+        }
+    }
+
+    private static func kind(for restriction: AviationRestriction) -> BringVerdict.Kind {
+        switch restriction {
+        case .banned: .banned
+        case .carryOnOnly: .carryOnOnly
+        case .checkedOnly: .checkedOnly
+        case .limited: .limited
+        }
+    }
+}

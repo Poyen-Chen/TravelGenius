@@ -21,6 +21,7 @@ struct RootGateView: View {
     }
 }
 
+/// 設定行程後才出現「清單」「Tips」分頁；沒有進行中行程時只有行程頁
 struct RootTabView: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(AppState.self) private var appState
@@ -28,46 +29,51 @@ struct RootTabView: View {
 
     enum Tab {
         case trips
-        case money
-        case packing
-        case medical
+        case checklist
+        case tips
     }
 
     @State private var selection: Tab = {
         let arguments = ProcessInfo.processInfo.arguments
-        if arguments.contains("-openMoneyTab") { return .money }
-        if arguments.contains("-openPackTab") { return .packing }
-        if arguments.contains("-openMedTab") || arguments.contains("-showEmergency") || arguments.contains("-showLargePrint") { return .medical }
-        // Onboarding 剛完成：直接落在行李分頁看清單
+        if arguments.contains("-openPackTab") { return .checklist }
+        if arguments.contains("-openTipsTab") || arguments.contains("-showProhibited") || arguments.contains("-showEtiquette") { return .tips }
         if UserDefaults.standard.bool(forKey: "startOnPackingTab") {
             UserDefaults.standard.removeObject(forKey: "startOnPackingTab")
-            return .packing
+            return .checklist
         }
         return .trips
     }()
 
+    private var activeTrip: Trip? {
+        appState.activeTrip(in: trips)
+    }
+
     var body: some View {
-        TabView(selection: $selection) {
-            TripListView()
-                .tabItem { Label("行程", systemImage: "airplane") }
-                .tag(Tab.trips)
+        Group {
+            if activeTrip != nil {
+                TabView(selection: $selection) {
+                    TripListView()
+                        .tabItem { Label("行程", systemImage: "airplane") }
+                        .tag(Tab.trips)
 
-            MoneyRootView()
-                .tabItem { Label("記帳", systemImage: "dollarsign.circle") }
-                .tag(Tab.money)
+                    PackingRootView()
+                        .tabItem { Label("清單", systemImage: "checklist") }
+                        .tag(Tab.checklist)
 
-            PackingRootView()
-                .tabItem { Label("行李", systemImage: "suitcase") }
-                .tag(Tab.packing)
-
-            MedCardRootView()
-                .tabItem { Label("醫療卡", systemImage: "cross.case") }
-                .tag(Tab.medical)
+                    TipsRootView()
+                        .tabItem { Label("Tips", systemImage: "lightbulb") }
+                        .tag(Tab.tips)
+                }
+            } else {
+                NavigationStack {
+                    TripListView()
+                }
+            }
         }
         .onChange(of: scenePhase) { _, newPhase in
             // 離開前景時更新主畫面小工具
             if newPhase != .active {
-                WidgetSync.update(trip: appState.activeTrip(in: trips))
+                WidgetSync.update(trip: activeTrip)
             }
         }
     }

@@ -23,13 +23,22 @@ enum PackingListGenerator {
     static let customReason = "自訂"
     static let customSortIndex = 1_000_000
 
-    static func generate(for trip: Trip) -> [GeneratedItem] {
+    static func generate(
+        for trip: Trip,
+        preferences: UserPreferences = .load(),
+        weatherTags: Set<String>? = nil
+    ) -> [GeneratedItem] {
         let month = Calendar.current.component(.month, from: trip.startDate)
         var results: [GeneratedItem] = []
         var seenNames = Set<String>()
 
         for (ruleIndex, rule) in StaticDataStore.shared.packingRules.enumerated() {
-            guard rule.applies(countryCode: trip.countryCode, month: month, tripType: trip.tripType) else { continue }
+            guard rule.applies(
+                countryCode: trip.countryCode,
+                month: month,
+                preferences: preferences,
+                weatherTags: weatherTags
+            ) else { continue }
             for (itemIndex, item) in rule.items.enumerated() {
                 // 同名項目只取第一次出現（例如夏季與換季都有摺疊傘）
                 guard !seenNames.contains(item.nameZh) else { continue }
@@ -49,8 +58,13 @@ enum PackingListGenerator {
 
     /// 將產生結果合併進行程的清單：新項目加入、已不適用且未打包的自動項目移除
     @MainActor
-    static func sync(trip: Trip, context: ModelContext) {
-        let generated = generate(for: trip)
+    static func sync(
+        trip: Trip,
+        context: ModelContext,
+        preferences: UserPreferences = .load(),
+        weatherTags: Set<String>? = nil
+    ) {
+        let generated = generate(for: trip, preferences: preferences, weatherTags: weatherTags)
         let existing = trip.packingItems ?? []
         let generatedNames = Set(generated.map(\.name))
         let existingNames = Set(existing.map(\.name))

@@ -14,7 +14,6 @@ struct TripDetailView: View {
 
     @State private var showingEdit = false
     @State private var confirmClose = false
-    @State private var showRetrospective = false
 
     private var country: Country? {
         StaticDataStore.shared.country(code: trip.countryCode)
@@ -36,24 +35,13 @@ struct TripDetailView: View {
                 LabeledContent("天數") {
                     Text("\(trip.totalDays) 天")
                 }
-                LabeledContent("型態") {
-                    Text(trip.tripType.label)
-                }
             }
 
-            Section("預算與支出") {
-                LabeledContent("總預算") {
-                    MoneyText(amount: trip.totalBudget, currencyCode: trip.homeCurrencyCode)
-                }
-                LabeledContent("已花費") {
-                    MoneyText(amount: trip.spentHome, currencyCode: trip.homeCurrencyCode)
-                }
-                LabeledContent("剩餘") {
-                    MoneyText(amount: trip.totalBudget - trip.spentHome, currencyCode: trip.homeCurrencyCode)
-                        .foregroundStyle(trip.totalBudget - trip.spentHome < 0 ? .red : .primary)
-                }
-                NavigationLink("全部支出") {
-                    ExpenseListView(trip: trip)
+            Section("行李") {
+                LabeledContent("打包進度") {
+                    let items = trip.packingItems ?? []
+                    Text(items.isEmpty ? "尚未產生清單" : "\(items.filter(\.isPacked).count)/\(items.count)")
+                        .monospacedDigit()
                 }
             }
 
@@ -65,11 +53,6 @@ struct TripDetailView: View {
                 }
                 Button("編輯行程", systemImage: "pencil") { showingEdit = true }
                 if trip.isClosed {
-                    NavigationLink {
-                        TripRetrospectiveView(trip: trip)
-                    } label: {
-                        Label("旅程回顧", systemImage: "chart.bar.doc.horizontal")
-                    }
                     Button("重新開啟行程", systemImage: "arrow.uturn.backward") {
                         trip.isClosed = false
                     }
@@ -84,17 +67,13 @@ struct TripDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showingEdit) { TripFormView(trip: trip) }
         .confirmationDialog(
-            "結束行程後將產生旅程回顧，之後仍可重新開啟。",
+            "結束行程後會從「目前行程」移除，之後仍可重新開啟。",
             isPresented: $confirmClose,
             titleVisibility: .visible
         ) {
             Button("結束行程", role: .destructive) {
                 trip.isClosed = true
-                showRetrospective = true
             }
-        }
-        .navigationDestination(isPresented: $showRetrospective) {
-            TripRetrospectiveView(trip: trip)
         }
     }
 }

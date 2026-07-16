@@ -31,34 +31,26 @@ struct Country: Codable, Identifiable, Hashable {
     }
 }
 
-struct Currency: Codable, Identifiable, Hashable {
-    let code: String
-    let symbol: String
-    let nameZh: String
-    let decimals: Int
-
-    var id: String { code }
-}
-
-struct PerDiemStandard: Codable, Identifiable {
-    struct Caps: Codable {
-        let food: Double
-        let transport: Double
-        let lodging: Double
-    }
-
+struct City: Codable, Identifiable, Hashable {
     let countryCode: String
-    let currencyCode: String
-    let caps: Caps
+    let cityZh: String
+    let lat: Double
+    let lon: Double
+    let isDefault: Bool
 
-    var id: String { countryCode }
+    var id: String { "\(countryCode)-\(cityZh)" }
 }
 
 struct PackingRule: Codable {
     struct Match: Codable {
         let countries: [String]?
         let months: [Int]?
-        let tripTypes: [String]?
+        /// 線上天氣模式下取代 months 的標籤（rain / hot / cold / mild）
+        let weatherTags: [String]?
+        let parties: [String]?
+        let experiences: [String]?
+        let ageBands: [String]?
+        let genders: [String]?
     }
 
     struct Item: Codable {
@@ -73,11 +65,29 @@ struct PackingRule: Codable {
     let reasonZh: String
     let items: [Item]
 
-    func applies(countryCode: String, month: Int, tripType: TripType) -> Bool {
+    func applies(
+        countryCode: String,
+        month: Int,
+        preferences: UserPreferences,
+        weatherTags: Set<String>?
+    ) -> Bool {
         guard let match else { return true }
         if let countries = match.countries, !countries.contains(countryCode) { return false }
+        if let parties = match.parties, !parties.contains(preferences.party.rawValue) { return false }
+        if let experiences = match.experiences, !experiences.contains(preferences.experience.rawValue) { return false }
+        if let ageBands = match.ageBands, !ageBands.contains(preferences.ageBand.rawValue) { return false }
+        if let genders = match.genders, !genders.contains(preferences.gender.rawValue) { return false }
+
+        // 天氣層：有即時預報時以 weatherTags 判定，否則退回月份規則
+        if layer == "weather" {
+            if let weatherTags {
+                guard let ruleTags = match.weatherTags else { return false }
+                return !weatherTags.isDisjoint(with: ruleTags)
+            }
+            if let months = match.months { return months.contains(month) }
+            return false
+        }
         if let months = match.months, !months.contains(month) { return false }
-        if let tripTypes = match.tripTypes, !tripTypes.contains(tripType.rawValue) { return false }
         return true
     }
 }
@@ -113,6 +123,8 @@ struct ProhibitedItem: Codable, Identifiable {
     /// 官方資訊來源（顯示於條目旁，供查證）
     let sourceName: String?
     let sourceUrl: String?
+    /// 「能帶嗎」查詢用的口語同義詞（肉鬆、香腸 → 肉類製品）
+    let aliases: [String]?
 
     var id: String { "\(countryCode)-\(itemZh)" }
 }
@@ -151,6 +163,7 @@ struct AviationRule: Codable, Identifiable {
     let sourceUrl: String?
     /// nil = 所有航班通用；有值 = 僅特定目的地國家顯示
     let countries: [String]?
+    let aliases: [String]?
 
     var id: String { itemZh }
 
@@ -172,71 +185,38 @@ struct EtiquetteCard: Codable, Identifiable {
     var id: String { "\(countryCode)-\(cityZh ?? "全國")-\(titleZh)" }
 }
 
-struct DrugEntry: Codable, Identifiable {
-    let brandZh: String
-    let aliases: [String]?
-    let generic: String
-    let genericZh: String
-
-    var id: String { brandZh }
-}
-
-struct MedicalTranslation: Codable {
-    let cardTitle: String
-    let name: String
-    let bloodType: String
-    let allergies: String
-    let medications: String
-    let history: String
-    let vaccines: String
-    let insurance: String
-    let emergencyContacts: String
-    let helpSentence: String
-}
-
-struct MedicalTranslations: Codable {
-    struct AllergenEntry: Codable {
-        let zh: String
-        let translations: [String: String]
-    }
-
-    let languages: [String: MedicalTranslation]
-    let allergens: [AllergenEntry]
-}
-
-struct ExchangeRateTable: Codable {
-    /// 基準幣別（rates 的值 = 1 單位該幣別折合多少基準幣別）
-    let base: String
-    let asOf: String
-    let source: String?
-    let sourceUrl: String?
-    let rates: [String: Double]
-}
-
 final class StaticDataStore {
     static let shared = StaticDataStore()
 
+    /// 聚焦版鎖定東亞三國
+    static let focusCountryCodes = ["JP", "KR", "TW"]
+
     private(set) lazy var countries: [Country] = load("countries")
-    private(set) lazy var currencies: [Currency] = load("currencies")
-    private(set) lazy var exchangeRates: ExchangeRateTable = load("exchange_rates")
-    private(set) lazy var perDiems: [PerDiemStandard] = load("per_diem")
+    private(set) lazy var cities: [City] = load("cities")
     private(set) lazy var packingRules: [PackingRule] = load("packing_rules")
     private(set) lazy var prohibitedItems: [ProhibitedItem] = load("prohibited_items")
     private(set) lazy var etiquetteCards: [EtiquetteCard] = load("etiquette")
-    private(set) lazy var drugMap: [DrugEntry] = load("drug_map")
     private(set) lazy var aviationRules: [AviationRule] = load("aviation_rules")
-    private(set) lazy var medicalTranslations: MedicalTranslations = load("medical_translations")
+
+    var focusCountries: [Country] {
+        Self.focusCountryCodes.compactMap { code in countries.first { $0.code == code } }
+    }
 
     func country(code: String) -> Country? {
         countries.first { $0.code == code }
     }
 
-    func currency(code: String) -> Currency? {
-        currencies.first { $0.code == code }
+    func cities(countryCode: String) -> [City] {
+        cities.filter { $0.countryCode == countryCode }
     }
 
-    func perDiem(countryCode: String) -> PerDiemStandard? {
-        perDiems.first { $0.countryCode == countryCode }
+    func defaultCity(countryCode: String) -> City? {
+        cities(countryCode: countryCode).first { $0.isDefault }
+            ?? cities(countryCode: countryCode).first
+    }
+
+    func city(countryCode: String, name: String) -> City? {
+        cities.first { $0.countryCode == countryCode && $0.cityZh == name }
     }
 
     func prohibitedItems(countryCode: String) -> [ProhibitedItem] {

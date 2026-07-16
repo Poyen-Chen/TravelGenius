@@ -3,17 +3,17 @@
     "layer": "base",
     "reasonZh": "基本必備",
     "items": [
-      { "nameZh": "護照＋簽證影本", "category": "documents", "quantity": 1 },
+      { "nameZh": "護照", "category": "documents", "quantity": 1 },
       { "nameZh": "換洗衣物", "category": "clothing", "perDay": true },
       { "nameZh": "行動電源", "category": "electronics", "quantity": 1 },
       { "nameZh": "充電線與充電頭", "category": "electronics", "quantity": 1 },
       { "nameZh": "牙刷盥洗組", "category": "toiletries", "quantity": 1 },
-      { "nameZh": "常用藥（含處方箋）", "category": "health", "quantity": 1 }
+      { "nameZh": "常用藥", "category": "health", "quantity": 1 }
     ]
   },
   {
     "layer": "regulation",
-    "match": { "countries": ["JP", "US", "TW"] },
+    "match": { "countries": ["JP", "TW"] },
     "reasonZh": "因為是當地插座 Type-A/B",
     "items": [
       { "nameZh": "轉接頭 Type-A/B", "category": "electronics", "quantity": 1 }
@@ -21,26 +21,10 @@
   },
   {
     "layer": "regulation",
-    "match": { "countries": ["GB", "SG"] },
-    "reasonZh": "因為是當地插座 Type-G",
-    "items": [
-      { "nameZh": "轉接頭 Type-G", "category": "electronics", "quantity": 1 }
-    ]
-  },
-  {
-    "layer": "regulation",
-    "match": { "countries": ["KR", "IT"] },
+    "match": { "countries": ["KR"] },
     "reasonZh": "因為是當地插座 Type-C/F",
     "items": [
       { "nameZh": "轉接頭 Type-C/F", "category": "electronics", "quantity": 1 }
-    ]
-  },
-  {
-    "layer": "regulation",
-    "match": { "countries": ["TH", "VN"] },
-    "reasonZh": "因為是多種插座規格",
-    "items": [
-      { "nameZh": "萬用轉接頭", "category": "electronics", "quantity": 1 }
     ]
   },
   {
@@ -55,37 +39,27 @@
   },
   {
     "layer": "culture",
-    "match": { "countries": ["TH"] },
-    "reasonZh": "因為是泰國",
+    "match": { "countries": ["KR"] },
+    "reasonZh": "因為是韓國",
     "items": [
-      { "nameZh": "遮肩披巾（寺廟著裝）", "category": "clothing", "quantity": 1 },
-      { "nameZh": "過膝長褲或長裙", "category": "clothing", "quantity": 1 },
-      { "nameZh": "防蚊液", "category": "health", "quantity": 1 }
-    ]
-  },
-  {
-    "layer": "culture",
-    "match": { "countries": ["IT"] },
-    "reasonZh": "因為是義大利",
-    "items": [
-      { "nameZh": "教堂參觀端莊衣著", "category": "clothing", "quantity": 1 },
-      { "nameZh": "防扒斜背包", "category": "other", "quantity": 1 }
+      { "nameZh": "T-money 交通卡（可機場買）", "category": "documents", "quantity": 1 },
+      { "nameZh": "腸胃藥（辣食多）", "category": "health", "quantity": 1 }
     ]
   },
   {
     "layer": "weather",
-    "match": { "months": [6, 7, 8, 9] },
-    "reasonZh": "因為是夏季",
+    "match": { "months": [6, 7, 8, 9], "weatherTags": ["hot"] },
+    "reasonZh": "因為天氣炎熱",
     "items": [
       { "nameZh": "防曬乳", "category": "toiletries", "quantity": 1 },
-      { "nameZh": "摺疊傘", "category": "other", "quantity": 1 },
-      { "nameZh": "太陽眼鏡", "category": "other", "quantity": 1 }
+      { "nameZh": "太陽眼鏡", "category": "other", "quantity": 1 },
+      { "nameZh": "隨身水瓶", "category": "other", "quantity": 1 }
     ]
   },
   {
     "layer": "weather",
-    "match": { "months": [12, 1, 2] },
-    "reasonZh": "因為是冬季",
+    "match": { "months": [12, 1, 2], "weatherTags": ["cold"] },
+    "reasonZh": "因為天氣寒冷",
     "items": [
       { "nameZh": "保暖外套", "category": "clothing", "quantity": 1 },
       { "nameZh": "圍巾手套", "category": "clothing", "quantity": 1 },
@@ -94,37 +68,50 @@
   },
   {
     "layer": "weather",
-    "match": { "months": [3, 4, 5, 10, 11] },
+    "match": { "months": [3, 4, 5, 10, 11], "weatherTags": ["mild"] },
     "reasonZh": "因為是換季天氣",
     "items": [
-      { "nameZh": "薄外套", "category": "clothing", "quantity": 1 },
-      { "nameZh": "摺疊傘", "category": "other", "quantity": 1 }
+      { "nameZh": "薄外套", "category": "clothing", "quantity": 1 }
     ]
   },
   {
-    "layer": "tripType",
-    "match": { "tripTypes": ["business"] },
-    "reasonZh": "因為是商務行程",
+    "layer": "weather",
+    "match": { "months": [], "weatherTags": ["rain"] },
+    "reasonZh": "因為預報有雨",
     "items": [
-      { "nameZh": "西裝／正式服裝", "category": "clothing", "quantity": 1 },
-      { "nameZh": "名片", "category": "documents", "quantity": 1 },
-      { "nameZh": "筆電與充電器", "category": "electronics", "quantity": 1 }
+      { "nameZh": "摺疊傘", "category": "other", "quantity": 1 },
+      { "nameZh": "防水袋（護3C）", "category": "other", "quantity": 1 }
     ]
   },
   {
-    "layer": "tripType",
-    "match": { "tripTypes": ["backpacking"] },
-    "reasonZh": "因為是背包旅行",
+    "layer": "party",
+    "match": { "parties": ["solo"] },
+    "reasonZh": "因為是獨旅",
     "items": [
-      { "nameZh": "快乾毛巾", "category": "toiletries", "quantity": 1 },
       { "nameZh": "行李鎖", "category": "other", "quantity": 1 },
-      { "nameZh": "輕便睡袋內襯", "category": "other", "quantity": 1 }
+      { "nameZh": "證件現金分放袋", "category": "documents", "quantity": 1 }
     ]
   },
   {
-    "layer": "tripType",
-    "match": { "tripTypes": ["family"] },
-    "reasonZh": "因為是家庭旅行",
+    "layer": "party",
+    "match": { "parties": ["couple"] },
+    "reasonZh": "因為是伴侶出遊",
+    "items": [
+      { "nameZh": "自拍腳架", "category": "electronics", "quantity": 1 }
+    ]
+  },
+  {
+    "layer": "party",
+    "match": { "parties": ["friends"] },
+    "reasonZh": "因為是朋友出遊",
+    "items": [
+      { "nameZh": "分帳 App 或小額零錢", "category": "other", "quantity": 1 }
+    ]
+  },
+  {
+    "layer": "party",
+    "match": { "parties": ["family"] },
+    "reasonZh": "因為是家庭出遊",
     "items": [
       { "nameZh": "兒童常備藥", "category": "health", "quantity": 1 },
       { "nameZh": "濕紙巾", "category": "toiletries", "quantity": 2 },
@@ -132,12 +119,48 @@
     ]
   },
   {
-    "layer": "tripType",
-    "match": { "tripTypes": ["leisure"] },
-    "reasonZh": "因為是觀光行程",
+    "layer": "party",
+    "match": { "parties": ["colleagues"] },
+    "reasonZh": "因為是同事出差",
     "items": [
-      { "nameZh": "相機與記憶卡", "category": "electronics", "quantity": 1 },
-      { "nameZh": "好走的鞋", "category": "clothing", "quantity": 1 }
+      { "nameZh": "名片", "category": "documents", "quantity": 1 },
+      { "nameZh": "正式服裝", "category": "clothing", "quantity": 1 },
+      { "nameZh": "筆電與充電器", "category": "electronics", "quantity": 1 }
+    ]
+  },
+  {
+    "layer": "experience",
+    "match": { "experiences": ["first"] },
+    "reasonZh": "因為是第一次出國",
+    "items": [
+      { "nameZh": "護照影本×2（分開放）", "category": "documents", "quantity": 2 },
+      { "nameZh": "旅平險保單影本", "category": "documents", "quantity": 1 },
+      { "nameZh": "緊急聯絡卡（手寫）", "category": "documents", "quantity": 1 }
+    ]
+  },
+  {
+    "layer": "age",
+    "match": { "ageBands": ["senior"] },
+    "reasonZh": "因為要照顧好自己",
+    "items": [
+      { "nameZh": "處方藥（多帶三天份）", "category": "health", "quantity": 1 },
+      { "nameZh": "老花眼鏡", "category": "health", "quantity": 1 }
+    ]
+  },
+  {
+    "layer": "age",
+    "match": { "ageBands": ["teen"] },
+    "reasonZh": "因為有學生身分",
+    "items": [
+      { "nameZh": "學生證（部分景點優惠）", "category": "documents", "quantity": 1 }
+    ]
+  },
+  {
+    "layer": "gender",
+    "match": { "genders": ["female"] },
+    "reasonZh": "個人衛生用品",
+    "items": [
+      { "nameZh": "衛生用品", "category": "toiletries", "quantity": 1 }
     ]
   }
 ]

@@ -2,8 +2,8 @@
 //  OnboardingTripSetupView.swift
 //  TravelGenius
 //
-//  Onboarding 第 5 步：30 秒建立行程（只問影響清單的三件事），
-//  以及第 7 步：清單揭曉＋分享（病毒時刻）。
+//  Onboarding 建行程步驟（東亞三國、預設城市自動帶入），
+//  以及揭曉步驟：清單完成＋分享（病毒時刻）。
 //
 
 import SwiftUI
@@ -15,8 +15,8 @@ struct OnboardingTripSetupView: View {
     @Binding var endDate: Date
     var onGenerate: () -> Void
 
-    private var availableCities: [String] {
-        StaticDataStore.shared.etiquetteCities(countryCode: countryCode)
+    private var availableCities: [City] {
+        StaticDataStore.shared.cities(countryCode: countryCode)
     }
 
     var body: some View {
@@ -24,7 +24,7 @@ struct OnboardingTripSetupView: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text("你要去哪裡？")
                     .font(.system(.title, design: .rounded).weight(.bold))
-                Text("30 秒就好——目的地與日期決定你的清單。")
+                Text("目的地與日期決定你的清單和 Tips。")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
@@ -33,23 +33,22 @@ struct OnboardingTripSetupView: View {
 
             Form {
                 Picker("目的地", selection: $countryCode) {
-                    ForEach(StaticDataStore.shared.countries) { country in
+                    ForEach(StaticDataStore.shared.focusCountries) { country in
                         Text("\(country.flagEmoji) \(country.nameZh)").tag(country.code)
                     }
                 }
-                if !availableCities.isEmpty {
-                    Picker("城市", selection: $city) {
-                        Text("不指定").tag("")
-                        ForEach(availableCities, id: \.self) { cityName in
-                            Text(cityName).tag(cityName)
-                        }
+                Picker("城市", selection: $city) {
+                    ForEach(availableCities) { cityOption in
+                        Text(cityOption.cityZh).tag(cityOption.cityZh)
                     }
                 }
                 DatePicker("出發", selection: $startDate, displayedComponents: .date)
                 DatePicker("回程", selection: $endDate, in: startDate..., displayedComponents: .date)
             }
             .scrollContentBackground(.hidden)
-            .onChange(of: countryCode) { _, _ in city = "" }
+            .onChange(of: countryCode) { _, newValue in
+                city = StaticDataStore.shared.defaultCity(countryCode: newValue)?.cityZh ?? ""
+            }
             .onChange(of: startDate) { _, newValue in
                 if endDate < newValue { endDate = newValue }
             }
@@ -91,9 +90,7 @@ struct OnboardingRevealView: View {
     var body: some View {
         VStack(spacing: 20) {
             Spacer()
-            Image(systemName: "checkmark.seal.fill")
-                .font(.system(size: 56))
-                .foregroundStyle(.green)
+            MascotView(expression: .happy, size: 64)
 
             VStack(spacing: 6) {
                 Text("你的行前包完成！")
@@ -111,7 +108,7 @@ struct OnboardingRevealView: View {
                 summaryRow(symbol: "airplane", tint: .blue,
                            text: "\(aviationCount) 條航空安檢規定，隨身托運不搞混")
                 summaryRow(symbol: "suitcase.fill", tint: .indigo,
-                           text: "\(itemCount) 項專屬打包清單，附「因為是…」理由")
+                           text: "\(itemCount) 項專屬清單，含你的同行與經驗客製")
             }
             .padding(.horizontal)
 

@@ -2,6 +2,9 @@
 //  PackingListView.swift
 //  TravelGenius
 //
+//  物品 checklist：吉祥物情境提醒、偏好＋天氣客製清單、
+//  前一晚模式與回程模式。海關與文化內容在 Tips 分頁。
+//
 
 import SwiftUI
 import SwiftData
@@ -12,13 +15,12 @@ struct PackingListView: View {
     @Environment(\.modelContext) private var context
     @State private var showingAddItem = false
     @State private var showingNightMode = false
-    @State private var showingEtiquette = false
-    @State private var showingProhibited = false
     @State private var showingReturnMode = false
     @State private var confirmReturnMode = false
     /// 進入回程模式前的已打包項目快照（誤觸時自動還原用）
     @State private var packedSnapshot: Set<UUID>?
     @State private var packToggle = false
+    @State private var weather: WeatherSummary?
 
     private var items: [PackingItem] {
         (trip.packingItems ?? []).sorted { $0.sortIndex < $1.sortIndex }
@@ -32,29 +34,18 @@ struct PackingListView: View {
             .sorted { ($0.items.first?.sortIndex ?? 0) < ($1.items.first?.sortIndex ?? 0) }
     }
 
-    private var prohibited: [ProhibitedItem] {
-        StaticDataStore.shared.prohibitedItems(countryCode: trip.countryCode)
-    }
-
-    /// 回程模式關閉時，若完全沒有勾任何項目（視為誤觸），還原出發時的打包狀態
-    private func restoreIfUntouched() {
-        defer { packedSnapshot = nil }
-        guard let snapshot = packedSnapshot, !snapshot.isEmpty else { return }
-        let allItems = trip.packingItems ?? []
-        guard allItems.allSatisfy({ !$0.isPacked }) else { return }
-        for item in allItems where snapshot.contains(item.id) {
-            item.isPacked = true
-        }
-    }
-
-    private var etiquette: [EtiquetteCard] {
-        StaticDataStore.shared.etiquetteCards(countryCode: trip.countryCode)
+    private var mascotMessage: (text: String, expression: MascotExpression) {
+        MascotMessenger.message(
+            for: trip,
+            unpackedCount: items.filter { !$0.isPacked }.count,
+            weather: weather
+        )
     }
 
     var body: some View {
         Group {
             if items.isEmpty {
-                riskFirstEmptyView
+                emptyGenerateView
             } else {
                 packingList
             }
@@ -65,7 +56,7 @@ struct PackingListView: View {
                 Menu {
                     Button("新增物品", systemImage: "plus") { showingAddItem = true }
                     Button("重新產生清單", systemImage: "arrow.clockwise") {
-                        PackingListGenerator.sync(trip: trip, context: context)
+                        PackingListGenerator.sync(trip: trip, context: context, weatherTags: weather?.tags)
                     }
                     Button("回程模式", systemImage: "arrow.uturn.left.circle") {
                         confirmReturnMode = true
@@ -98,21 +89,37 @@ struct PackingListView: View {
                 showingReturnMode = true
             }
         }
-        .navigationDestination(isPresented: $showingEtiquette) { EtiquetteCardsView(trip: trip) }
-        .navigationDestination(isPresented: $showingProhibited) { ProhibitedItemsView(trip: trip) }
         .sensoryFeedback(.impact, trigger: packToggle)
-        .onAppear {
-            let arguments = ProcessInfo.processInfo.arguments
-            if arguments.contains("-showEtiquette") { showingEtiquette = true }
-            if arguments.contains("-showProhibited") { showingProhibited = true }
+        .task(id: trip.id) {
+            await refreshWeather()
         }
     }
 
-    /// 尚未產生清單：先亮海關風險，再一鍵產生 —「先查風險，再打包」
-    private var riskFirstEmptyView: some View {
+    /// 抓目的地天氣，成功後以天氣標籤重新合併清單（離線自動退回月份規則）
+    private func refreshWeather() async {
+        guard let summary = await WeatherService.fetch(for: trip) else { return }
+        weather = summary
+        PackingListGenerator.sync(trip: trip, context: context, weatherTags: summary.tags)
+        WidgetSync.update(trip: trip)
+    }
+
+    /// 回程模式關閉時，若完全沒有勾任何項目（視為誤觸），還原出發時的打包狀態
+    private func restoreIfUntouched() {
+        defer { packedSnapshot = nil }
+        guard let snapshot = packedSnapshot, !snapshot.isEmpty else { return }
+        let allItems = trip.packingItems ?? []
+        guard allItems.allSatisfy({ !$0.isPacked }) else { return }
+        for item in allItems where snapshot.contains(item.id) {
+            item.isPacked = true
+        }
+    }
+
+    private var emptyGenerateView: some View {
         List {
-            if !prohibited.isEmpty {
-                riskSection(header: "第一步・先看海關風險")
+            Section {
+                MascotBubbleRow(expression: .normal, message: "還沒有清單！我依你的目的地、天氣和同行組成，一鍵幫你生一份。")
+                    .listRowBackground(Color.clear)
+                    .listRowInsets(EdgeInsets(top: 8, leading: 8, bottom: 8, trailing: 8))
             }
             Section {
                 VStack(spacing: 12) {
@@ -121,53 +128,48 @@ struct PackingListView: View {
                         .foregroundStyle(.secondary)
                     Text("產生專屬打包清單")
                         .font(.headline)
-                    Text("依目的地、天氣與旅行型態自動客製，每個項目都說明「因為是什麼」才建議帶。")
+                    Text("每個項目都說明「因為是什麼」才建議帶。")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
                     Button("產生清單") {
-                        PackingListGenerator.sync(trip: trip, context: context)
+                        PackingListGenerator.sync(trip: trip, context: context, weatherTags: weather?.tags)
                     }
                     .buttonStyle(.borderedProminent)
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 12)
-            } header: {
-                if !prohibited.isEmpty {
-                    Text("第二步・再打包")
-                }
             }
         }
     }
 
     private var packingList: some View {
         List {
-            if !prohibited.isEmpty {
-                riskSection(header: nil)
+            Section {
+                MascotBubbleRow(expression: mascotMessage.expression, message: mascotMessage.text)
+                    .listRowBackground(Color.clear)
+                    .listRowInsets(EdgeInsets(top: 8, leading: 8, bottom: 4, trailing: 8))
+            }
+
+            if let weather {
+                Section {
+                    HStack(spacing: 8) {
+                        Image(systemName: weather.rainDays > 0 ? "cloud.rain" : "sun.max")
+                            .foregroundStyle(.tint)
+                        Text("\(weather.cityZh) 旅行期間預報：\(weather.headline)")
+                            .font(.footnote)
+                        Spacer()
+                        Text("Open-Meteo")
+                            .font(.caption2)
+                            .foregroundStyle(.tertiary)
+                    }
+                    .accessibilityElement(children: .combine)
+                }
             }
 
             Section {
                 PackingProgressHeader(items: items)
                     .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16))
-            }
-
-            if !etiquette.isEmpty {
-                Section {
-                    NavigationLink {
-                        EtiquetteCardsView(trip: trip)
-                    } label: {
-                        HStack {
-                            Label("文化提醒", systemImage: "hand.raised")
-                                .font(.subheadline.weight(.medium))
-                            Spacer()
-                            if !trip.city.isEmpty {
-                                Text(trip.city)
-                                    .font(.footnote)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                    }
-                }
             }
 
             ForEach(sections, id: \.reason) { section in
@@ -184,44 +186,6 @@ struct PackingListView: View {
                         }
                     }
                 }
-            }
-        }
-    }
-
-    /// 最高風險警示卡：紅色置頂，直接點名最危險的禁帶品
-    private func riskSection(header: String?) -> some View {
-        let banned = prohibited.filter { $0.severity == .banned }
-        let otherCount = prohibited.count - banned.count
-        let countryName = StaticDataStore.shared.country(code: trip.countryCode)?.nameZh ?? trip.countryCode
-        return Section {
-            NavigationLink {
-                ProhibitedItemsView(trip: trip)
-            } label: {
-                VStack(alignment: .leading, spacing: 8) {
-                    Label("海關風險・\(countryName)", systemImage: "exclamationmark.octagon.fill")
-                        .font(.subheadline.weight(.bold))
-                        .foregroundStyle(.red)
-                    ForEach(banned.prefix(2)) { item in
-                        HStack(spacing: 6) {
-                            Image(systemName: "xmark.circle.fill")
-                                .font(.caption)
-                                .foregroundStyle(.red)
-                            Text(item.itemZh)
-                                .font(.footnote.weight(.medium))
-                        }
-                    }
-                    Text("海關 \(banned.count) 項禁止・\(otherCount) 項需許可或申報，另有 \(StaticDataStore.shared.aviationRules(countryCode: trip.countryCode).count) 條航空安檢規定。")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                .padding(.vertical, 2)
-            }
-            .listRowBackground(Color.red.opacity(0.1))
-            .accessibilityElement(children: .combine)
-            .accessibilityLabel("海關風險警示：\(countryName) 有 \(banned.count) 項禁止攜帶物品，點入查看詳情")
-        } header: {
-            if let header {
-                Text(header)
             }
         }
     }

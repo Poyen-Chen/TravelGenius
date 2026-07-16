@@ -2,8 +2,9 @@
 //  WidgetSync.swift
 //  TravelGenius
 //
-//  把目前行程的跑道數字寫進 App Group 共享儲存，供主畫面小工具讀取。
-//  欄位需與 TravelGeniusWidget/RunwayWidget.swift 的 RunwaySnapshot 保持一致。
+//  把目前行程寫進 App Group 共享儲存，供主畫面「出發倒數」小工具讀取。
+//  欄位需與 TravelGeniusWidget/RunwayWidget.swift 的 DepartureSnapshot 保持一致。
+//  倒數天數由 widget 端以 startDate/endDate 即時計算，跨日不會過期。
 //
 
 import Foundation
@@ -11,17 +12,12 @@ import WidgetKit
 
 enum WidgetSync {
     static let appGroupID = "group.com.example.TravelGenius"
-    static let defaultsKey = "runwaySnapshot"
+    static let defaultsKey = "departureSnapshot"
 
     struct Snapshot: Codable {
         var tripName: String
-        var runwayDays: Double?
-        var burnRatePerDay: Double
-        var remainingTripDays: Int
-        var statusRaw: String
-        var todaySpent: Double
-        var todayCap: Double
-        var currencyCode: String
+        var startDate: Date
+        var endDate: Date
         var packedCount: Int
         var packingTotal: Int
         var updatedAt: Date
@@ -37,17 +33,11 @@ enum WidgetSync {
             return
         }
 
-        let calc = RunwayCalculator(trip: trip)
         let packing = trip.packingItems ?? []
         let snapshot = Snapshot(
             tripName: trip.name,
-            runwayDays: calc.runwayDays,
-            burnRatePerDay: calc.burnRatePerDay,
-            remainingTripDays: calc.remainingTripDays,
-            statusRaw: calc.status.rawValue,
-            todaySpent: calc.todaySpent,
-            todayCap: calc.todayCap,
-            currencyCode: trip.homeCurrencyCode,
+            startDate: trip.startDate,
+            endDate: trip.endDate,
             packedCount: packing.filter(\.isPacked).count,
             packingTotal: packing.count,
             updatedAt: .now

@@ -11,6 +11,7 @@ struct TripListView: View {
     @Environment(AppState.self) private var appState
     @Query(sort: \Trip.createdAt, order: .reverse) private var trips: [Trip]
     @State private var showingForm = false
+    @State private var showingPreferences = false
 
     var body: some View {
         NavigationStack {
@@ -23,11 +24,13 @@ struct TripListView: View {
             }
             .navigationTitle("行程")
             .toolbar {
-                ToolbarItem(placement: .primaryAction) {
+                ToolbarItemGroup(placement: .primaryAction) {
+                    Button("偏好設定", systemImage: "person.crop.circle") { showingPreferences = true }
                     Button("新增行程", systemImage: "plus") { showingForm = true }
                 }
             }
             .sheet(isPresented: $showingForm) { TripFormView() }
+            .sheet(isPresented: $showingPreferences) { PreferenceSettingsView() }
             .navigationDestination(for: Trip.self) { TripDetailView(trip: $0) }
         }
     }
@@ -58,9 +61,15 @@ private struct TripRow: View {
     let trip: Trip
     let isActive: Bool
 
+    private var packedSummary: String {
+        let items = trip.packingItems ?? []
+        guard !items.isEmpty else { return "尚未產生清單" }
+        return "行李 \(items.filter(\.isPacked).count)/\(items.count)"
+    }
+
     var body: some View {
         HStack(spacing: 12) {
-            Text(StaticDataStore.shared.country(code: trip.countryCode)?.flagEmoji ?? "🌍")
+            Text(StaticDataStore.shared.country(code: trip.countryCode)?.flagEmoji ?? "🌏")
                 .font(.title)
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 6) {
@@ -80,8 +89,10 @@ private struct TripRow: View {
             }
             Spacer()
             VStack(alignment: .trailing, spacing: 3) {
-                MoneyText(amount: trip.totalBudget, currencyCode: trip.homeCurrencyCode)
-                    .font(.subheadline)
+                Text(packedSummary)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
                 if isActive {
                     Label("目前行程", systemImage: "checkmark.circle.fill")
                         .font(.caption)

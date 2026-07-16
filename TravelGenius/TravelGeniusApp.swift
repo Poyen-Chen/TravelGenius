@@ -13,6 +13,7 @@ struct TravelGeniusApp: App {
 
     init() {
         do {
+            // 聚焦版仍註冊全部模型，避免既有安裝的 schema migration 問題
             container = try ModelContainer(
                 for: Trip.self, Expense.self, PackingItem.self,
                 MedicalProfile.self, Medication.self, AllergyRecord.self,
@@ -24,10 +25,18 @@ struct TravelGeniusApp: App {
         if ProcessInfo.processInfo.arguments.contains("-seedDemo") {
             DemoSeeder.seedIfNeeded(into: container.mainContext)
         }
-        if ProcessInfo.processInfo.arguments.contains("-exportDemo") {
-            exportDemoReport()
-        }
         configureOnboardingGate()
+        logCheckerDebugQuery()
+    }
+
+    /// 開發驗證用：`-checkItem 肉鬆` 直接在 log 印出「能帶嗎」判定
+    private func logCheckerDebugQuery() {
+        let arguments = ProcessInfo.processInfo.arguments
+        guard let index = arguments.firstIndex(of: "-checkItem"), index + 1 < arguments.count else { return }
+        let query = arguments[index + 1]
+        for verdict in CanIBringService.check(query, countryCode: "JP") {
+            NSLog("CHECK-ITEM [%@] %@ — %@", query, verdict.kind.label, verdict.matchedName)
+        }
     }
 
     /// 首次啟動顯示 onboarding；已有行程（升級用戶）或帶開發引數時自動略過
@@ -39,28 +48,10 @@ struct TravelGeniusApp: App {
             return
         }
         guard !defaults.bool(forKey: "hasOnboarded") else { return }
-        let hasDebugArgs = arguments.contains { $0.hasPrefix("-seedDemo") || $0.hasPrefix("-open") || $0.hasPrefix("-show") || $0.hasPrefix("-exportDemo") }
+        let hasDebugArgs = arguments.contains { $0.hasPrefix("-seedDemo") || $0.hasPrefix("-open") || $0.hasPrefix("-show") }
         let tripCount = (try? container.mainContext.fetchCount(FetchDescriptor<Trip>())) ?? 0
         if hasDebugArgs || tripCount > 0 {
             defaults.set(true, forKey: "hasOnboarded")
-        }
-    }
-
-    /// 開發驗證用：啟動時直接產出報帳文件並印出路徑
-    private func exportDemoReport() {
-        let context = container.mainContext
-        guard let trip = try? context.fetch(FetchDescriptor<Trip>()).first else {
-            NSLog("EXPORT-DEMO: no trip")
-            return
-        }
-        let expenses = (trip.expenses ?? []).sorted { $0.date < $1.date }
-        do {
-            let csv = try ReportExporter.exportCSV(trip: trip, expenses: expenses)
-            let pdf = try ReportExporter.exportPDF(trip: trip, expenses: expenses, includeReceipts: true)
-            NSLog("EXPORT-DEMO CSV: %@", csv.path)
-            NSLog("EXPORT-DEMO PDF: %@", pdf.path)
-        } catch {
-            NSLog("EXPORT-DEMO FAILED: %@", "\(error)")
         }
     }
 

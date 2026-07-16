@@ -2,18 +2,14 @@
 //  EtiquetteCardsView.swift
 //  TravelGenius
 //
-//  文化提醒：城市限定優先（同一國家不同城市習慣可能相反，例如東京手扶梯靠左、大阪靠右），
-//  其次全國通用；未指定城市時列出所有城市供參考。
+//  城市文化提醒 section 元件（嵌入 Tips 分頁）：
+//  城市限定優先（同一國家不同城市習慣可能相反，例如東京手扶梯靠左、大阪靠右），其次全國通用。
 //
 
 import SwiftUI
 
-struct EtiquetteCardsView: View {
+struct EtiquetteSections: View {
     let trip: Trip
-
-    private var country: Country? {
-        StaticDataStore.shared.country(code: trip.countryCode)
-    }
 
     private var allCards: [EtiquetteCard] {
         StaticDataStore.shared.etiquetteCards(countryCode: trip.countryCode)
@@ -31,56 +27,49 @@ struct EtiquetteCardsView: View {
     }
 
     var body: some View {
-        List {
-            if !trip.city.isEmpty {
-                // 指定城市：城市限定放最前面，再列全國通用
-                if let section = citySections.first(where: { $0.city == trip.city }) {
-                    Section("\(section.city)・城市限定") {
-                        ForEach(section.cards) { card in
-                            EtiquetteRow(card: card, highlighted: true)
-                        }
-                    }
-                }
-                if !generalCards.isEmpty {
-                    Section("全國通用") {
-                        ForEach(generalCards) { card in
-                            EtiquetteRow(card: card, highlighted: false)
-                        }
-                    }
-                }
-            } else {
-                if !generalCards.isEmpty {
-                    Section("全國通用") {
-                        ForEach(generalCards) { card in
-                            EtiquetteRow(card: card, highlighted: false)
-                        }
-                    }
-                }
-                ForEach(citySections, id: \.city) { section in
-                    Section("\(section.city)・城市限定") {
-                        ForEach(section.cards) { card in
-                            EtiquetteRow(card: card, highlighted: false)
-                        }
+        if allCards.isEmpty {
+            Section {
+                Text("此目的地尚未收錄文化提醒。")
+                    .foregroundStyle(.secondary)
+            }
+        }
+
+        if !trip.city.isEmpty {
+            // 指定城市：城市限定放最前面，再列全國通用
+            if let section = citySections.first(where: { $0.city == trip.city }) {
+                Section("\(section.city)・城市限定") {
+                    ForEach(section.cards) { card in
+                        EtiquetteRow(card: card, highlighted: true)
                     }
                 }
             }
-
-            Section {
-            } footer: {
-                VStack(alignment: .leading, spacing: 4) {
-                    if trip.city.isEmpty && !citySections.isEmpty {
-                        Text("在行程中指定城市，出發前就只看該城市的重點提醒。")
+            if !generalCards.isEmpty {
+                Section("全國通用") {
+                    ForEach(generalCards) { card in
+                        EtiquetteRow(card: card, highlighted: false)
                     }
-                    Text("內容整理自各地觀光局與官方公告；涉及罰則的條目附來源連結。")
+                }
+            }
+        } else {
+            if !generalCards.isEmpty {
+                Section("全國通用") {
+                    ForEach(generalCards) { card in
+                        EtiquetteRow(card: card, highlighted: false)
+                    }
+                }
+            }
+            ForEach(citySections, id: \.city) { section in
+                Section("\(section.city)・城市限定") {
+                    ForEach(section.cards) { card in
+                        EtiquetteRow(card: card, highlighted: false)
+                    }
                 }
             }
         }
-        .navigationTitle("文化提醒・\(country?.nameZh ?? trip.countryCode)\(trip.city.isEmpty ? "" : "・\(trip.city)")")
-        .navigationBarTitleDisplayMode(.inline)
-        .overlay {
-            if allCards.isEmpty {
-                ContentUnavailableView("尚無資料", systemImage: "hand.raised", description: Text("此目的地尚未收錄文化提醒。"))
-            }
+
+        Section {
+        } footer: {
+            Text("內容整理自各地觀光局與官方公告；涉及罰則的條目附來源連結。")
         }
     }
 }

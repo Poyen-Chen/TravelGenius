@@ -2,18 +2,27 @@
 //  ProhibitedItemsView.swift
 //  TravelGenius
 //
+//  海關違禁品與航空安檢規則的 section 元件（嵌入 Tips 分頁的 List 使用）。
+//
 
 import SwiftUI
 
-struct ProhibitedItemsView: View {
+/// Tips 分頁的海關／安檢內容
+struct ProhibitedSections: View {
+    enum Mode {
+        case customs
+        case aviation
+    }
+
     let trip: Trip
+    let mode: Mode
 
     private var country: Country? {
         StaticDataStore.shared.country(code: trip.countryCode)
     }
 
     /// 依嚴重度排序：禁止 → 需許可 → 需申報
-    private var items: [ProhibitedItem] {
+    private var customsItems: [ProhibitedItem] {
         let order: [ProhibitedSeverity] = [.banned, .permit, .declare]
         return StaticDataStore.shared.prohibitedItems(countryCode: trip.countryCode)
             .sorted { (order.firstIndex(of: $0.severity) ?? 9) < (order.firstIndex(of: $1.severity) ?? 9) }
@@ -24,94 +33,95 @@ struct ProhibitedItemsView: View {
     }
 
     private var lastVerified: String? {
-        (items.map(\.lastVerified) + aviationRules.map(\.lastVerified)).max()
+        switch mode {
+        case .customs: customsItems.map(\.lastVerified).max()
+        case .aviation: aviationRules.map(\.lastVerified).max()
+        }
     }
 
     var body: some View {
-        List {
-            if !items.isEmpty {
-                Section("入境海關・\(country?.nameZh ?? trip.countryCode)") {
-            ForEach(items) { item in
-                VStack(alignment: .leading, spacing: 6) {
-                    HStack {
-                        Text(item.itemZh)
-                            .font(.body.weight(.medium))
-                        Spacer()
+        switch mode {
+        case .customs:
+            Section("入境海關・\(country?.nameZh ?? trip.countryCode)") {
+                if customsItems.isEmpty {
+                    Text("此目的地尚未收錄違禁品規則。")
+                        .foregroundStyle(.secondary)
+                }
+                ForEach(customsItems) { item in
+                    RegulationRow(
+                        title: item.itemZh,
+                        detail: item.reasonZh,
+                        sourceName: item.sourceName,
+                        sourceUrl: item.sourceUrl
+                    ) {
                         SeverityBadge(severity: item.severity)
                     }
-                    Text(item.reasonZh)
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                    if let sourceName = item.sourceName,
-                       let sourceUrl = item.sourceUrl,
-                       let url = URL(string: sourceUrl) {
-                        Link(destination: url) {
-                            HStack(spacing: 3) {
-                                Image(systemName: "link")
-                                Text("來源：\(sourceName)")
-                                Image(systemName: "arrow.up.right")
-                                    .font(.system(size: 8))
-                            }
-                            .font(.caption)
-                        }
-                        .accessibilityLabel("開啟資料來源：\(sourceName)")
+                }
+            }
+            verifiedFooter
+        case .aviation:
+            Section("航空安檢・隨身／托運") {
+                ForEach(aviationRules) { rule in
+                    RegulationRow(
+                        title: rule.itemZh,
+                        detail: rule.detailZh,
+                        sourceName: rule.sourceName,
+                        sourceUrl: rule.sourceUrl
+                    ) {
+                        RestrictionBadge(restriction: rule.restriction)
                     }
                 }
-                .padding(.vertical, 4)
             }
-                }
-            }
+            verifiedFooter
+        }
+    }
 
-            if !aviationRules.isEmpty {
-                Section("航空安檢・隨身／托運") {
-                    ForEach(aviationRules) { rule in
-                        VStack(alignment: .leading, spacing: 6) {
-                            HStack {
-                                Text(rule.itemZh)
-                                    .font(.body.weight(.medium))
-                                Spacer()
-                                RestrictionBadge(restriction: rule.restriction)
-                            }
-                            Text(rule.detailZh)
-                                .font(.footnote)
-                                .foregroundStyle(.secondary)
-                            if let sourceName = rule.sourceName,
-                               let sourceUrl = rule.sourceUrl,
-                               let url = URL(string: sourceUrl) {
-                                Link(destination: url) {
-                                    HStack(spacing: 3) {
-                                        Image(systemName: "link")
-                                        Text("來源：\(sourceName)")
-                                        Image(systemName: "arrow.up.right")
-                                            .font(.system(size: 8))
-                                    }
-                                    .font(.caption)
-                                }
-                                .accessibilityLabel("開啟資料來源：\(sourceName)")
-                            }
-                        }
-                        .padding(.vertical, 4)
-                    }
+    private var verifiedFooter: some View {
+        Section {
+        } footer: {
+            VStack(alignment: .leading, spacing: 4) {
+                if let lastVerified {
+                    Text("最後查證：\(lastVerified)")
                 }
-            }
-
-            Section {
-            } footer: {
-                VStack(alignment: .leading, spacing: 4) {
-                    if let lastVerified {
-                        Text("最後查證：\(lastVerified)")
-                    }
-                    Text("每項條目均附官方來源連結；規定可能變動，出發前請點擊來源以最新公告為準。安檢細節依航空公司規定可能更嚴格。")
-                }
+                Text("每項條目均附官方來源連結；規定可能變動，出發前請以最新公告為準。")
             }
         }
-        .navigationTitle("海關與安檢・\(country?.nameZh ?? trip.countryCode)")
-        .navigationBarTitleDisplayMode(.inline)
-        .overlay {
-            if items.isEmpty && aviationRules.isEmpty {
-                ContentUnavailableView("尚無資料", systemImage: "checkmark.seal", description: Text("此目的地尚未收錄違禁品規則。"))
+    }
+}
+
+/// 單條法規列：名稱＋標章＋原因＋官方來源
+struct RegulationRow<Badge: View>: View {
+    let title: String
+    let detail: String
+    let sourceName: String?
+    let sourceUrl: String?
+    @ViewBuilder var badge: () -> Badge
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text(title)
+                    .font(.body.weight(.medium))
+                Spacer()
+                badge()
+            }
+            Text(detail)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+            if let sourceName, let sourceUrl, let url = URL(string: sourceUrl) {
+                Link(destination: url) {
+                    HStack(spacing: 3) {
+                        Image(systemName: "link")
+                        Text("來源：\(sourceName)")
+                        Image(systemName: "arrow.up.right")
+                            .font(.system(size: 8))
+                    }
+                    .font(.caption)
+                }
+                .accessibilityLabel("開啟資料來源：\(sourceName)")
             }
         }
+        .padding(.vertical, 4)
     }
 }
 
