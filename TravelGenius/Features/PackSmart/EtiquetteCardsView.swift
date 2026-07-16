@@ -65,10 +65,13 @@ struct EtiquetteCardsView: View {
                 }
             }
 
-            if trip.city.isEmpty && !citySections.isEmpty {
-                Section {
-                } footer: {
-                    Text("在行程中指定城市，出發前就只看該城市的重點提醒。")
+            Section {
+            } footer: {
+                VStack(alignment: .leading, spacing: 4) {
+                    if trip.city.isEmpty && !citySections.isEmpty {
+                        Text("在行程中指定城市，出發前就只看該城市的重點提醒。")
+                    }
+                    Text("內容整理自各地觀光局與官方公告；涉及罰則的條目附來源連結。")
                 }
             }
         }
@@ -94,6 +97,20 @@ private struct EtiquetteRow: View {
             Text(card.bodyZh)
                 .font(.footnote)
                 .foregroundStyle(.secondary)
+            if let sourceName = card.sourceName,
+               let sourceUrl = card.sourceUrl,
+               let url = URL(string: sourceUrl) {
+                Link(destination: url) {
+                    HStack(spacing: 3) {
+                        Image(systemName: "link")
+                        Text("來源：\(sourceName)")
+                        Image(systemName: "arrow.up.right")
+                            .font(.system(size: 8))
+                    }
+                    .font(.caption)
+                }
+                .accessibilityLabel("開啟資料來源：\(sourceName)")
+            }
         }
         .padding(.vertical, 4)
     }

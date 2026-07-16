@@ -110,6 +110,9 @@ struct ProhibitedItem: Codable, Identifiable {
     let severity: ProhibitedSeverity
     let reasonZh: String
     let lastVerified: String
+    /// 官方資訊來源（顯示於條目旁，供查證）
+    let sourceName: String?
+    let sourceUrl: String?
 
     var id: String { "\(countryCode)-\(itemZh)" }
 }
@@ -120,6 +123,9 @@ struct EtiquetteCard: Codable, Identifiable {
     let cityZh: String?
     let titleZh: String
     let bodyZh: String
+    /// 涉及法規罰則的條目附上官方來源
+    let sourceName: String?
+    let sourceUrl: String?
 
     var id: String { "\(countryCode)-\(cityZh ?? "全國")-\(titleZh)" }
 }
@@ -160,6 +166,8 @@ struct ExchangeRateTable: Codable {
     /// 基準幣別（rates 的值 = 1 單位該幣別折合多少基準幣別）
     let base: String
     let asOf: String
+    let source: String?
+    let sourceUrl: String?
     let rates: [String: Double]
 }
 

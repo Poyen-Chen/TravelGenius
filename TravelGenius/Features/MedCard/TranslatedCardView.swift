@@ -88,6 +88,11 @@ struct TranslatedCardView: View {
                         }
                     }
                 }
+
+                Section {
+                } footer: {
+                    Text("固定醫療語句為內建離線語言包（非即時機器翻譯）；過敏原與藥名以 WHO 國際學名對照。")
+                }
             }
         }
         .navigationTitle("翻譯卡片")

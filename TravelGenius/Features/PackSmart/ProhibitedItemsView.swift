@@ -36,6 +36,20 @@ struct ProhibitedItemsView: View {
                     Text(item.reasonZh)
                         .font(.footnote)
                         .foregroundStyle(.secondary)
+                    if let sourceName = item.sourceName,
+                       let sourceUrl = item.sourceUrl,
+                       let url = URL(string: sourceUrl) {
+                        Link(destination: url) {
+                            HStack(spacing: 3) {
+                                Image(systemName: "link")
+                                Text("來源：\(sourceName)")
+                                Image(systemName: "arrow.up.right")
+                                    .font(.system(size: 8))
+                            }
+                            .font(.caption)
+                        }
+                        .accessibilityLabel("開啟資料來源：\(sourceName)")
+                    }
                 }
                 .padding(.vertical, 4)
             }
@@ -46,7 +60,7 @@ struct ProhibitedItemsView: View {
                     if let lastVerified {
                         Text("最後查證：\(lastVerified)")
                     }
-                    Text("規定可能變動，出發前請以海關與官方資訊為準。")
+                    Text("每項條目均附官方來源連結；規定可能變動，出發前請點擊來源以最新公告為準。")
                 }
             }
         }

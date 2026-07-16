@@ -95,6 +95,11 @@ struct EmergencyScreenView: View {
                             prominent: false
                         )
                     }
+
+                    Text("急救號碼來源：各國政府官方公告（如日本消防廳 119、歐盟通用 112）。")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .padding()
             }

@@ -1,6 +1,8 @@
 {
   "base": "TWD",
   "asOf": "2026-07-01",
+  "source": "臺灣銀行牌告匯率（離線快取）",
+  "sourceUrl": "https://rate.bot.com.tw/xrt",
   "rates": {
     "TWD": 1,
     "JPY": 0.205,

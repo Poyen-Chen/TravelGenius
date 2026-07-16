@@ -13,6 +13,7 @@ struct PackingListView: View {
     @State private var showingAddItem = false
     @State private var showingNightMode = false
     @State private var showingEtiquette = false
+    @State private var showingProhibited = false
     @State private var packToggle = false
 
     private var items: [PackingItem] {
@@ -59,11 +60,12 @@ struct PackingListView: View {
         .sheet(isPresented: $showingAddItem) { AddPackingItemView(trip: trip) }
         .fullScreenCover(isPresented: $showingNightMode) { NightBeforeModeView(trip: trip) }
         .navigationDestination(isPresented: $showingEtiquette) { EtiquetteCardsView(trip: trip) }
+        .navigationDestination(isPresented: $showingProhibited) { ProhibitedItemsView(trip: trip) }
         .sensoryFeedback(.impact, trigger: packToggle)
         .onAppear {
-            if ProcessInfo.processInfo.arguments.contains("-showEtiquette") {
-                showingEtiquette = true
-            }
+            let arguments = ProcessInfo.processInfo.arguments
+            if arguments.contains("-showEtiquette") { showingEtiquette = true }
+            if arguments.contains("-showProhibited") { showingProhibited = true }
         }
     }
 

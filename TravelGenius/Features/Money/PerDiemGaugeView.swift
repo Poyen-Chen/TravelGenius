@@ -40,6 +40,10 @@ struct PerDiemGaugeView: View {
                     .font(.footnote.weight(.medium))
                     .foregroundStyle(worst.ratio >= 1 ? .red : .orange)
                 }
+
+                Text("津貼標準為內建預設值，請依公司差旅政策調整。")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
             }
             .padding()
             .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14))

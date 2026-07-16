@@ -17,7 +17,7 @@ struct ExpenseDetailView: View {
 
     var body: some View {
         Form {
-            Section("金額") {
+            Section {
                 TextField("金額", text: $amountText)
                     .keyboardType(.decimalPad)
                     .focused($amountFocused)
@@ -31,6 +31,11 @@ struct ExpenseDetailView: View {
                         MoneyText(amount: expense.amountInHome, currencyCode: trip.homeCurrencyCode)
                     }
                 }
+            } header: {
+                Text("金額")
+            } footer: {
+                let table = StaticDataStore.shared.exchangeRates
+                Text("匯率來源：\(table.source ?? "內建匯率")・\(table.asOf)，記帳當下凍結。")
             }
 
             Section("類別") {

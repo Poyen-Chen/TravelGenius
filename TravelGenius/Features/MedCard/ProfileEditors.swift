@@ -114,7 +114,7 @@ struct MedicationEditorView: View {
                 } header: {
                     Text("藥品")
                 } footer: {
-                    Text("以學名建檔，海外就醫與購藥不出錯。")
+                    Text("以學名建檔，海外就醫與購藥不出錯。學名對照參考 WHO 國際非專利藥名（INN）與台灣食藥署藥品許可證資料庫。")
                 }
 
                 Section("服用方式") {

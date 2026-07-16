@@ -68,7 +68,8 @@ struct ReportExportView: View {
                     }
                 }
             } footer: {
-                Text("CSV 供財務系統匯入；PDF 供簽核，收據照片依日期排入附檔頁。")
+                let table = StaticDataStore.shared.exchangeRates
+                Text("CSV 供財務系統匯入；PDF 供簽核，收據照片依日期排入附檔頁。折算匯率來源：\(table.source ?? "內建匯率")・\(table.asOf)。")
             }
         }
         .navigationTitle("匯出報帳")
