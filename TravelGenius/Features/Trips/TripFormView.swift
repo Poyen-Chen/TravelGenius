@@ -26,9 +26,9 @@ struct TripFormView: View {
     @State private var didLoad = false
     @FocusState private var budgetFocused: Bool
 
-    /// 逐鍵解析輸入的預算（容許千分位逗號）
+    /// 逐鍵解析輸入的預算（依裝置地區處理千分位與小數符號）
     private var budget: Decimal? {
-        Decimal(string: budgetText.replacingOccurrences(of: ",", with: ""))
+        Decimal.fromUserInput(budgetText)
     }
 
     /// 名稱留空時自動命名，例如「日本・東京 5 天」
@@ -145,6 +145,11 @@ struct TripFormView: View {
         let trimmedName = name.trimmingCharacters(in: .whitespaces)
         let name = trimmedName.isEmpty ? autoName : trimmedName
         if let trip {
+            let homeCurrencyChanged = trip.homeCurrencyCode != homeCurrency
+            let packingContextChanged = trip.countryCode != countryCode
+                || trip.tripType != tripType
+                || trip.startDate != startDate
+                || trip.endDate != endDate
             trip.name = name
             trip.countryCode = countryCode
             trip.city = city
@@ -154,6 +159,16 @@ struct TripFormView: View {
             trip.totalBudget = budget
             trip.homeCurrencyCode = homeCurrency
             trip.localCurrencyCode = localCurrency
+            // 本幣變更時，既有支出的凍結匯率需以新本幣重算，否則折算金額會被錯誤解讀
+            if homeCurrencyChanged {
+                for expense in trip.expenses ?? [] {
+                    expense.rateToHome = CurrencyService.shared.rate(from: expense.currencyCode, to: homeCurrency)
+                }
+            }
+            // 目的地／日期／型態變更會影響清單內容與海關規則，需重新合併生成
+            if packingContextChanged && !(trip.packingItems ?? []).isEmpty {
+                PackingListGenerator.sync(trip: trip, context: context)
+            }
         } else {
             let newTrip = Trip(
                 name: name,

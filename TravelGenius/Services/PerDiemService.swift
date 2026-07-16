@@ -36,8 +36,12 @@ enum PerDiemService {
         func used(in category: ExpenseCategory) -> Double {
             todays
                 .filter { $0.category == category }
-                .reduce(0.0) {
-                    $0 + service.convert($1.amountInHome, from: trip.homeCurrencyCode, to: standard.currencyCode).doubleValue
+                .reduce(0.0) { total, expense in
+                    // 支出原幣＝津貼標準幣別時直接取原值，避免經過匯率表往返造成誤差
+                    if expense.currencyCode == standard.currencyCode {
+                        return total + expense.amount.doubleValue
+                    }
+                    return total + service.convert(expense.amountInHome, from: trip.homeCurrencyCode, to: standard.currencyCode).doubleValue
                 }
         }
 

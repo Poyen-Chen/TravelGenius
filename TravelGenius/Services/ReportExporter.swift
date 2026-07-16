@@ -31,16 +31,21 @@ enum ReportExporter {
         }
         // UTF-8 BOM：讓 Excel 正確辨識中文
         let content = "\u{FEFF}" + lines.joined(separator: "\r\n")
-        let url = temporaryURL(tripName: trip.name, ext: "csv")
+        let url = temporaryURL(trip: trip, ext: "csv")
         try content.write(to: url, atomically: true, encoding: .utf8)
         return url
     }
 
     private static func escapeCSV(_ field: String) -> String {
-        if field.contains(",") || field.contains("\"") || field.contains("\n") {
-            return "\"\(field.replacingOccurrences(of: "\"", with: "\"\""))\""
+        var sanitized = field
+        // 防 CSV 公式注入：開頭為 = + - @ 的內容在 Excel 會被當公式執行
+        if let first = sanitized.first, "=+-@".contains(first) {
+            sanitized = "'" + sanitized
         }
-        return field
+        if sanitized.contains(",") || sanitized.contains("\"") || sanitized.contains("\n") {
+            return "\"\(sanitized.replacingOccurrences(of: "\"", with: "\"\""))\""
+        }
+        return sanitized
     }
 
     // MARK: - PDF
@@ -104,7 +109,7 @@ enum ReportExporter {
             return y + 24
         }
 
-        let url = temporaryURL(tripName: trip.name, ext: "pdf")
+        let url = temporaryURL(trip: trip, ext: "pdf")
         try renderer.writePDF(to: url) { context in
             context.beginPage()
             var y = margin
@@ -165,12 +170,16 @@ enum ReportExporter {
 
     // MARK: - 檔案
 
-    private static func temporaryURL(tripName: String, ext: String) -> URL {
-        let safeName = tripName
+    /// 以行程 ID 建立獨立子目錄，避免同名行程（自動命名很容易撞名）互相覆蓋報表
+    private static func temporaryURL(trip: Trip, ext: String) -> URL {
+        let safeName = trip.name
             .replacingOccurrences(of: "/", with: "-")
             .replacingOccurrences(of: ":", with: "-")
         let name = safeName.isEmpty ? "報帳" : safeName
-        return FileManager.default.temporaryDirectory
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent(trip.id.uuidString, isDirectory: true)
+        try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        return directory
             .appendingPathComponent("\(name)-報帳")
             .appendingPathExtension(ext)
     }

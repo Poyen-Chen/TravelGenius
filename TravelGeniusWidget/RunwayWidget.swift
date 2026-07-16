@@ -83,7 +83,8 @@ struct RunwayProvider: TimelineProvider {
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<RunwayEntry>) -> Void) {
         let entry = RunwayEntry(date: .now, snapshot: RunwaySnapshot.load())
-        // 資料主要由 App 觸發更新；午夜後重讀讓「今日」相關數字翻頁
+        // 快照由 App 寫入且「今日」數字凍結於寫入當下；
+        // 午夜後重新產生 entry，讓 view 依 updatedAt 判定過期並改顯示提示
         let calendar = Calendar.current
         let nextMidnight = calendar.startOfDay(for: .now).addingTimeInterval(24 * 3600 + 60)
         completion(Timeline(entries: [entry], policy: .after(nextMidnight)))
@@ -95,6 +96,12 @@ struct RunwayProvider: TimelineProvider {
 struct RunwayWidgetView: View {
     @Environment(\.widgetFamily) private var family
     let entry: RunwayEntry
+
+    /// 快照寫入日 ≠ 顯示日：「今日」相關數字已過期，不能再當今天的呈現
+    private var isStale: Bool {
+        guard let snapshot = entry.snapshot else { return false }
+        return !Calendar.current.isDate(snapshot.updatedAt, inSameDayAs: entry.date)
+    }
 
     var body: some View {
         Group {
@@ -160,14 +167,22 @@ struct RunwayWidgetView: View {
             Spacer(minLength: 0)
             runwayNumber(snapshot, size: 34)
             Spacer(minLength: 0)
-            HStack(spacing: 3) {
-                Image(systemName: "flame")
-                Text(Decimal(snapshot.burnRatePerDay), format: .currency(code: snapshot.currencyCode).precision(.fractionLength(0)))
-                    .monospacedDigit()
-                Text("／天")
+            if isStale {
+                Text("更新於 \(snapshot.updatedAt.formatted(.dateTime.month().day()))・開啟 App 更新")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+            } else {
+                HStack(spacing: 3) {
+                    Image(systemName: "flame")
+                    Text(Decimal(snapshot.burnRatePerDay), format: .currency(code: snapshot.currencyCode).precision(.fractionLength(0)))
+                        .monospacedDigit()
+                    Text("／天")
+                }
+                .font(.caption2)
+                .foregroundStyle(.secondary)
             }
-            .font(.caption2)
-            .foregroundStyle(.secondary)
         }
     }
 
@@ -204,21 +219,29 @@ struct RunwayWidgetView: View {
                     .font(.footnote.weight(.semibold))
                     .lineLimit(1)
 
-                let capRatio = snapshot.todayCap > 0 ? snapshot.todaySpent / snapshot.todayCap : 0
-                ProgressView(value: min(snapshot.todaySpent, snapshot.todayCap), total: max(snapshot.todayCap, 1))
-                    .tint(capRatio >= 1 ? .red : capRatio >= 0.8 ? .orange : .green)
-                HStack(spacing: 3) {
-                    Text("今日")
-                    Text(Decimal(snapshot.todaySpent), format: .currency(code: snapshot.currencyCode).precision(.fractionLength(0)))
-                        .monospacedDigit()
-                    Text("／上限")
-                    Text(Decimal(snapshot.todayCap), format: .currency(code: snapshot.currencyCode).precision(.fractionLength(0)))
-                        .monospacedDigit()
+                if isStale {
+                    Label("開啟 App 更新今日數字", systemImage: "arrow.triangle.2.circlepath")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                } else {
+                    let capRatio = snapshot.todayCap > 0 ? snapshot.todaySpent / snapshot.todayCap : 0
+                    ProgressView(value: min(snapshot.todaySpent, snapshot.todayCap), total: max(snapshot.todayCap, 1))
+                        .tint(capRatio >= 1 ? .red : capRatio >= 0.8 ? .orange : .green)
+                    HStack(spacing: 3) {
+                        Text("今日")
+                        Text(Decimal(snapshot.todaySpent), format: .currency(code: snapshot.currencyCode).precision(.fractionLength(0)))
+                            .monospacedDigit()
+                        Text("／上限")
+                        Text(Decimal(snapshot.todayCap), format: .currency(code: snapshot.currencyCode).precision(.fractionLength(0)))
+                            .monospacedDigit()
+                    }
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
                 }
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
 
                 if snapshot.packingTotal > 0 {
                     HStack(spacing: 4) {

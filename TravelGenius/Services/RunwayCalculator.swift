@@ -107,9 +107,10 @@ struct RunwayCalculator {
         burnRatePerDay > 0 ? max(remainingBudget, 0) / burnRatePerDay : nil
     }
 
-    /// 今日建議上限：(總預算 − 今日前已花費) ÷ 剩餘天數（當日內維持穩定）
+    /// 今日建議上限：(總預算 − 今日前已花費) ÷ 剩餘天數（當日內維持穩定；行程結束後為 0）
     var todayCap: Double {
-        max(totalBudget - spentBeforeToday, 0) / Double(max(remainingTripDays, 1))
+        guard remainingTripDays > 0 else { return 0 }
+        return max(totalBudget - spentBeforeToday, 0) / Double(remainingTripDays)
     }
 
     var status: RunwayStatus {

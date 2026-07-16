@@ -89,7 +89,13 @@ final class Trip {
         (expenses ?? []).reduce(0) { $0 + $1.amountInHome }
     }
 
+    /// 日期是否落在旅程期間（endDate 儲存為回程日 00:00，需涵蓋回程日整天）
     func contains(_ date: Date) -> Bool {
-        startDate <= date && date <= endDate
+        let calendar = Calendar.current
+        let start = calendar.startOfDay(for: startDate)
+        guard let dayAfterEnd = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: endDate)) else {
+            return false
+        }
+        return date >= start && date < dayAfterEnd
     }
 }

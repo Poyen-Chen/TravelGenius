@@ -119,7 +119,7 @@ struct ExpenseDetailView: View {
             }
         }
         .onChange(of: amountText) { _, newValue in
-            if let value = Decimal(string: newValue.replacingOccurrences(of: ",", with: "")), value >= 0 {
+            if let value = Decimal.fromUserInput(newValue), value >= 0 {
                 expense.amount = value
             }
         }

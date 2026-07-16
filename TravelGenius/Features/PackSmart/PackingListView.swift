@@ -16,6 +16,8 @@ struct PackingListView: View {
     @State private var showingProhibited = false
     @State private var showingReturnMode = false
     @State private var confirmReturnMode = false
+    /// 進入回程模式前的已打包項目快照（誤觸時自動還原用）
+    @State private var packedSnapshot: Set<UUID>?
     @State private var packToggle = false
 
     private var items: [PackingItem] {
@@ -32,6 +34,17 @@ struct PackingListView: View {
 
     private var prohibited: [ProhibitedItem] {
         StaticDataStore.shared.prohibitedItems(countryCode: trip.countryCode)
+    }
+
+    /// 回程模式關閉時，若完全沒有勾任何項目（視為誤觸），還原出發時的打包狀態
+    private func restoreIfUntouched() {
+        defer { packedSnapshot = nil }
+        guard let snapshot = packedSnapshot, !snapshot.isEmpty else { return }
+        let allItems = trip.packingItems ?? []
+        guard allItems.allSatisfy({ !$0.isPacked }) else { return }
+        for item in allItems where snapshot.contains(item.id) {
+            item.isPacked = true
+        }
     }
 
     private var etiquette: [EtiquetteCard] {
@@ -69,13 +82,16 @@ struct PackingListView: View {
         }
         .sheet(isPresented: $showingAddItem) { AddPackingItemView(trip: trip) }
         .fullScreenCover(isPresented: $showingNightMode) { NightBeforeModeView(trip: trip, mode: .nightBefore) }
-        .fullScreenCover(isPresented: $showingReturnMode) { NightBeforeModeView(trip: trip, mode: .returnTrip) }
+        .fullScreenCover(isPresented: $showingReturnMode, onDismiss: restoreIfUntouched) {
+            NightBeforeModeView(trip: trip, mode: .returnTrip)
+        }
         .confirmationDialog(
             "回程模式會將全部項目重設為未打包，用同一份清單反向檢查，避免把東西留在住宿處。",
             isPresented: $confirmReturnMode,
             titleVisibility: .visible
         ) {
-            Button("開始回程打包") {
+            Button("重設並開始回程打包", role: .destructive) {
+                packedSnapshot = Set((trip.packingItems ?? []).filter(\.isPacked).map(\.id))
                 for item in (trip.packingItems ?? []) {
                     item.isPacked = false
                 }
