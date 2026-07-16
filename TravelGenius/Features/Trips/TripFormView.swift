@@ -17,6 +17,8 @@ struct TripFormView: View {
     @State private var name = ""
     @State private var countryCode = "JP"
     @State private var city = StaticDataStore.shared.defaultCity(countryCode: "JP")?.cityZh ?? ""
+    @State private var originCountryCode = "TW"
+    @State private var originCity = StaticDataStore.shared.defaultCity(countryCode: "TW")?.cityZh ?? ""
     @State private var startDate = Calendar.current.startOfDay(for: .now)
     @State private var endDate = Calendar.current.date(byAdding: .day, value: 4, to: Calendar.current.startOfDay(for: .now)) ?? .now
     @State private var didLoad = false
@@ -33,9 +35,26 @@ struct TripFormView: View {
         StaticDataStore.shared.cities(countryCode: countryCode)
     }
 
+    private var availableOriginCities: [City] {
+        StaticDataStore.shared.cities(countryCode: originCountryCode)
+    }
+
     var body: some View {
         NavigationStack {
             Form {
+                Section("出發地") {
+                    Picker("國家", selection: $originCountryCode) {
+                        ForEach(StaticDataStore.shared.focusCountries) { country in
+                            Text("\(country.flagEmoji) \(country.nameZh)").tag(country.code)
+                        }
+                    }
+                    Picker("城市", selection: $originCity) {
+                        ForEach(availableOriginCities) { cityOption in
+                            Text(cityOption.cityZh).tag(cityOption.cityZh)
+                        }
+                    }
+                }
+
                 Section("目的地") {
                     Picker("國家", selection: $countryCode) {
                         ForEach(StaticDataStore.shared.focusCountries) { country in
@@ -73,6 +92,9 @@ struct TripFormView: View {
             .onChange(of: countryCode) { _, newValue in
                 city = StaticDataStore.shared.defaultCity(countryCode: newValue)?.cityZh ?? ""
             }
+            .onChange(of: originCountryCode) { _, newValue in
+                originCity = StaticDataStore.shared.defaultCity(countryCode: newValue)?.cityZh ?? ""
+            }
             .onChange(of: startDate) { _, newValue in
                 if endDate < newValue { endDate = newValue }
             }
@@ -86,6 +108,8 @@ struct TripFormView: View {
         name = trip.name
         countryCode = trip.countryCode
         city = trip.city
+        originCountryCode = trip.originCountryCode
+        originCity = trip.originCity
         startDate = trip.startDate
         endDate = trip.endDate
     }
@@ -101,6 +125,8 @@ struct TripFormView: View {
             trip.name = name
             trip.countryCode = countryCode
             trip.city = city
+            trip.originCountryCode = originCountryCode
+            trip.originCity = originCity
             trip.startDate = startDate
             trip.endDate = endDate
             // 目的地／日期變更會影響清單內容與海關規則，需重新合併生成
@@ -120,6 +146,8 @@ struct TripFormView: View {
                 tripType: .leisure
             )
             newTrip.city = city
+            newTrip.originCountryCode = originCountryCode
+            newTrip.originCity = originCity
             context.insert(newTrip)
             appState.setActive(newTrip)
         }

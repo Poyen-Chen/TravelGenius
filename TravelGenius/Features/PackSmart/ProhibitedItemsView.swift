@@ -21,33 +21,41 @@ struct ProhibitedSections: View {
         StaticDataStore.shared.country(code: trip.countryCode)
     }
 
+    private var originCountry: Country? {
+        StaticDataStore.shared.country(code: trip.originCountryCode)
+    }
+
     /// 依嚴重度排序：禁止 → 需許可 → 需申報
-    private var customsItems: [ProhibitedItem] {
+    private func sortedCustoms(countryCode: String) -> [ProhibitedItem] {
         let order: [ProhibitedSeverity] = [.banned, .permit, .declare]
-        return StaticDataStore.shared.prohibitedItems(countryCode: trip.countryCode)
+        return StaticDataStore.shared.prohibitedItems(countryCode: countryCode)
             .sorted { (order.firstIndex(of: $0.severity) ?? 9) < (order.firstIndex(of: $1.severity) ?? 9) }
     }
 
     private var aviationRules: [AviationRule] {
-        StaticDataStore.shared.aviationRules(countryCode: trip.countryCode)
+        StaticDataStore.shared.aviationRules(destination: trip.countryCode, origin: trip.originCountryCode)
     }
 
     private var lastVerified: String? {
         switch mode {
-        case .customs: customsItems.map(\.lastVerified).max()
-        case .aviation: aviationRules.map(\.lastVerified).max()
+        case .customs:
+            (sortedCustoms(countryCode: trip.countryCode) + sortedCustoms(countryCode: trip.originCountryCode))
+                .map(\.lastVerified).max()
+        case .aviation:
+            aviationRules.map(\.lastVerified).max()
         }
     }
 
     var body: some View {
         switch mode {
         case .customs:
-            Section("入境海關・\(country?.nameZh ?? trip.countryCode)") {
-                if customsItems.isEmpty {
+            let destinationItems = sortedCustoms(countryCode: trip.countryCode)
+            Section("去程入境・\(country?.nameZh ?? trip.countryCode)") {
+                if destinationItems.isEmpty {
                     Text("此目的地尚未收錄違禁品規則。")
                         .foregroundStyle(.secondary)
                 }
-                ForEach(customsItems) { item in
+                ForEach(destinationItems) { item in
                     RegulationRow(
                         title: item.itemZh,
                         detail: item.reasonZh,
@@ -55,6 +63,25 @@ struct ProhibitedSections: View {
                         sourceUrl: item.sourceUrl
                     ) {
                         SeverityBadge(severity: item.severity)
+                    }
+                }
+            }
+            if trip.originCountryCode != trip.countryCode {
+                let originItems = sortedCustoms(countryCode: trip.originCountryCode)
+                Section("回程入境・\(originCountry?.nameZh ?? trip.originCountryCode)") {
+                    if originItems.isEmpty {
+                        Text("出發地尚未收錄違禁品規則。")
+                            .foregroundStyle(.secondary)
+                    }
+                    ForEach(originItems) { item in
+                        RegulationRow(
+                            title: item.itemZh,
+                            detail: item.reasonZh,
+                            sourceName: item.sourceName,
+                            sourceUrl: item.sourceUrl
+                        ) {
+                            SeverityBadge(severity: item.severity)
+                        }
                     }
                 }
             }

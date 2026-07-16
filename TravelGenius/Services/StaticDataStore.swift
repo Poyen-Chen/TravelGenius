@@ -167,8 +167,10 @@ struct AviationRule: Codable, Identifiable {
 
     var id: String { itemZh }
 
-    func applies(countryCode: String) -> Bool {
-        countries?.contains(countryCode) ?? true
+    /// 航線任一端（出發地或目的地）符合即適用
+    func applies(route: Set<String>) -> Bool {
+        guard let countries else { return true }
+        return !route.isDisjoint(with: countries)
     }
 }
 
@@ -223,8 +225,9 @@ final class StaticDataStore {
         prohibitedItems.filter { $0.countryCode == countryCode }
     }
 
-    func aviationRules(countryCode: String) -> [AviationRule] {
-        aviationRules.filter { $0.applies(countryCode: countryCode) }
+    func aviationRules(destination: String, origin: String = "TW") -> [AviationRule] {
+        let route: Set<String> = [destination, origin]
+        return aviationRules.filter { $0.applies(route: route) }
     }
 
     func etiquetteCards(countryCode: String) -> [EtiquetteCard] {

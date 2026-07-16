@@ -28,6 +28,8 @@ struct OnboardingView: View {
     // 快速建行程
     @State private var countryCode = "JP"
     @State private var city = StaticDataStore.shared.defaultCity(countryCode: "JP")?.cityZh ?? ""
+    @State private var originCountryCode = "TW"
+    @State private var originCity = StaticDataStore.shared.defaultCity(countryCode: "TW")?.cityZh ?? ""
     @State private var startDate = Calendar.current.startOfDay(for: .now)
     @State private var endDate = Calendar.current.date(byAdding: .day, value: 4, to: Calendar.current.startOfDay(for: .now)) ?? .now
     @State private var createdTrip: Trip?
@@ -62,6 +64,8 @@ struct OnboardingView: View {
                 case .setup: OnboardingTripSetupView(
                     countryCode: $countryCode,
                     city: $city,
+                    originCountryCode: $originCountryCode,
+                    originCity: $originCity,
                     startDate: $startDate,
                     endDate: $endDate,
                     onGenerate: startProcessing
@@ -274,6 +278,8 @@ struct OnboardingView: View {
             tripType: .leisure
         )
         trip.city = city
+        trip.originCountryCode = originCountryCode
+        trip.originCity = originCity
         context.insert(trip)
         PackingListGenerator.sync(trip: trip, context: context, preferences: preferences)
         appState.setActive(trip)

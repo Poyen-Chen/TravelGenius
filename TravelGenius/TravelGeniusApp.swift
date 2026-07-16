@@ -9,6 +9,7 @@ import SwiftData
 @main
 struct TravelGeniusApp: App {
     @State private var appState = AppState()
+    @State private var mascotState = MascotState()
     private let container: ModelContainer
 
     init() {
@@ -34,8 +35,8 @@ struct TravelGeniusApp: App {
         let arguments = ProcessInfo.processInfo.arguments
         guard let index = arguments.firstIndex(of: "-checkItem"), index + 1 < arguments.count else { return }
         let query = arguments[index + 1]
-        for verdict in CanIBringService.check(query, countryCode: "JP") {
-            NSLog("CHECK-ITEM [%@] %@ — %@", query, verdict.kind.label, verdict.matchedName)
+        for verdict in CanIBringService.check(query, destination: "JP", origin: "TW") {
+            NSLog("CHECK-ITEM [%@] %@ — %@（%@）", query, verdict.kind.label, verdict.matchedName, verdict.context ?? "-")
         }
     }
 
@@ -59,6 +60,7 @@ struct TravelGeniusApp: App {
         WindowGroup {
             RootGateView()
                 .environment(appState)
+                .environment(mascotState)
         }
         .modelContainer(container)
     }

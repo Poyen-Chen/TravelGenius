@@ -13,6 +13,7 @@ struct PackingListView: View {
     let trip: Trip
 
     @Environment(\.modelContext) private var context
+    @Environment(MascotState.self) private var mascot
     @State private var showingAddItem = false
     @State private var showingNightMode = false
     @State private var showingReturnMode = false
@@ -32,14 +33,6 @@ struct PackingListView: View {
         return grouped
             .map { (reason: $0.key, items: $0.value) }
             .sorted { ($0.items.first?.sortIndex ?? 0) < ($1.items.first?.sortIndex ?? 0) }
-    }
-
-    private var mascotMessage: (text: String, expression: MascotExpression) {
-        MascotMessenger.message(
-            for: trip,
-            unpackedCount: items.filter { !$0.isPacked }.count,
-            weather: weather
-        )
     }
 
     var body: some View {
@@ -95,12 +88,23 @@ struct PackingListView: View {
         }
     }
 
-    /// 抓目的地天氣，成功後以天氣標籤重新合併清單（離線自動退回月份規則）
+    /// 抓目的地天氣，成功後以天氣標籤重新合併清單（離線自動退回月份規則），並讓小旅犬播報
     private func refreshWeather() async {
         guard let summary = await WeatherService.fetch(for: trip) else { return }
         weather = summary
         PackingListGenerator.sync(trip: trip, context: context, weatherTags: summary.tags)
         WidgetSync.update(trip: trip)
+        let contextual = MascotMessenger.message(
+            for: trip,
+            unpackedCount: (trip.packingItems ?? []).filter { !$0.isPacked }.count,
+            weather: summary
+        )
+        if summary.rainDays > 0 {
+            mascot.speak("查了\(summary.cityZh)天氣：\(summary.headline)。傘我加進清單了，記得帶", expression: .alert)
+        } else {
+            mascot.message = contextual.text
+            mascot.expression = contextual.expression
+        }
     }
 
     /// 回程模式關閉時，若完全沒有勾任何項目（視為誤觸），還原出發時的打包狀態
@@ -116,11 +120,6 @@ struct PackingListView: View {
 
     private var emptyGenerateView: some View {
         List {
-            Section {
-                MascotBubbleRow(expression: .normal, message: "還沒有清單！我依你的目的地、天氣和同行組成，一鍵幫你生一份。")
-                    .listRowBackground(Color.clear)
-                    .listRowInsets(EdgeInsets(top: 8, leading: 8, bottom: 8, trailing: 8))
-            }
             Section {
                 VStack(spacing: 12) {
                     Image(systemName: "suitcase")
@@ -145,12 +144,6 @@ struct PackingListView: View {
 
     private var packingList: some View {
         List {
-            Section {
-                MascotBubbleRow(expression: mascotMessage.expression, message: mascotMessage.text)
-                    .listRowBackground(Color.clear)
-                    .listRowInsets(EdgeInsets(top: 8, leading: 8, bottom: 4, trailing: 8))
-            }
-
             if let weather {
                 Section {
                     HStack(spacing: 8) {

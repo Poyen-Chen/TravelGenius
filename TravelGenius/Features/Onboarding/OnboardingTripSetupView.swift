@@ -11,12 +11,18 @@ import SwiftUI
 struct OnboardingTripSetupView: View {
     @Binding var countryCode: String
     @Binding var city: String
+    @Binding var originCountryCode: String
+    @Binding var originCity: String
     @Binding var startDate: Date
     @Binding var endDate: Date
     var onGenerate: () -> Void
 
     private var availableCities: [City] {
         StaticDataStore.shared.cities(countryCode: countryCode)
+    }
+
+    private var availableOriginCities: [City] {
+        StaticDataStore.shared.cities(countryCode: originCountryCode)
     }
 
     var body: some View {
@@ -32,22 +38,41 @@ struct OnboardingTripSetupView: View {
             .padding(.top, 20)
 
             Form {
-                Picker("目的地", selection: $countryCode) {
-                    ForEach(StaticDataStore.shared.focusCountries) { country in
-                        Text("\(country.flagEmoji) \(country.nameZh)").tag(country.code)
+                Section("出發地") {
+                    Picker("國家", selection: $originCountryCode) {
+                        ForEach(StaticDataStore.shared.focusCountries) { country in
+                            Text("\(country.flagEmoji) \(country.nameZh)").tag(country.code)
+                        }
+                    }
+                    Picker("城市", selection: $originCity) {
+                        ForEach(availableOriginCities) { cityOption in
+                            Text(cityOption.cityZh).tag(cityOption.cityZh)
+                        }
                     }
                 }
-                Picker("城市", selection: $city) {
-                    ForEach(availableCities) { cityOption in
-                        Text(cityOption.cityZh).tag(cityOption.cityZh)
+                Section("目的地") {
+                    Picker("國家", selection: $countryCode) {
+                        ForEach(StaticDataStore.shared.focusCountries) { country in
+                            Text("\(country.flagEmoji) \(country.nameZh)").tag(country.code)
+                        }
+                    }
+                    Picker("城市", selection: $city) {
+                        ForEach(availableCities) { cityOption in
+                            Text(cityOption.cityZh).tag(cityOption.cityZh)
+                        }
                     }
                 }
-                DatePicker("出發", selection: $startDate, displayedComponents: .date)
-                DatePicker("回程", selection: $endDate, in: startDate..., displayedComponents: .date)
+                Section("日期") {
+                    DatePicker("出發", selection: $startDate, displayedComponents: .date)
+                    DatePicker("回程", selection: $endDate, in: startDate..., displayedComponents: .date)
+                }
             }
             .scrollContentBackground(.hidden)
             .onChange(of: countryCode) { _, newValue in
                 city = StaticDataStore.shared.defaultCity(countryCode: newValue)?.cityZh ?? ""
+            }
+            .onChange(of: originCountryCode) { _, newValue in
+                originCity = StaticDataStore.shared.defaultCity(countryCode: newValue)?.cityZh ?? ""
             }
             .onChange(of: startDate) { _, newValue in
                 if endDate < newValue { endDate = newValue }
@@ -80,7 +105,7 @@ struct OnboardingRevealView: View {
 
     private var aviationCount: Int {
         guard let trip else { return 0 }
-        return StaticDataStore.shared.aviationRules(countryCode: trip.countryCode).count
+        return StaticDataStore.shared.aviationRules(destination: trip.countryCode, origin: trip.originCountryCode).count
     }
 
     private var itemCount: Int {

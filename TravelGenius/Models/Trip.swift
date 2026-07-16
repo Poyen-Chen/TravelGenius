@@ -31,6 +31,9 @@ final class Trip {
     var countryCode: String = "JP"
     /// 目的地城市（中文名，選填；影響城市限定的文化提醒）
     var city: String = ""
+    /// 出發地（回程入境的海關規定、航線安檢規則依此判定）
+    var originCountryCode: String = "TW"
+    var originCity: String = "台北"
     var startDate: Date = Date()
     var endDate: Date = Date()
     var homeCurrencyCode: String = "TWD"

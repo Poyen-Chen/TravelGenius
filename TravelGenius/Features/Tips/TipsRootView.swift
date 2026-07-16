@@ -10,6 +10,7 @@ import SwiftData
 
 struct TipsRootView: View {
     @Environment(AppState.self) private var appState
+    @Environment(MascotState.self) private var mascot
     @Query(sort: \Trip.createdAt, order: .reverse) private var trips: [Trip]
 
     private enum Segment: String, CaseIterable, Identifiable {
@@ -73,13 +74,6 @@ struct TipsRootView: View {
     private func checkerSection(for trip: Trip) -> some View {
         Section {
             VStack(alignment: .leading, spacing: 12) {
-                MascotBubbleRow(
-                    expression: verdicts.first.map(expression(for:)) ?? .normal,
-                    message: verdicts.isEmpty
-                        ? "不確定什麼東西能不能帶？打出來問我！例如「肉鬆」「行動電源」"
-                        : bubbleText(for: verdicts[0])
-                )
-
                 HStack(spacing: 8) {
                     Image(systemName: "magnifyingglass")
                         .foregroundStyle(.secondary)
@@ -107,16 +101,23 @@ struct TipsRootView: View {
                 }
             }
             .padding(.vertical, 4)
+        } header: {
+            Text("這個能帶嗎？")
         } footer: {
             if !verdicts.isEmpty {
-                Text("判定依內建法規資料庫（含官方來源），特殊物品出發前請以最新公告為準。")
+                Text("同時查去程與回程海關、航線安檢；判定附官方來源，特殊物品出發前請以最新公告為準。")
+            } else {
+                Text("例如「肉鬆」「行動電源」— 去程回程一次查。")
             }
         }
     }
 
     private func runCheck() {
         guard let trip = appState.activeTrip(in: trips) else { return }
-        verdicts = CanIBringService.check(query, countryCode: trip.countryCode)
+        verdicts = CanIBringService.check(query, destination: trip.countryCode, origin: trip.originCountryCode)
+        if let top = verdicts.first {
+            mascot.speak(bubbleText(for: top), expression: expression(for: top))
+        }
     }
 
     private func expression(for verdict: BringVerdict) -> MascotExpression {
@@ -168,6 +169,14 @@ private struct VerdictCard: View {
                         .font(.caption2)
                         .foregroundStyle(.tertiary)
                 }
+            }
+            if let context = verdict.context {
+                Text(context)
+                    .font(.caption.weight(.semibold))
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 2)
+                    .background(tint.opacity(0.15), in: Capsule())
+                    .foregroundStyle(tint)
             }
             Text(verdict.matchedName)
                 .font(.body.weight(.semibold))

@@ -36,6 +36,8 @@ enum DemoSeeder {
             tripType: .leisure
         )
         trip.city = "東京"
+        trip.originCountryCode = "TW"
+        trip.originCity = "台北"
         context.insert(trip)
 
         PackingListGenerator.sync(trip: trip, context: context, preferences: preferences)

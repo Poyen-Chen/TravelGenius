@@ -25,6 +25,7 @@ struct RootGateView: View {
 struct RootTabView: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(AppState.self) private var appState
+    @Environment(MascotState.self) private var mascot
     @Query private var trips: [Trip]
 
     enum Tab {
@@ -70,11 +71,30 @@ struct RootTabView: View {
                 }
             }
         }
+        .overlay {
+            FloatingMascotDock()
+        }
+        .onAppear(perform: refreshMascotMessage)
+        .onChange(of: selection) { _, _ in refreshMascotMessage() }
+        .onChange(of: activeTrip?.id) { _, _ in refreshMascotMessage() }
         .onChange(of: scenePhase) { _, newPhase in
             // 離開前景時更新主畫面小工具
             if newPhase != .active {
                 WidgetSync.update(trip: activeTrip)
             }
         }
+    }
+
+    /// 依目前行程狀態更新小旅犬的預設情境訊息（不強制展開）
+    private func refreshMascotMessage() {
+        guard let trip = activeTrip else {
+            mascot.message = "先建立一個行程，我就開始幫你倒數、盯行李！"
+            mascot.expression = .normal
+            return
+        }
+        let unpacked = (trip.packingItems ?? []).filter { !$0.isPacked }.count
+        let contextual = MascotMessenger.message(for: trip, unpackedCount: unpacked, weather: nil)
+        mascot.message = contextual.text
+        mascot.expression = contextual.expression
     }
 }
