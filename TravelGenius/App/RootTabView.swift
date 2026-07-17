@@ -6,14 +6,12 @@
 import SwiftUI
 import SwiftData
 
-/// 首次啟動顯示 onboarding，完成後進入主畫面；外觀設定在此套用（涵蓋 onboarding）
+/// 首次啟動顯示 onboarding，完成後進入主畫面；
+/// 外觀設定以 UIWindow 層級套用（sheet／fullScreenCover 不繼承 preferredColorScheme，
+/// 視窗覆蓋才能讓所有呈現層一致變色）
 struct RootGateView: View {
     @AppStorage("hasOnboarded") private var hasOnboarded = false
     @AppStorage(AppAppearance.storageKey) private var appearanceRaw = AppAppearance.system.rawValue
-
-    private var appearance: AppAppearance {
-        AppAppearance(rawValue: appearanceRaw) ?? .system
-    }
 
     var body: some View {
         Group {
@@ -25,7 +23,22 @@ struct RootGateView: View {
                 }
             }
         }
-        .preferredColorScheme(appearance.colorScheme)
+        .onAppear { applyAppearance() }
+        .onChange(of: appearanceRaw) { _, _ in applyAppearance() }
+    }
+
+    private func applyAppearance() {
+        let appearance = AppAppearance(rawValue: appearanceRaw) ?? .system
+        let style: UIUserInterfaceStyle = switch appearance {
+        case .system: .unspecified
+        case .light: .light
+        case .dark: .dark
+        }
+        for scene in UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene }) {
+            for window in scene.windows {
+                window.overrideUserInterfaceStyle = style
+            }
+        }
     }
 }
 
