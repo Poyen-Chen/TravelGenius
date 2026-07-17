@@ -101,7 +101,7 @@ struct OnboardingView: View {
     private var welcomeStep: some View {
         VStack(spacing: PackSmartDesign.Spacing.large) {
             Spacer()
-            MascotBubbleRow(expression: .happy, message: "回答四個小問題，我會依你的旅行方式調整打包建議。")
+            MascotBubbleRow(expression: .happy, message: "回答五個小問題，我會依你的旅行方式調整打包建議。")
                 .padding(.horizontal, PackSmartDesign.Spacing.large)
 
             VStack(spacing: PackSmartDesign.Spacing.small) {
