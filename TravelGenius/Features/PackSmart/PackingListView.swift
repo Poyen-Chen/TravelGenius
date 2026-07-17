@@ -175,7 +175,11 @@ struct PackingListView: View {
                     }
                     .onDelete { offsets in
                         for index in offsets {
-                            context.delete(section.items[index])
+                            let item = section.items[index]
+                            if !item.isCustom {
+                                trip.excludePackingItem(named: item.name)
+                            }
+                            context.delete(item)
                         }
                     }
                 }

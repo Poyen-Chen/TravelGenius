@@ -28,13 +28,7 @@ struct RootTabView: View {
     @Environment(MascotState.self) private var mascot
     @Query private var trips: [Trip]
 
-    enum Tab {
-        case trips
-        case checklist
-        case tips
-    }
-
-    @State private var selection: Tab = {
+    @State private var selection: AppTab = {
         let arguments = ProcessInfo.processInfo.arguments
         if arguments.contains("-openPackTab") { return .checklist }
         if arguments.contains("-openTipsTab") || arguments.contains("-showProhibited") || arguments.contains("-showEtiquette") { return .tips }
@@ -55,20 +49,18 @@ struct RootTabView: View {
                 TabView(selection: $selection) {
                     TripListView()
                         .tabItem { Label("行程", systemImage: "airplane") }
-                        .tag(Tab.trips)
+                        .tag(AppTab.trips)
 
                     PackingRootView()
                         .tabItem { Label("清單", systemImage: "checklist") }
-                        .tag(Tab.checklist)
+                        .tag(AppTab.checklist)
 
                     TipsRootView()
                         .tabItem { Label("Tips", systemImage: "lightbulb") }
-                        .tag(Tab.tips)
+                        .tag(AppTab.tips)
                 }
             } else {
-                NavigationStack {
-                    TripListView()
-                }
+                TripListView()
             }
         }
         .overlay {
@@ -76,6 +68,11 @@ struct RootTabView: View {
         }
         .onAppear(perform: refreshMascotMessage)
         .onChange(of: selection) { _, _ in refreshMascotMessage() }
+        .onChange(of: appState.requestedTab) { _, requested in
+            guard let requested else { return }
+            selection = requested
+            appState.requestedTab = nil
+        }
         .onChange(of: activeTrip?.id) { _, _ in refreshMascotMessage() }
         .onChange(of: scenePhase) { _, newPhase in
             // 離開前景時更新主畫面小工具

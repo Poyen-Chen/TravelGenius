@@ -29,6 +29,22 @@ struct TripDetailView: View {
 
     var body: some View {
         List {
+            Section {
+                HStack(spacing: 12) {
+                    Image(systemName: trip.lifecycleStatus.symbolName)
+                        .font(.title2)
+                        .foregroundStyle(.tint)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(trip.lifecycleStatus.label)
+                            .font(.headline)
+                        Text(isActive ? "目前 App 使用這趟行程的清單與 Tips" : "可設為目前行程後從底部分頁快速查看")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .accessibilityElement(children: .combine)
+            }
+
             Section("基本資料") {
                 LabeledContent("出發地") {
                     Text("\(originCountry?.flagEmoji ?? "") \(originCountry?.nameZh ?? trip.originCountryCode)\(trip.originCity.isEmpty ? "" : "・\(trip.originCity)")")
@@ -44,11 +60,40 @@ struct TripDetailView: View {
                 }
             }
 
-            Section("行李") {
-                LabeledContent("打包進度") {
-                    let items = trip.packingItems ?? []
-                    Text(items.isEmpty ? "尚未產生清單" : "\(items.filter(\.isPacked).count)/\(items.count)")
-                        .monospacedDigit()
+            Section("行前準備") {
+                NavigationLink {
+                    PackingListView(trip: trip)
+                        .navigationTitle("清單・\(trip.name)")
+                        .navigationBarTitleDisplayMode(.inline)
+                } label: {
+                    DetailDestinationRow(
+                        title: "行李 Checklist",
+                        subtitle: packingProgressText,
+                        symbol: "checklist",
+                        tint: .blue
+                    )
+                }
+
+                NavigationLink {
+                    TipsRootView(trip: trip, embedded: true)
+                } label: {
+                    DetailDestinationRow(
+                        title: "海關 Tips",
+                        subtitle: "查物品、看海關與城市文化提醒",
+                        symbol: "lightbulb.fill",
+                        tint: .orange
+                    )
+                }
+
+                NavigationLink {
+                    TripRegulationsView(trip: trip)
+                } label: {
+                    DetailDestinationRow(
+                        title: "出入境管制物品",
+                        subtitle: trip.hasReviewedTravelRules ? "建立行程時已閱讀" : "尚未確認閱讀",
+                        symbol: "checkmark.shield.fill",
+                        tint: .red
+                    )
                 }
             }
 
@@ -82,5 +127,49 @@ struct TripDetailView: View {
                 trip.isClosed = true
             }
         }
+    }
+
+    private var packingProgressText: String {
+        let items = trip.packingItems ?? []
+        guard !items.isEmpty else { return "尚未產生清單" }
+        return "已打包 \(items.filter(\.isPacked).count)／\(items.count) 項"
+    }
+}
+
+private struct DetailDestinationRow: View {
+    let title: String
+    let subtitle: String
+    let symbol: String
+    let tint: Color
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: symbol)
+                .foregroundStyle(tint)
+                .frame(width: 32, height: 32)
+                .background(tint.opacity(0.12), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.body.weight(.semibold))
+                Text(subtitle)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(.vertical, 3)
+        .accessibilityElement(children: .combine)
+    }
+}
+
+private struct TripRegulationsView: View {
+    let trip: Trip
+
+    var body: some View {
+        List {
+            ProhibitedSections(trip: trip, mode: .customs)
+            ProhibitedSections(trip: trip, mode: .aviation)
+        }
+        .navigationTitle("管制物品")
+        .navigationBarTitleDisplayMode(.inline)
     }
 }

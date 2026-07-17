@@ -24,6 +24,33 @@ enum TripType: String, Codable, CaseIterable, Identifiable {
     }
 }
 
+enum TripLifecycleStatus: String, CaseIterable, Identifiable {
+    case draft
+    case upcoming
+    case inProgress
+    case history
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .draft: "草稿"
+        case .upcoming: "未開始"
+        case .inProgress: "進行中"
+        case .history: "歷史行程"
+        }
+    }
+
+    var symbolName: String {
+        switch self {
+        case .draft: "doc.badge.clock"
+        case .upcoming: "calendar"
+        case .inProgress: "airplane.departure"
+        case .history: "clock.arrow.circlepath"
+        }
+    }
+}
+
 @Model
 final class Trip {
     var id: UUID = UUID()
@@ -41,6 +68,14 @@ final class Trip {
     var totalBudget: Decimal = 0
     var tripTypeRaw: String = TripType.leisure.rawValue
     var isClosed: Bool = false
+    /// 建立流程尚未完成；草稿不會成為「目前行程」。
+    var isDraft: Bool = false
+    /// 草稿停留的建立步驟（1...3）。
+    var draftCreationStep: Int = 1
+    /// 使用者在建立流程中已看過海關與出入境提醒。
+    var hasReviewedTravelRules: Bool = false
+    /// 使用者主動取消的自動推薦，避免重新產生清單時又被加入。
+    var excludedPackingNamesRaw: String = ""
     var createdAt: Date = Date()
 
     @Relationship(deleteRule: .cascade, inverse: \Expense.trip)
@@ -72,6 +107,44 @@ final class Trip {
     var tripType: TripType {
         get { TripType(rawValue: tripTypeRaw) ?? .leisure }
         set { tripTypeRaw = newValue.rawValue }
+    }
+
+    var lifecycleStatus: TripLifecycleStatus {
+        lifecycleStatus(relativeTo: .now)
+    }
+
+    func lifecycleStatus(relativeTo date: Date) -> TripLifecycleStatus {
+        if isDraft { return .draft }
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: date)
+        let start = calendar.startOfDay(for: startDate)
+        let end = calendar.startOfDay(for: endDate)
+        if isClosed || today > end { return .history }
+        if today < start { return .upcoming }
+        return .inProgress
+    }
+
+    var excludedPackingNames: Set<String> {
+        get {
+            Set(excludedPackingNamesRaw
+                .split(separator: "\n")
+                .map(String.init))
+        }
+        set {
+            excludedPackingNamesRaw = newValue.sorted().joined(separator: "\n")
+        }
+    }
+
+    func excludePackingItem(named name: String) {
+        var names = excludedPackingNames
+        names.insert(name)
+        excludedPackingNames = names
+    }
+
+    func includePackingItem(named name: String) {
+        var names = excludedPackingNames
+        names.remove(name)
+        excludedPackingNames = names
     }
 
     /// 旅程總天數（含出發與回程當日）

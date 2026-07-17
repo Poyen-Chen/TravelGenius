@@ -65,6 +65,7 @@ enum PackingListGenerator {
         weatherTags: Set<String>? = nil
     ) {
         let generated = generate(for: trip, preferences: preferences, weatherTags: weatherTags)
+            .filter { !trip.excludedPackingNames.contains($0.name) }
         let existing = trip.packingItems ?? []
         let generatedNames = Set(generated.map(\.name))
         let existingNames = Set(existing.map(\.name))
