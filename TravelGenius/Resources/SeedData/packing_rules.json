@@ -36,39 +36,6 @@
     ]
   },
   {
-    "layer": "regulation",
-    "match": {
-      "countries": [
-        "JP",
-        "TW"
-      ]
-    },
-    "reasonZh": "因為是當地插座 Type-A/B",
-    "items": [
-      {
-        "nameZh": "轉接頭 Type-A/B",
-        "category": "electronics",
-        "quantity": 1
-      }
-    ]
-  },
-  {
-    "layer": "regulation",
-    "match": {
-      "countries": [
-        "KR"
-      ]
-    },
-    "reasonZh": "因為是當地插座 Type-C/F",
-    "items": [
-      {
-        "nameZh": "轉接頭 Type-C/F",
-        "category": "electronics",
-        "quantity": 1
-      }
-    ]
-  },
-  {
     "layer": "culture",
     "match": {
       "countries": [
