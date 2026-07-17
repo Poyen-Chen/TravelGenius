@@ -22,8 +22,9 @@ enum DemoSeeder {
 
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: .now)
-        guard let start = calendar.date(byAdding: .day, value: 3, to: today),
-              let end = calendar.date(byAdding: .day, value: 7, to: today) else { return }
+        let startsToday = ProcessInfo.processInfo.arguments.contains("-seedDemoDueToday")
+        guard let start = calendar.date(byAdding: .day, value: startsToday ? 0 : 3, to: today),
+              let end = calendar.date(byAdding: .day, value: startsToday ? 4 : 7, to: today) else { return }
 
         let trip = Trip(
             name: "日本・東京 5 天",

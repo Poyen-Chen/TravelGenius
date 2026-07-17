@@ -110,9 +110,7 @@ struct DepartureWidgetView: View {
 
     private var emptyView: some View {
         VStack(spacing: 6) {
-            Image(systemName: "pawprint.fill")
-                .font(.title2)
-                .foregroundStyle(.secondary)
+            jelly(size: 64)
             Text("開啟 TravelGenius\n建立行程開始倒數")
                 .font(.caption)
                 .multilineTextAlignment(.center)
@@ -147,21 +145,18 @@ struct DepartureWidgetView: View {
     private func smallView(_ snapshot: DepartureSnapshot) -> some View {
         let head = headline(snapshot)
         return VStack(alignment: .leading, spacing: 2) {
-            HStack {
-                Text(head.label)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Spacer()
-                Image(systemName: "pawprint.fill")
-                    .font(.caption)
-                    .foregroundStyle(.orange)
+            Text(head.label)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            HStack(alignment: .center, spacing: 8) {
+                Text(head.big)
+                    .font(.system(size: 34, weight: .bold, design: .rounded))
+                    .monospacedDigit()
+                    .minimumScaleFactor(0.6)
+                    .lineLimit(1)
+                Spacer(minLength: 0)
+                jelly(size: 68)
             }
-            Spacer(minLength: 0)
-            Text(head.big)
-                .font(.system(size: 34, weight: .bold, design: .rounded))
-                .monospacedDigit()
-                .minimumScaleFactor(0.6)
-                .lineLimit(1)
             Text(snapshot.tripName)
                 .font(.caption2)
                 .foregroundStyle(.secondary)
@@ -177,19 +172,17 @@ struct DepartureWidgetView: View {
             ? Double(snapshot.packedCount) / Double(snapshot.packingTotal) : 0
         return HStack(spacing: 14) {
             VStack(alignment: .leading, spacing: 2) {
-                HStack(spacing: 6) {
-                    Text(head.label)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    Image(systemName: "pawprint.fill")
-                        .font(.caption)
-                        .foregroundStyle(.orange)
+                Text(head.label)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                HStack(alignment: .center, spacing: 8) {
+                    jelly(size: 64)
+                    Text(head.big)
+                        .font(.system(size: 32, weight: .bold, design: .rounded))
+                        .monospacedDigit()
+                        .minimumScaleFactor(0.55)
+                        .lineLimit(1)
                 }
-                Text(head.big)
-                    .font(.system(size: 32, weight: .bold, design: .rounded))
-                    .monospacedDigit()
-                    .minimumScaleFactor(0.6)
-                    .lineLimit(1)
                 Spacer(minLength: 0)
                 Text(snapshot.tripName)
                     .font(.caption2)
@@ -212,6 +205,17 @@ struct DepartureWidgetView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
+    }
+
+    private func jelly(size: CGFloat) -> some View {
+        Image("PackmonSlime")
+            .resizable()
+            .scaledToFill()
+            .frame(width: size, height: size)
+            .clipShape(Circle())
+            .overlay(Circle().stroke(.white.opacity(0.7), lineWidth: 1))
+            .shadow(color: .black.opacity(0.12), radius: 2, y: 1)
+            .accessibilityHidden(true)
     }
 }
 

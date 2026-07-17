@@ -9,6 +9,9 @@ import SwiftUI
 import SwiftData
 
 struct TipsRootView: View {
+    var trip: Trip?
+    var embedded = false
+
     @Environment(AppState.self) private var appState
     @Environment(MascotState.self) private var mascot
     @Query(sort: \Trip.createdAt, order: .reverse) private var trips: [Trip]
@@ -25,21 +28,45 @@ struct TipsRootView: View {
     @State private var verdicts: [BringVerdict] = []
     @FocusState private var searchFocused: Bool
 
+    init(trip: Trip? = nil, embedded: Bool = false) {
+        self.trip = trip
+        self.embedded = embedded
+    }
+
+    private var selectedTrip: Trip? {
+        trip ?? appState.activeTrip(in: trips)
+    }
+
     var body: some View {
-        NavigationStack {
-            if let trip = appState.activeTrip(in: trips) {
-                content(for: trip)
-                    .navigationTitle("Tips・\(StaticDataStore.shared.country(code: trip.countryCode)?.nameZh ?? trip.countryCode)\(trip.city.isEmpty ? "" : "・\(trip.city)")")
-                    .navigationBarTitleDisplayMode(.inline)
+        Group {
+            if embedded {
+                rootContent
             } else {
-                ContentUnavailableView("尚無行程", systemImage: "lightbulb", description: Text("建立行程後，這裡會顯示目的地的海關規定與文化提醒。"))
-                    .navigationTitle("Tips")
+                NavigationStack {
+                    rootContent
+                }
             }
         }
         .onAppear {
             let arguments = ProcessInfo.processInfo.arguments
             if arguments.contains("-showEtiquette") { segment = .culture }
             if arguments.contains("-showProhibited") { segment = .customs }
+        }
+    }
+
+    @ViewBuilder
+    private var rootContent: some View {
+        if let selectedTrip {
+            if embedded {
+                content(for: selectedTrip)
+            } else {
+                content(for: selectedTrip)
+                    .navigationTitle("Tips・\(StaticDataStore.shared.country(code: selectedTrip.countryCode)?.nameZh ?? selectedTrip.countryCode)\(selectedTrip.city.isEmpty ? "" : "・\(selectedTrip.city)")")
+                    .navigationBarTitleDisplayMode(.inline)
+            }
+        } else {
+            ContentUnavailableView("尚無行程", systemImage: "lightbulb", description: Text("建立行程後，這裡會顯示目的地的海關規定與文化提醒。"))
+                .navigationTitle("Tips")
         }
     }
 
@@ -113,7 +140,7 @@ struct TipsRootView: View {
     }
 
     private func runCheck() {
-        guard let trip = appState.activeTrip(in: trips) else { return }
+        guard let trip = selectedTrip else { return }
         verdicts = CanIBringService.check(query, destination: trip.countryCode, origin: trip.originCountryCode)
         if let top = verdicts.first {
             mascot.speak(bubbleText(for: top), expression: expression(for: top))

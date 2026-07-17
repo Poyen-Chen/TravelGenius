@@ -2,21 +2,19 @@
 //  OnboardingView.swift
 //  TravelGenius
 //
-//  首次啟動：四題使用者偏好（年齡／性別／同行／經驗）→ 建行程 → 處理動畫 → 清單揭曉。
-//  偏好直接影響清單生成（「因為是…」分組看得見）。
-//
 
 import SwiftUI
-import SwiftData
 
+/// 首次啟動只完成基本偏好；行程由主畫面的三步驟流程建立。
 struct OnboardingView: View {
     var onComplete: () -> Void
 
-    @Environment(\.modelContext) private var context
-    @Environment(AppState.self) private var appState
-
     private enum Step: Int, CaseIterable {
-        case welcome, age, gender, party, experience, setup, processing, reveal
+        case welcome
+        case age
+        case gender
+        case party
+        case experience
     }
 
     @State private var step: Step = .welcome
@@ -24,16 +22,6 @@ struct OnboardingView: View {
     @State private var gender: GenderPreference = .undisclosed
     @State private var party: TravelParty = .solo
     @State private var experience: TravelExperience = .some
-
-    // 快速建行程
-    @State private var countryCode = "JP"
-    @State private var city = StaticDataStore.shared.defaultCity(countryCode: "JP")?.cityZh ?? ""
-    @State private var originCountryCode = "TW"
-    @State private var originCity = StaticDataStore.shared.defaultCity(countryCode: "TW")?.cityZh ?? ""
-    @State private var startDate = Calendar.current.startOfDay(for: .now)
-    @State private var endDate = Calendar.current.date(byAdding: .day, value: 4, to: Calendar.current.startOfDay(for: .now)) ?? .now
-    @State private var createdTrip: Trip?
-    @State private var processingText = "正在比對海關與安檢規則…"
 
     private var progress: Double {
         Double(step.rawValue) / Double(Step.allCases.count - 1)
@@ -44,126 +32,84 @@ struct OnboardingView: View {
             HStack(spacing: 12) {
                 ProgressView(value: progress)
                     .tint(.accentColor)
-                    .accessibilityLabel("流程進度 \(Int(progress * 100))%")
-                if step.rawValue <= Step.setup.rawValue {
-                    Button("略過") { finish(openChecklist: false) }
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
+                    .accessibilityLabel("基本設定進度")
+                    .accessibilityValue("\(Int(progress * 100))%")
+                Button("略過", action: finish)
+                    .font(.footnote)
+                    .frame(minWidth: 44, minHeight: 44)
             }
             .padding(.horizontal)
-            .padding(.top, 8)
 
             Group {
                 switch step {
                 case .welcome: welcomeStep
-                case .age: ageStep
-                case .gender: genderStep
-                case .party: partyStep
-                case .experience: experienceStep
-                case .setup: OnboardingTripSetupView(
-                    countryCode: $countryCode,
-                    city: $city,
-                    originCountryCode: $originCountryCode,
-                    originCity: $originCity,
-                    startDate: $startDate,
-                    endDate: $endDate,
-                    onGenerate: startProcessing
-                )
-                case .processing: processingStep
-                case .reveal: OnboardingRevealView(trip: createdTrip) {
-                    finish(openChecklist: true)
-                }
+                case .age:
+                    preferenceStep(
+                        title: "你的年齡層是？",
+                        subtitle: "不同年齡的必備品不一樣。",
+                        options: AgeBand.allCases,
+                        selection: $ageBand,
+                        label: { $0.label },
+                        next: { step = .gender }
+                    )
+                case .gender:
+                    preferenceStep(
+                        title: "你的性別是？",
+                        subtitle: "只用來調整個人用品建議，也可以選擇不透露。",
+                        options: GenderPreference.allCases,
+                        selection: $gender,
+                        label: { $0.label },
+                        next: { step = .party }
+                    )
+                case .party:
+                    preferenceStep(
+                        title: "通常跟誰旅行？",
+                        subtitle: "建立行程後仍可在基本設定修改。",
+                        options: TravelParty.allCases,
+                        selection: $party,
+                        label: { $0.label },
+                        next: { step = .experience }
+                    )
+                case .experience:
+                    preferenceStep(
+                        title: "出國經驗大概是？",
+                        subtitle: "第一次出國會多一些文件與保險提醒。",
+                        options: TravelExperience.allCases,
+                        selection: $experience,
+                        label: { $0.label },
+                        buttonTitle: "完成基本設定",
+                        next: finish
+                    )
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .animation(.snappy, value: step)
         }
-        .background(Color(.systemGroupedBackground))
+        .background(PackSmartDesign.ColorToken.canvas)
     }
 
-    // MARK: - 1. Welcome
-
     private var welcomeStep: some View {
-        VStack(spacing: 24) {
+        VStack(spacing: PackSmartDesign.Spacing.large) {
             Spacer()
-            MascotBubbleRow(expression: .happy, message: "嗨！我是小旅犬 🐾 回答四個小問題，我幫你把行李清單客製到位。")
-                .padding(.horizontal, 24)
+            MascotBubbleRow(expression: .happy, message: "回答四個小問題，我會依你的旅行方式調整打包建議。")
+                .padding(.horizontal, PackSmartDesign.Spacing.large)
 
-            VStack(spacing: 8) {
-                Text("出國前，先看懂海關風險")
+            VStack(spacing: PackSmartDesign.Spacing.small) {
+                Text("先把每趟旅程準備好")
                     .font(.system(.largeTitle, design: .rounded).weight(.bold))
                     .multilineTextAlignment(.center)
-                Text("再拿到為你客製的打包清單與當地 Tips。")
+                Text("建立行程後，你會拿到專屬清單、海關風險與當地 Tips。")
                     .font(.body)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
             }
-            .padding(.horizontal, 28)
+            .padding(.horizontal, PackSmartDesign.Spacing.xLarge)
             Spacer()
 
-            Button {
-                step = .age
-            } label: {
-                Text("開始")
-                    .font(.headline)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 6)
-            }
-            .buttonStyle(.borderedProminent)
-            .padding(.horizontal)
-            .padding(.bottom, 20)
+            Button("開始設定") { step = .age }
+                .buttonStyle(PackSmartPrimaryButtonStyle())
+                .padding(.horizontal)
+                .padding(.bottom, PackSmartDesign.Spacing.large)
         }
-    }
-
-    // MARK: - 2–5. 偏好四問
-
-    private var ageStep: some View {
-        preferenceStep(
-            title: "你的年齡層是？",
-            subtitle: "不同年齡的必備品不一樣。",
-            options: AgeBand.allCases,
-            selection: $ageBand,
-            label: { $0.label },
-            emoji: { _ in nil },
-            next: { step = .gender }
-        )
-    }
-
-    private var genderStep: some View {
-        preferenceStep(
-            title: "你的性別是？",
-            subtitle: "只用來調整個人用品建議，可以略過。",
-            options: GenderPreference.allCases,
-            selection: $gender,
-            label: { $0.label },
-            emoji: { _ in nil },
-            next: { step = .party }
-        )
-    }
-
-    private var partyStep: some View {
-        preferenceStep(
-            title: "這趟跟誰一起？",
-            subtitle: "同行組成會改變清單內容。",
-            options: TravelParty.allCases,
-            selection: $party,
-            label: { $0.label },
-            emoji: { $0.emoji },
-            next: { step = .experience }
-        )
-    }
-
-    private var experienceStep: some View {
-        preferenceStep(
-            title: "出國經驗大概是？",
-            subtitle: "新手我會多幫你備幾樣保命文件。",
-            options: TravelExperience.allCases,
-            selection: $experience,
-            label: { $0.label },
-            emoji: { _ in nil },
-            next: { step = .setup }
-        )
     }
 
     private func preferenceStep<T: Identifiable & Equatable>(
@@ -172,132 +118,66 @@ struct OnboardingView: View {
         options: [T],
         selection: Binding<T>,
         label: @escaping (T) -> String,
-        emoji: @escaping (T) -> String?,
+        buttonTitle: String = "繼續",
         next: @escaping () -> Void
     ) -> some View {
-        VStack(alignment: .leading, spacing: 16) {
-            header(title: title, subtitle: subtitle)
+        VStack(alignment: .leading, spacing: PackSmartDesign.Spacing.medium) {
+            VStack(alignment: .leading, spacing: PackSmartDesign.Spacing.small) {
+                Text(title)
+                    .font(.system(.title, design: .rounded).weight(.bold))
+                Text(subtitle)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal)
+            .padding(.top, PackSmartDesign.Spacing.large)
 
-            VStack(spacing: 10) {
+            VStack(spacing: PackSmartDesign.Spacing.small) {
                 ForEach(options) { option in
                     Button {
                         selection.wrappedValue = option
                     } label: {
                         HStack(spacing: 12) {
-                            if let emoji = emoji(option) {
-                                Text(emoji).font(.title3)
-                            }
                             Text(label(option))
                                 .font(.body.weight(.semibold))
+                                .foregroundStyle(.primary)
                             Spacer()
                             Image(systemName: selection.wrappedValue == option ? "checkmark.circle.fill" : "circle")
+                                .font(.title3)
                                 .foregroundStyle(selection.wrappedValue == option ? AnyShapeStyle(.tint) : AnyShapeStyle(.tertiary))
                         }
                         .padding()
+                        .frame(minHeight: 52)
                         .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color(.secondarySystemGroupedBackground))
-                                .strokeBorder(selection.wrappedValue == option ? Color.accentColor : .clear, lineWidth: 1.5)
+                            PackSmartDesign.ColorToken.elevatedSurface,
+                            in: RoundedRectangle(cornerRadius: PackSmartDesign.Radius.medium, style: .continuous)
                         )
+                        .overlay {
+                            RoundedRectangle(cornerRadius: PackSmartDesign.Radius.medium, style: .continuous)
+                                .stroke(selection.wrappedValue == option ? Color.accentColor : Color.clear, lineWidth: 1.5)
+                        }
                     }
                     .buttonStyle(.plain)
+                    .accessibilityAddTraits(selection.wrappedValue == option ? .isSelected : [])
                 }
             }
             .padding(.horizontal)
 
             Spacer()
-            continueButton(action: next)
+            Button(buttonTitle, action: next)
+                .buttonStyle(PackSmartPrimaryButtonStyle())
+                .padding(.horizontal)
+                .padding(.bottom, PackSmartDesign.Spacing.large)
         }
     }
 
-    // MARK: - 7. 處理動畫
-
-    private var processingStep: some View {
-        VStack(spacing: 20) {
-            Spacer()
-            MascotView(expression: .normal, size: 64)
-            ProgressView()
-                .controlSize(.large)
-            Text(processingText)
-                .font(.headline)
-                .contentTransition(.opacity)
-            Text("依你的目的地、日期、同行組成與經驗客製")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-            Spacer()
-        }
-        .onAppear(perform: runProcessing)
-    }
-
-    // MARK: - Helpers
-
-    private func header(title: String, subtitle: String) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(title)
-                .font(.system(.title, design: .rounded).weight(.bold))
-            Text(subtitle)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-        }
-        .padding(.horizontal)
-        .padding(.top, 20)
-    }
-
-    private func continueButton(title: String = "繼續", action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(title)
-                .font(.headline)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 6)
-        }
-        .buttonStyle(.borderedProminent)
-        .padding(.horizontal)
-        .padding(.bottom, 20)
-    }
-
-    private func startProcessing() {
-        step = .processing
-    }
-
-    private func runProcessing() {
-        // 先存偏好，生成器會讀取
-        let preferences = UserPreferences(ageBand: ageBand, gender: gender, party: party, experience: experience)
-        preferences.save()
-
-        let country = StaticDataStore.shared.country(code: countryCode)
-        let calendar = Calendar.current
-        let days = (calendar.dateComponents([.day], from: calendar.startOfDay(for: startDate), to: calendar.startOfDay(for: endDate)).day ?? 0) + 1
-        let trip = Trip(
-            name: "\(country?.nameZh ?? countryCode)\(city.isEmpty ? "" : "・\(city)") \(max(days, 1)) 天",
-            countryCode: countryCode,
-            startDate: startDate,
-            endDate: endDate,
-            homeCurrencyCode: "TWD",
-            localCurrencyCode: country?.currencyCode ?? "TWD",
-            totalBudget: 0,
-            tripType: .leisure
-        )
-        trip.city = city
-        trip.originCountryCode = originCountryCode
-        trip.originCity = originCity
-        context.insert(trip)
-        PackingListGenerator.sync(trip: trip, context: context, preferences: preferences)
-        appState.setActive(trip)
-        createdTrip = trip
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.1) {
-            processingText = "正在依你的偏好客製清單…"
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-            step = .reveal
-        }
-    }
-
-    private func finish(openChecklist: Bool) {
-        if openChecklist {
-            UserDefaults.standard.set(true, forKey: "startOnPackingTab")
-        }
-        WidgetSync.update(trip: createdTrip)
+    private func finish() {
+        UserPreferences(
+            ageBand: ageBand,
+            gender: gender,
+            party: party,
+            experience: experience
+        ).save()
         onComplete()
     }
 }

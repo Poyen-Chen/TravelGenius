@@ -6,9 +6,15 @@
 import Foundation
 import Observation
 
+enum AppTab: Hashable {
+    case trips
+    case settings
+}
+
 @Observable
 final class AppState {
     private static let activeTripKey = "activeTripID"
+    private var hasPendingCreateTripLaunchRequest = ProcessInfo.processInfo.arguments.contains("-openCreateTrip")
 
     var activeTripID: String? {
         didSet {
@@ -24,18 +30,29 @@ final class AppState {
         activeTripID = UserDefaults.standard.string(forKey: Self.activeTripKey)
     }
 
-    /// 解析目前行程：指定 ID 優先；否則取日期涵蓋今天者；再否則取最近建立者（已結束行程一律排除）
+    /// 解析目前行程：指定 ID 優先；否則取進行中；再取最近即將出發的行程。
     func activeTrip(in trips: [Trip]) -> Trip? {
-        let open = trips.filter { !$0.isClosed }
+        let open = trips.filter { trip in
+            let status = trip.lifecycleStatus
+            return status == .inProgress || status == .upcoming
+        }
         if let activeTripID,
            let match = open.first(where: { $0.id.uuidString == activeTripID }) {
             return match
         }
         let now = Date()
-        return open.first { $0.contains(now) } ?? open.max { $0.createdAt < $1.createdAt }
+        return open.first { $0.contains(now) }
+            ?? open.filter { $0.startDate > now }.min { $0.startDate < $1.startDate }
     }
 
     func setActive(_ trip: Trip?) {
         activeTripID = trip?.id.uuidString
     }
+
+    func consumeCreateTripLaunchRequest() -> Bool {
+        guard hasPendingCreateTripLaunchRequest else { return false }
+        hasPendingCreateTripLaunchRequest = false
+        return true
+    }
+
 }

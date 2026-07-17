@@ -2,7 +2,7 @@
 
 > **出國前，先看懂海關風險，再開始打包。**
 
-聚焦兩件事的旅行助手 iOS App（SwiftUI + SwiftData，iOS 17+）：**行程 → 專屬打包清單＋當地 Tips**。繁體中文原生介面、資料留在裝置、零帳號。
+聚焦兩件事的旅行助手 iOS App（SwiftUI + SwiftData，iOS 17+）：**行程 → 專屬打包清單＋當地 Tips**。主畫面分成「行程／設定」，Checklist 與 Tips 整合在每趟行程內。繁體中文原生介面、資料留在裝置、零帳號。
 
 ## 亮點：「這個能帶嗎？」🐶
 
@@ -16,13 +16,13 @@
 
 ## 功能總覽
 
-| 分頁 | 內容 |
+| 入口 | 內容 |
 |---|---|
-| 行程 | 出發地＋目的地（東亞：台/日/韓，含城市）、日期；名稱自動命名；偏好設定隨時可改 |
-| 清單 | 依「目的地規定＋文化＋**即時天氣**＋**你的偏好**」四層規則生成，「因為是…」分組；前一晚模式、回程模式（防遺留）、分享清單 |
-| Tips | 「能帶嗎」查詢＋海關規定（去程/回程雙向）＋航空安檢＋城市文化（東京手扶梯靠左、大阪靠右） |
+| 行程 Tab | 未開始／進行中／已完成；日期到達時顯示開始或完成快捷提示；新增與管理行程 |
+| 設定 Tab | 編輯首次設定的年齡層、性別、同行組成與旅行經驗 |
+| 行程詳細頁 | 以「行程資訊／Checklist／Tips」切換；Checklist 含前一晚與回程模式，Tips 含「能帶嗎」、海關、安檢與城市文化 |
 
-**小旅犬 🐾**：浮動吉祥物，左右緣皆可停靠（拖曳吸附、點擊縮放），做 D-day 行前提醒（D-1「行動電源充飽了嗎？」）、天氣播報與查詢回答。
+**小旅犬 🐾**：固定在右下角、底部分頁列上方的吉祥物，不會擋住 UI 或攔截操作；會隨行前提醒、天氣與查詢結果改變表情。
 
 **個人化**：首次啟動四個問題（年齡層/性別/同行組成/旅行經驗）直接改變清單——家庭出遊多兒童常備藥、第一次出國多護照影本與旅平險、同事出差多名片正裝。
 
@@ -32,36 +32,40 @@
 
 ## 操作步驟
 
-### 1. 首次啟動：小旅犬帶你回答四個問題
+### 1. 首次啟動：完成四項基本設定
 
 <img src="docs/screenshots/01-onboarding.png" width="240" alt="Onboarding 首屏">
 
-年齡層 → 性別（可略過）→ 同行組成 → 旅行經驗，接著選出發地／目的地與日期。App 即時比對法規、依偏好客製清單，最後一頁可直接分享給同行的人。
+年齡層 → 性別（可略過）→ 同行組成 → 旅行經驗。完成後進入行程列表，所有設定都能稍後修改。
 
-### 2. 清單：先知道天氣，再開始打包
+### 2. 建立行程：三步驟完成行前準備
+
+行程基本資訊 → 採納／取消推薦清單並加入自訂物品 → 閱讀去回程海關與航空安檢提醒。完成前資料只保留在建立畫面，放棄後不留下草稿；完成後先列為未開始，日期到達時由使用者手動開始或完成行程。
+
+### 3. 清單：先知道天氣，再開始打包
 
 <img src="docs/screenshots/02-checklist.png" width="240" alt="打包清單與天氣">
 
 清單依四層規則生成、「因為是…」分組說明理由；小旅犬播報旅行期間預報（有雨自動加傘）。工具列：前一晚模式（大字掃未打包）、回程模式（重設反向檢查，誤觸自動還原）、分享清單。
 
-### 3. Tips：能帶嗎＋雙向海關＋城市文化
+### 4. Tips：能帶嗎＋雙向海關＋城市文化
 
 <img src="docs/screenshots/03-tips.png" width="240" alt="Tips 分頁">
 
 頂部輸入框即問即答；海關規定分「去程入境」與「回程入境」兩段；城市文化提醒城市限定優先。每條法規附官方來源連結。
 
-### 4. 小旅犬：想放哪就放哪
+### 5. 小旅犬：想放哪就放哪
 
-<img src="docs/screenshots/04-mascot-left.png" width="240" alt="小旅犬停靠左緣">
+<img src="docs/screenshots/04-mascot-left.png" width="240" alt="小旅犬顯示在介面角落">
 
-拖曳到任一側自動吸附（位置記憶），點一下縮成半露狗頭、再點展開。
+吉祥物固定顯示於右下角，位於底部分頁列上方，不支援拖曳或點擊展開。
 
 ## 開發
 
 - Xcode 26+，開啟 `TravelGenius.xcodeproj`，scheme `TravelGenius`，Cmd+R
 - **Branch**：`focus`＝本聚焦版；`main`＝完整四模組版（含記帳、報帳匯出、醫療卡）
 - CLI 建置：`DEVELOPER_DIR=/Applications/Xcode.app xcodebuild -project TravelGenius.xcodeproj -scheme TravelGenius -destination 'platform=iOS Simulator,name=iPhone 17' build`
-- 開發用啟動引數：`-seedDemo`（示範行程）、`-resetOnboarding`、`-openPackTab` / `-openTipsTab`、`-checkItem 肉鬆`（log 印出能帶嗎判定）、`-mascotDockOnLeft YES`
+- 開發用啟動引數：`-seedDemo`（示範行程）、`-seedDemoDueToday`（今天出發的示範行程）、`-resetOnboarding`、`-openSettingsTab`、`-openPackTab` / `-openTipsTab`（行程詳細頁預設區段）、`-checkItem 肉鬆`（log 印出能帶嗎判定）
 - 靜態資料在 `TravelGenius/Resources/SeedData/*.json`（海關/安檢規則含 `aliases` 口語別名與 `sourceUrl`），直接編輯即可擴充
 - 實機安裝需在兩個 target 設定 Development Team 並註冊 App Group（`group.com.example.TravelGenius`）
 

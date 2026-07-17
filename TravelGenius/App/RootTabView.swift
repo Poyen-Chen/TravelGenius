@@ -9,10 +9,23 @@ import SwiftData
 /// 首次啟動顯示 onboarding，完成後進入主畫面
 struct RootGateView: View {
     @AppStorage("hasOnboarded") private var hasOnboarded = false
+    @AppStorage("hasSeenFirstLaunchGuide") private var hasSeenFirstLaunchGuide = false
 
     var body: some View {
         if hasOnboarded {
             RootTabView()
+                .fullScreenCover(
+                    isPresented: Binding(
+                        get: { !hasSeenFirstLaunchGuide },
+                        set: { isPresented in
+                            if !isPresented { hasSeenFirstLaunchGuide = true }
+                        }
+                    )
+                ) {
+                    FirstLaunchGuideView {
+                        hasSeenFirstLaunchGuide = true
+                    }
+                }
         } else {
             OnboardingView {
                 hasOnboarded = true
@@ -21,55 +34,28 @@ struct RootGateView: View {
     }
 }
 
-/// 設定行程後才出現「清單」「Tips」分頁；沒有進行中行程時只有行程頁
+/// 主畫面固定為「行程」「設定」兩個頂層分頁。
 struct RootTabView: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(AppState.self) private var appState
     @Environment(MascotState.self) private var mascot
     @Query private var trips: [Trip]
 
-    enum Tab {
-        case trips
-        case checklist
-        case tips
-    }
-
-    @State private var selection: Tab = {
-        let arguments = ProcessInfo.processInfo.arguments
-        if arguments.contains("-openPackTab") { return .checklist }
-        if arguments.contains("-openTipsTab") || arguments.contains("-showProhibited") || arguments.contains("-showEtiquette") { return .tips }
-        if UserDefaults.standard.bool(forKey: "startOnPackingTab") {
-            UserDefaults.standard.removeObject(forKey: "startOnPackingTab")
-            return .checklist
-        }
-        return .trips
-    }()
+    @State private var selection: AppTab = ProcessInfo.processInfo.arguments.contains("-openSettingsTab") ? .settings : .trips
 
     private var activeTrip: Trip? {
         appState.activeTrip(in: trips)
     }
 
     var body: some View {
-        Group {
-            if activeTrip != nil {
-                TabView(selection: $selection) {
-                    TripListView()
-                        .tabItem { Label("行程", systemImage: "airplane") }
-                        .tag(Tab.trips)
+        TabView(selection: $selection) {
+            TripListView()
+                .tabItem { Label("行程", systemImage: "airplane") }
+                .tag(AppTab.trips)
 
-                    PackingRootView()
-                        .tabItem { Label("清單", systemImage: "checklist") }
-                        .tag(Tab.checklist)
-
-                    TipsRootView()
-                        .tabItem { Label("Tips", systemImage: "lightbulb") }
-                        .tag(Tab.tips)
-                }
-            } else {
-                NavigationStack {
-                    TripListView()
-                }
-            }
+            PreferenceSettingsView()
+                .tabItem { Label("設定", systemImage: "gearshape") }
+                .tag(AppTab.settings)
         }
         .overlay {
             FloatingMascotDock()

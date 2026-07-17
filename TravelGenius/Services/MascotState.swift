@@ -11,7 +11,7 @@ import Observation
 
 @Observable
 final class MascotState {
-    var message: String = "嗨！我是小旅犬 🐾"
+    var message: String = "嗨！我是小史萊姆！"
     var expression: MascotExpression = .normal
     var isExpanded: Bool = true
 

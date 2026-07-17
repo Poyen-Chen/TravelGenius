@@ -10,11 +10,11 @@ import SwiftData
 
 struct PreferenceSettingsView: View {
     @Environment(\.modelContext) private var context
-    @Environment(\.dismiss) private var dismiss
     @Environment(AppState.self) private var appState
     @Query private var trips: [Trip]
 
     @State private var preferences = UserPreferences.load()
+    @State private var saveFeedback = false
 
     var body: some View {
         NavigationStack {
@@ -32,28 +32,31 @@ struct PreferenceSettingsView: View {
                     Picker("旅行經驗", selection: $preferences.experience) {
                         ForEach(TravelExperience.allCases) { Text($0.label).tag($0) }
                     }
+                } header: {
+                    Text("基本資料")
                 } footer: {
                     Text("偏好會直接影響清單內容（例如家庭出遊會加入兒童用品），儲存後立即重新客製目前行程的清單。")
                 }
-            }
-            .navigationTitle("偏好設定")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("取消") { dismiss() }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("儲存") {
-                        preferences.save()
-                        if let trip = appState.activeTrip(in: trips),
-                           !(trip.packingItems ?? []).isEmpty {
-                            PackingListGenerator.sync(trip: trip, context: context, preferences: preferences)
-                        }
-                        dismiss()
+
+                Section {
+                    Button("儲存設定", systemImage: "checkmark.circle.fill") {
+                        save()
                     }
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .font(.headline)
                 }
             }
+            .navigationTitle("設定")
+            .sensoryFeedback(.success, trigger: saveFeedback)
         }
-        .presentationDetents([.medium])
+    }
+
+    private func save() {
+        preferences.save()
+        if let trip = appState.activeTrip(in: trips),
+           !(trip.packingItems ?? []).isEmpty {
+            PackingListGenerator.sync(trip: trip, context: context, preferences: preferences)
+        }
+        saveFeedback.toggle()
     }
 }

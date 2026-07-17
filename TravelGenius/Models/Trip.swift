@@ -24,6 +24,30 @@ enum TripType: String, Codable, CaseIterable, Identifiable {
     }
 }
 
+enum TripLifecycleStatus: String, CaseIterable, Identifiable {
+    case upcoming
+    case inProgress
+    case completed
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .upcoming: "未開始"
+        case .inProgress: "進行中"
+        case .completed: "已完成"
+        }
+    }
+
+    var symbolName: String {
+        switch self {
+        case .upcoming: "calendar"
+        case .inProgress: "airplane.departure"
+        case .completed: "checkmark.circle"
+        }
+    }
+}
+
 @Model
 final class Trip {
     var id: UUID = UUID()
@@ -41,6 +65,18 @@ final class Trip {
     var totalBudget: Decimal = 0
     var tripTypeRaw: String = TripType.leisure.rawValue
     var isClosed: Bool = false
+    /// 舊版相容欄位。新版建立流程不再產生草稿。
+    var isDraft: Bool = false
+    /// 舊版相容欄位。
+    var draftCreationStep: Int = 1
+    /// 使用者主動按下「開始行程」的時間；日期本身不會自動改變狀態。
+    var startedAt: Date?
+    /// 使用者主動按下「完成行程」的時間。
+    var completedAt: Date?
+    /// 使用者在建立流程中已看過海關與出入境提醒。
+    var hasReviewedTravelRules: Bool = false
+    /// 使用者主動取消的自動推薦，避免重新產生清單時又被加入。
+    var excludedPackingNamesRaw: String = ""
     var createdAt: Date = Date()
 
     @Relationship(deleteRule: .cascade, inverse: \Expense.trip)
@@ -72,6 +108,68 @@ final class Trip {
     var tripType: TripType {
         get { TripType(rawValue: tripTypeRaw) ?? .leisure }
         set { tripTypeRaw = newValue.rawValue }
+    }
+
+    var lifecycleStatus: TripLifecycleStatus {
+        if completedAt != nil || isClosed { return .completed }
+        if startedAt != nil { return .inProgress }
+        return .upcoming
+    }
+
+    func lifecycleStatus(relativeTo date: Date) -> TripLifecycleStatus {
+        lifecycleStatus
+    }
+
+    func shouldPromptToStart(relativeTo date: Date = .now) -> Bool {
+        guard lifecycleStatus == .upcoming else { return false }
+        return Calendar.current.startOfDay(for: date) >= Calendar.current.startOfDay(for: startDate)
+    }
+
+    func shouldPromptToComplete(relativeTo date: Date = .now) -> Bool {
+        guard lifecycleStatus == .inProgress else { return false }
+        return Calendar.current.startOfDay(for: date) >= Calendar.current.startOfDay(for: endDate)
+    }
+
+    func start(relativeTo date: Date = .now) {
+        startedAt = date
+        completedAt = nil
+        isClosed = false
+        isDraft = false
+    }
+
+    func complete(relativeTo date: Date = .now) {
+        if startedAt == nil { startedAt = date }
+        completedAt = date
+        isClosed = true
+    }
+
+    func reopen(relativeTo date: Date = .now) {
+        startedAt = date
+        completedAt = nil
+        isClosed = false
+    }
+
+    var excludedPackingNames: Set<String> {
+        get {
+            Set(excludedPackingNamesRaw
+                .split(separator: "\n")
+                .map(String.init))
+        }
+        set {
+            excludedPackingNamesRaw = newValue.sorted().joined(separator: "\n")
+        }
+    }
+
+    func excludePackingItem(named name: String) {
+        var names = excludedPackingNames
+        names.insert(name)
+        excludedPackingNames = names
+    }
+
+    func includePackingItem(named name: String) {
+        var names = excludedPackingNames
+        names.remove(name)
+        excludedPackingNames = names
     }
 
     /// 旅程總天數（含出發與回程當日）
