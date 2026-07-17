@@ -190,6 +190,8 @@ struct OnboardingView: View {
             experience: experience,
             packingStyle: packingStyle
         ).save()
+        // 剛完成 onboarding 一律先進「行程」階段，待使用者建立／選定行程再切換
+        UserDefaults.standard.set(true, forKey: "needsTripStageAfterOnboarding")
         onComplete()
     }
 }

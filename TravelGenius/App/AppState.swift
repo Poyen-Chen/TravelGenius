@@ -52,6 +52,8 @@ final class AppState {
 
     func setActive(_ trip: Trip?) {
         activeTripID = trip?.id.uuidString
+        // 使用者明確建立／選定行程後，解除 onboarding 後的「行程階段」鎖定
+        UserDefaults.standard.removeObject(forKey: "needsTripStageAfterOnboarding")
     }
 
     func consumeCreateTripLaunchRequest() -> Bool {

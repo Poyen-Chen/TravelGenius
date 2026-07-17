@@ -98,9 +98,15 @@ struct TripDetailView: View {
             }
 
             Section {
-                if !trip.isClosed && !isActive {
-                    Button("設為目前行程", systemImage: "checkmark.circle") {
-                        appState.setActive(trip)
+                if !trip.isClosed {
+                    if isActive {
+                        Button("開始打包這趟行程", systemImage: "checklist") {
+                            appState.open(.checklist, for: trip)
+                        }
+                    } else {
+                        Button("設為目前行程", systemImage: "checkmark.circle") {
+                            appState.setActive(trip)
+                        }
                     }
                 }
                 Button("編輯行程", systemImage: "pencil") { showingEdit = true }

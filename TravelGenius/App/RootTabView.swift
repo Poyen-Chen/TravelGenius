@@ -29,10 +29,14 @@ struct RootTabView: View {
     @Environment(MascotState.self) private var mascot
     @Query private var trips: [Trip]
 
+    /// Onboarding 剛完成：先停留在行程階段，直到明確建立／選定行程（setActive 時解除）
+    @AppStorage("needsTripStageAfterOnboarding") private var needsTripStage = false
+
     @State private var selection: AppTab = {
         let arguments = ProcessInfo.processInfo.arguments
         if arguments.contains("-openPackTab") { return .checklist }
         if arguments.contains("-openTipsTab") || arguments.contains("-showProhibited") || arguments.contains("-showEtiquette") { return .tips }
+        if UserDefaults.standard.bool(forKey: "needsTripStageAfterOnboarding") { return .trips }
         if UserDefaults.standard.bool(forKey: "startOnPackingTab") {
             UserDefaults.standard.removeObject(forKey: "startOnPackingTab")
             return .checklist
@@ -44,7 +48,7 @@ struct RootTabView: View {
         appState.activeTrip(in: trips)
     }
 
-    private var hasActiveTrip: Bool { activeTrip != nil }
+    private var hasActiveTrip: Bool { activeTrip != nil && !needsTripStage }
 
     var body: some View {
         Group {
@@ -86,6 +90,9 @@ struct RootTabView: View {
         .onChange(of: activeTrip?.id) { _, _ in
             clampSelectionToStage()
             refreshMascotMessage()
+        }
+        .onChange(of: needsTripStage) { _, _ in
+            clampSelectionToStage()
         }
         .onChange(of: scenePhase) { _, newPhase in
             // 離開前景時更新主畫面小工具
