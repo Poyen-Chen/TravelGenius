@@ -9,10 +9,23 @@ import SwiftData
 /// 首次啟動顯示 onboarding，完成後進入主畫面
 struct RootGateView: View {
     @AppStorage("hasOnboarded") private var hasOnboarded = false
+    @AppStorage("hasSeenFirstLaunchGuide") private var hasSeenFirstLaunchGuide = false
 
     var body: some View {
         if hasOnboarded {
             RootTabView()
+                .fullScreenCover(
+                    isPresented: Binding(
+                        get: { !hasSeenFirstLaunchGuide },
+                        set: { isPresented in
+                            if !isPresented { hasSeenFirstLaunchGuide = true }
+                        }
+                    )
+                ) {
+                    FirstLaunchGuideView {
+                        hasSeenFirstLaunchGuide = true
+                    }
+                }
         } else {
             OnboardingView {
                 hasOnboarded = true

@@ -22,7 +22,7 @@
 | 設定 Tab | 編輯首次設定的年齡層、性別、同行組成與旅行經驗 |
 | 行程詳細頁 | 以「行程資訊／Checklist／Tips」切換；Checklist 含前一晚與回程模式，Tips 含「能帶嗎」、海關、安檢與城市文化 |
 
-**小旅犬 🐾**：浮動吉祥物，左右緣皆可停靠（拖曳吸附、點擊縮放），做 D-day 行前提醒（D-1「行動電源充飽了嗎？」）、天氣播報與查詢回答。
+**小旅犬 🐾**：固定在右下角、底部分頁列上方的吉祥物，不會擋住 UI 或攔截操作；會隨行前提醒、天氣與查詢結果改變表情。
 
 **個人化**：首次啟動四個問題（年齡層/性別/同行組成/旅行經驗）直接改變清單——家庭出遊多兒童常備藥、第一次出國多護照影本與旅平險、同事出差多名片正裝。
 
@@ -56,16 +56,16 @@
 
 ### 5. 小旅犬：想放哪就放哪
 
-<img src="docs/screenshots/04-mascot-left.png" width="240" alt="小旅犬停靠左緣">
+<img src="docs/screenshots/04-mascot-left.png" width="240" alt="小旅犬顯示在介面角落">
 
-拖曳到任一側自動吸附（位置記憶），點一下縮成半露狗頭、再點展開。
+吉祥物固定顯示於右下角，位於底部分頁列上方，不支援拖曳或點擊展開。
 
 ## 開發
 
 - Xcode 26+，開啟 `TravelGenius.xcodeproj`，scheme `TravelGenius`，Cmd+R
 - **Branch**：`focus`＝本聚焦版；`main`＝完整四模組版（含記帳、報帳匯出、醫療卡）
 - CLI 建置：`DEVELOPER_DIR=/Applications/Xcode.app xcodebuild -project TravelGenius.xcodeproj -scheme TravelGenius -destination 'platform=iOS Simulator,name=iPhone 17' build`
-- 開發用啟動引數：`-seedDemo`（示範行程）、`-seedDemoDueToday`（今天出發的示範行程）、`-resetOnboarding`、`-openSettingsTab`、`-openPackTab` / `-openTipsTab`（行程詳細頁預設區段）、`-checkItem 肉鬆`（log 印出能帶嗎判定）、`-mascotDockOnLeft YES`
+- 開發用啟動引數：`-seedDemo`（示範行程）、`-seedDemoDueToday`（今天出發的示範行程）、`-resetOnboarding`、`-openSettingsTab`、`-openPackTab` / `-openTipsTab`（行程詳細頁預設區段）、`-checkItem 肉鬆`（log 印出能帶嗎判定）
 - 靜態資料在 `TravelGenius/Resources/SeedData/*.json`（海關/安檢規則含 `aliases` 口語別名與 `sourceUrl`），直接編輯即可擴充
 - 實機安裝需在兩個 target 設定 Development Team 並註冊 App Group（`group.com.example.TravelGenius`）
 
