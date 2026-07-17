@@ -2,8 +2,8 @@
 //  FloatingMascotView.swift
 //  TravelGenius
 //
-//  浮動小旅犬：左右兩緣皆可停靠（放開時吸附較近的一側）、上下拖曳（位置記憶）、
-//  點一下縮成半露狗頭、再點展開訊息泡泡。
+//  浮動小史萊姆：左右兩緣皆可停靠（放開時吸附較近的一側）、上下拖曳（位置記憶）、
+//  點一下只切換訊息泡泡，角色本身保持完整顯示。
 //
 
 import SwiftUI
@@ -24,8 +24,8 @@ struct FloatingMascotDock: View {
             let bottomInset: CGFloat = 120
             let travel = max(proxy.size.height - topInset - bottomInset, 1)
             let y = min(max(topInset + travel * storedY + dragOffset.height, topInset), topInset + travel)
-            // 縮起時狗頭半露出停靠側；拖曳中跟著手指水平移動
-            let restingX: CGFloat = mascot.isExpanded ? (dockOnLeft ? 6 : -6) : (dockOnLeft ? -28 : 28)
+            // 角色始終完整顯示；拖曳中跟著手指水平移動
+            let restingX: CGFloat = dockOnLeft ? 6 : -6
             let x = restingX + dragOffset.width
 
             dock
@@ -52,8 +52,8 @@ struct FloatingMascotDock: View {
                         }
                 )
                 .accessibilityElement(children: .ignore)
-                .accessibilityLabel(mascot.isExpanded ? "小旅犬：\(mascot.message)" : "小旅犬（已縮起）")
-                .accessibilityHint("點一下\(mascot.isExpanded ? "縮起" : "展開")，拖曳可上下移動或換到另一側")
+                .accessibilityLabel(mascot.isExpanded ? "小史萊姆：\(mascot.message)" : "小史萊姆")
+                .accessibilityHint("點一下\(mascot.isExpanded ? "隱藏" : "顯示")對話框，拖曳可上下移動或換到另一側")
                 .accessibilityAddTraits(.isButton)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: dockOnLeft ? .topLeading : .topTrailing)
                 .offset(x: x, y: y)
