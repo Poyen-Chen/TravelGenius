@@ -101,9 +101,8 @@ struct TripListView: View {
                 Button("取消", role: .cancel) { pendingDeletion = nil }
             }
             .onAppear {
-                if ProcessInfo.processInfo.arguments.contains("-openCreateTrip") {
-                    presentedSheet = .create
-                }
+                guard appState.consumeCreateTripLaunchRequest() else { return }
+                presentedSheet = .create
             }
         }
     }

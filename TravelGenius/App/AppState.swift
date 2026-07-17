@@ -15,6 +15,7 @@ enum AppTab: Hashable {
 @Observable
 final class AppState {
     private static let activeTripKey = "activeTripID"
+    private var hasPendingCreateTripLaunchRequest = ProcessInfo.processInfo.arguments.contains("-openCreateTrip")
 
     var activeTripID: String? {
         didSet {
@@ -50,6 +51,12 @@ final class AppState {
 
     func setActive(_ trip: Trip?) {
         activeTripID = trip?.id.uuidString
+    }
+
+    func consumeCreateTripLaunchRequest() -> Bool {
+        guard hasPendingCreateTripLaunchRequest else { return false }
+        hasPendingCreateTripLaunchRequest = false
+        return true
     }
 
     func open(_ tab: AppTab, for trip: Trip? = nil) {
