@@ -29,18 +29,10 @@ struct RootTabView: View {
     @Environment(MascotState.self) private var mascot
     @Query private var trips: [Trip]
 
-    /// Onboarding 剛完成：先停留在行程階段，直到明確建立／選定行程（setActive 時解除）
-    @AppStorage("needsTripStageAfterOnboarding") private var needsTripStage = false
-
     @State private var selection: AppTab = {
         let arguments = ProcessInfo.processInfo.arguments
         if arguments.contains("-openPackTab") { return .checklist }
         if arguments.contains("-openTipsTab") || arguments.contains("-showProhibited") || arguments.contains("-showEtiquette") { return .tips }
-        if UserDefaults.standard.bool(forKey: "needsTripStageAfterOnboarding") { return .trips }
-        if UserDefaults.standard.bool(forKey: "startOnPackingTab") {
-            UserDefaults.standard.removeObject(forKey: "startOnPackingTab")
-            return .checklist
-        }
         return .trips
     }()
 
@@ -48,7 +40,9 @@ struct RootTabView: View {
         appState.activeTrip(in: trips)
     }
 
-    private var hasActiveTrip: Bool { activeTrip != nil && !needsTripStage }
+    /// 旅行模式（清單＋Tips）＝有進行中行程「且」本次 session 已明確選定行程；
+    /// 冷啟動一律從「行程」階段開始
+    private var hasActiveTrip: Bool { activeTrip != nil && appState.hasEnteredTrip }
 
     var body: some View {
         Group {
@@ -91,7 +85,7 @@ struct RootTabView: View {
             clampSelectionToStage()
             refreshMascotMessage()
         }
-        .onChange(of: needsTripStage) { _, _ in
+        .onChange(of: appState.hasEnteredTrip) { _, _ in
             clampSelectionToStage()
         }
         .onChange(of: scenePhase) { _, newPhase in
