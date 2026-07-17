@@ -33,7 +33,7 @@
 
 <img src="docs/screenshots/01-onboarding.png" width="240" alt="Onboarding 歡迎頁">
 
-年齡層 → 性別（可略過）→ 同行組成 → 旅行經驗 → **行李偏好（輕便/完整）**。答案直接改變清單：家庭出遊多兒童用品、第一次出國多保命文件、輕便風格略過加分項目並減少衣物數量。
+年齡層 → 性別（可略過）→ 同行組成 → 旅行經驗 → **行李偏好（輕便/完整）**。答案直接改變清單：家庭出遊多兒童用品、第一次出國多保命文件、輕便風格略過加分項目並減少衣物數量。**插座轉接頭依出發地動態判斷**（台灣→日本同為 Type-A/B 就不會出現）。偏好設定另提供外觀選項（跟隨系統/淺色/深色）。
 
 ### 2. 行程：三步驟建立，分類管理
 
@@ -55,7 +55,7 @@
 
 ### 小史萊姆 🟢
 
-動畫吉祥物浮動於左右任一緣（拖曳吸附、位置記憶），點一下縮成半露、再點展開。D-day 行前提醒（D-1「行動電源充飽了嗎？」）、天氣播報、查詢回答，表情隨情境變化。
+動畫吉祥物浮動於左右任一緣（拖曳即時跟手、放開吸附、位置記憶），點一下縮成半露、再點展開。重要時刻做行前提醒（D-1「行動電源充飽了嗎？」、天氣播報、查詢回答），平常則講 **AI 生成的目的地旅遊冷知識**（Claude API，點一下換一則；離線或未設金鑰時退回內建冷知識庫），表情隨情境變化。
 
 ### 主畫面 Widget
 
@@ -68,6 +68,7 @@
 - CLI 建置：`DEVELOPER_DIR=/Applications/Xcode.app xcodebuild -project TravelGenius.xcodeproj -scheme TravelGenius -destination 'platform=iOS Simulator,name=iPhone 17' build`
 - 開發用啟動引數：`-seedDemo`（示範行程）、`-resetOnboarding`、`-openPackTab` / `-openTipsTab`、`-checkItem 肉絲`（log 印出能帶嗎判定）、`-mascotDockOnLeft YES`
 - 靜態資料在 `TravelGenius/Resources/SeedData/*.json` — 海關/安檢規則支援 `aliases`（口語別名）、`keywords`／`exclusions`（語意判定）與 `sourceUrl`，直接編輯即可擴充
+- **AI 冷知識金鑰（選配）**：複製 `TravelGenius/Resources/Secrets.example.plist` 為 `Secrets.plist` 並填入 Anthropic API key（`Secrets.plist` 已被 gitignore，**絕不提交**）。未設定時小史萊姆自動使用內建冷知識庫。⚠️ 從 App 直接呼叫 API 僅適合 demo，正式上架請改走自家後端代理
 - 設計系統：`TravelGenius/SharedUI/PackSmartDesignSystem.swift`＋`design-system/` 文件
 - 實機安裝需在兩個 target 設定 Development Team 並註冊 App Group（`group.com.example.TravelGenius`）
 
@@ -91,4 +92,5 @@
 - 規則引擎：`packing_rules.json` 多層（base/regulation/culture/weather/party/experience/age/gender＋fullOnly 輕便過濾），`PackingListGenerator.sync` 合併式重生成（永不動自訂與已打包項目）
 - `CanIBringService`：別名／關鍵字＋排除詞／異體字三層比對 → 嚴重度排序，去程回程雙向
 - `WeatherService`：Open-Meteo，6 小時快取，16 天預報範圍外自動退回
-- 小史萊姆：`MascotState`（@Observable）＋`FloatingMascotDock`＋`AnimatedGIFView`（縮圖解碼、尊重減少動態）
+- `TriviaService`：Claude API 依目的地批次生成 5 則冷知識輪播（金鑰缺席時退回內建庫）
+- 小史萊姆：`MascotState`（@Observable）＋`FloatingMascotDock`（單一手勢零延遲拖曳）＋`AnimatedGIFView`（縮圖解碼、尊重減少動態）
