@@ -23,7 +23,8 @@ This file overrides web-specific recommendations in `MASTER.md` for the SwiftUI 
 ## Interaction rules
 
 - Minimum touch target is 44×44 pt; primary buttons are 52 pt high.
-- Multi-step creation always exposes Back or Cancel and saves progress as a draft after Step 1.
+- Multi-step creation always exposes Back or Cancel; cancelling discards the unfinished trip after confirmation.
 - Color never communicates trip or regulation state by itself.
 - Forms use native labels, pickers, date pickers, and inline helper text.
-- Top-level navigation remains 行程／清單／Tips. Trip details link into those existing destinations.
+- Top-level navigation is 行程／設定. Trip details use an inline 行程資訊／Checklist／Tips segmented switch.
+- Trip lifecycle is explicit: dates trigger prompts, while only user actions start or complete a trip.

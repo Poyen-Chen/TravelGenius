@@ -57,9 +57,13 @@ struct TipsRootView: View {
     @ViewBuilder
     private var rootContent: some View {
         if let selectedTrip {
-            content(for: selectedTrip)
-                .navigationTitle("Tips・\(StaticDataStore.shared.country(code: selectedTrip.countryCode)?.nameZh ?? selectedTrip.countryCode)\(selectedTrip.city.isEmpty ? "" : "・\(selectedTrip.city)")")
-                .navigationBarTitleDisplayMode(.inline)
+            if embedded {
+                content(for: selectedTrip)
+            } else {
+                content(for: selectedTrip)
+                    .navigationTitle("Tips・\(StaticDataStore.shared.country(code: selectedTrip.countryCode)?.nameZh ?? selectedTrip.countryCode)\(selectedTrip.city.isEmpty ? "" : "・\(selectedTrip.city)")")
+                    .navigationBarTitleDisplayMode(.inline)
+            }
         } else {
             ContentUnavailableView("尚無行程", systemImage: "lightbulb", description: Text("建立行程後，這裡會顯示目的地的海關規定與文化提醒。"))
                 .navigationTitle("Tips")

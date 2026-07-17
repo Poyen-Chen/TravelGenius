@@ -23,11 +23,43 @@ struct TravelGeniusApp: App {
         } catch {
             fatalError("無法建立資料庫：\(error)")
         }
+        migrateLegacyTripLifecycleIfNeeded()
         if ProcessInfo.processInfo.arguments.contains("-seedDemo") {
             DemoSeeder.seedIfNeeded(into: container.mainContext)
         }
         configureOnboardingGate()
         logCheckerDebugQuery()
+    }
+
+    /// 將舊版由日期推導的狀態轉成使用者操作狀態，並移除舊草稿。
+    private func migrateLegacyTripLifecycleIfNeeded() {
+        let defaults = UserDefaults.standard
+        let migrationKey = "migration.explicitTripLifecycle.v1"
+        guard !defaults.bool(forKey: migrationKey) else { return }
+
+        let context = container.mainContext
+        let trips = (try? context.fetch(FetchDescriptor<Trip>())) ?? []
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: .now)
+
+        for trip in trips {
+            if trip.isDraft {
+                context.delete(trip)
+                continue
+            }
+            guard trip.startedAt == nil, trip.completedAt == nil else { continue }
+            let start = calendar.startOfDay(for: trip.startDate)
+            let end = calendar.startOfDay(for: trip.endDate)
+            if trip.isClosed || today > end {
+                trip.startedAt = trip.startDate
+                trip.completedAt = trip.endDate
+                trip.isClosed = true
+            } else if today >= start {
+                trip.startedAt = trip.startDate
+            }
+        }
+        try? context.save()
+        defaults.set(true, forKey: migrationKey)
     }
 
     /// 開發驗證用：`-checkItem 肉鬆` 直接在 log 印出「能帶嗎」判定

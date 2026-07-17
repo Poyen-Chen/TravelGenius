@@ -7,13 +7,34 @@ import SwiftUI
 import SwiftData
 
 struct TripDetailView: View {
-    @Environment(\.modelContext) private var context
+    private enum DetailTab: String, CaseIterable, Identifiable {
+        case information = "行程資訊"
+        case checklist = "Checklist"
+        case tips = "Tips"
+
+        var id: String { rawValue }
+    }
+
     @Environment(AppState.self) private var appState
     @Query private var trips: [Trip]
     let trip: Trip
 
+    @State private var selectedTab: DetailTab
     @State private var showingEdit = false
-    @State private var confirmClose = false
+    @State private var confirmComplete = false
+    @State private var lifecycleFeedback = false
+
+    init(trip: Trip) {
+        self.trip = trip
+        let arguments = ProcessInfo.processInfo.arguments
+        if arguments.contains("-openPackTab") {
+            _selectedTab = State(initialValue: .checklist)
+        } else if arguments.contains("-openTipsTab") || arguments.contains("-showProhibited") || arguments.contains("-showEtiquette") {
+            _selectedTab = State(initialValue: .tips)
+        } else {
+            _selectedTab = State(initialValue: .information)
+        }
+    }
 
     private var country: Country? {
         StaticDataStore.shared.country(code: trip.countryCode)
@@ -28,6 +49,43 @@ struct TripDetailView: View {
     }
 
     var body: some View {
+        VStack(spacing: 0) {
+            Picker("行程內容", selection: $selectedTab) {
+                ForEach(DetailTab.allCases) { tab in
+                    Text(tab.rawValue).tag(tab)
+                }
+            }
+            .pickerStyle(.segmented)
+            .padding(.horizontal)
+            .padding(.vertical, 10)
+            .background(.bar)
+
+            Group {
+                switch selectedTab {
+                case .information:
+                    informationList
+                case .checklist:
+                    PackingListView(trip: trip)
+                case .tips:
+                    TipsRootView(trip: trip, embedded: true)
+                }
+            }
+        }
+        .navigationTitle(trip.name)
+        .navigationBarTitleDisplayMode(.inline)
+        .sheet(isPresented: $showingEdit) { TripFormView(trip: trip) }
+        .confirmationDialog(
+            "要將「\(trip.name)」標記為已完成嗎？",
+            isPresented: $confirmComplete,
+            titleVisibility: .visible
+        ) {
+            Button("完成行程") { completeTrip() }
+            Button("取消", role: .cancel) {}
+        }
+        .sensoryFeedback(.success, trigger: lifecycleFeedback)
+    }
+
+    private var informationList: some View {
         List {
             Section {
                 HStack(spacing: 12) {
@@ -37,7 +95,7 @@ struct TripDetailView: View {
                     VStack(alignment: .leading, spacing: 3) {
                         Text(trip.lifecycleStatus.label)
                             .font(.headline)
-                        Text(isActive ? "目前 App 使用這趟行程的清單與 Tips" : "可設為目前行程後從底部分頁快速查看")
+                        Text(statusDescription)
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -58,74 +116,46 @@ struct TripDetailView: View {
                 LabeledContent("天數") {
                     Text("\(trip.totalDays) 天")
                 }
-            }
-
-            Section("行前準備") {
-                NavigationLink {
-                    PackingListView(trip: trip)
-                        .navigationTitle("清單・\(trip.name)")
-                        .navigationBarTitleDisplayMode(.inline)
-                } label: {
-                    DetailDestinationRow(
-                        title: "行李 Checklist",
-                        subtitle: packingProgressText,
-                        symbol: "checklist",
-                        tint: .blue
-                    )
-                }
-
-                NavigationLink {
-                    TipsRootView(trip: trip, embedded: true)
-                } label: {
-                    DetailDestinationRow(
-                        title: "海關 Tips",
-                        subtitle: "查物品、看海關與城市文化提醒",
-                        symbol: "lightbulb.fill",
-                        tint: .orange
-                    )
-                }
-
-                NavigationLink {
-                    TripRegulationsView(trip: trip)
-                } label: {
-                    DetailDestinationRow(
-                        title: "出入境管制物品",
-                        subtitle: trip.hasReviewedTravelRules ? "建立行程時已閱讀" : "尚未確認閱讀",
-                        symbol: "checkmark.shield.fill",
-                        tint: .red
-                    )
+                LabeledContent("打包進度") {
+                    Text(packingProgressText)
                 }
             }
 
-            Section {
-                if !trip.isClosed && !isActive {
-                    Button("設為目前行程", systemImage: "checkmark.circle") {
+            Section("行程操作") {
+                switch trip.lifecycleStatus {
+                case .upcoming:
+                    Button("開始行程", systemImage: "airplane.departure") {
+                        trip.start()
                         appState.setActive(trip)
+                        WidgetSync.update(trip: trip)
+                        lifecycleFeedback.toggle()
+                    }
+                case .inProgress:
+                    Button("完成行程", systemImage: "flag.checkered") {
+                        confirmComplete = true
+                    }
+                case .completed:
+                    Button("重新開啟行程", systemImage: "arrow.uturn.backward") {
+                        trip.reopen()
+                        appState.setActive(trip)
+                        WidgetSync.update(trip: trip)
+                        lifecycleFeedback.toggle()
                     }
                 }
                 Button("編輯行程", systemImage: "pencil") { showingEdit = true }
-                if trip.isClosed {
-                    Button("重新開啟行程", systemImage: "arrow.uturn.backward") {
-                        trip.isClosed = false
-                    }
-                } else {
-                    Button("結束行程", systemImage: "flag.checkered", role: .destructive) {
-                        confirmClose = true
-                    }
-                }
             }
         }
-        .navigationTitle(trip.name)
-        .navigationBarTitleDisplayMode(.inline)
-        .sheet(isPresented: $showingEdit) { TripFormView(trip: trip) }
-        .confirmationDialog(
-            "結束行程後會從「目前行程」移除，之後仍可重新開啟。",
-            isPresented: $confirmClose,
-            titleVisibility: .visible
-        ) {
-            Button("結束行程", role: .destructive) {
-                trip.isClosed = true
-            }
+        .listStyle(.insetGrouped)
+    }
+
+    private var statusDescription: String {
+        switch trip.lifecycleStatus {
+        case .upcoming:
+            trip.shouldPromptToStart() ? "已到出發日，可以開始行程。" : "等待出發；到出發日會在列表顯示快捷提示。"
+        case .inProgress:
+            trip.shouldPromptToComplete() ? "已到回程日，可以完成行程。" : "行程進行中。"
+        case .completed:
+            "行程已完成，清單與 Tips 仍可查看。"
         }
     }
 
@@ -134,42 +164,11 @@ struct TripDetailView: View {
         guard !items.isEmpty else { return "尚未產生清單" }
         return "已打包 \(items.filter(\.isPacked).count)／\(items.count) 項"
     }
-}
 
-private struct DetailDestinationRow: View {
-    let title: String
-    let subtitle: String
-    let symbol: String
-    let tint: Color
-
-    var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: symbol)
-                .foregroundStyle(tint)
-                .frame(width: 32, height: 32)
-                .background(tint.opacity(0.12), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(.body.weight(.semibold))
-                Text(subtitle)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-        }
-        .padding(.vertical, 3)
-        .accessibilityElement(children: .combine)
-    }
-}
-
-private struct TripRegulationsView: View {
-    let trip: Trip
-
-    var body: some View {
-        List {
-            ProhibitedSections(trip: trip, mode: .customs)
-            ProhibitedSections(trip: trip, mode: .aviation)
-        }
-        .navigationTitle("管制物品")
-        .navigationBarTitleDisplayMode(.inline)
+    private func completeTrip() {
+        trip.complete()
+        if isActive { appState.setActive(nil) }
+        WidgetSync.update(trip: appState.activeTrip(in: trips))
+        lifecycleFeedback.toggle()
     }
 }

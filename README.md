@@ -2,7 +2,7 @@
 
 > **出國前，先看懂海關風險，再開始打包。**
 
-聚焦兩件事的旅行助手 iOS App（SwiftUI + SwiftData，iOS 17+）：**行程 → 專屬打包清單＋當地 Tips**。繁體中文原生介面、資料留在裝置、零帳號。
+聚焦兩件事的旅行助手 iOS App（SwiftUI + SwiftData，iOS 17+）：**行程 → 專屬打包清單＋當地 Tips**。主畫面分成「行程／設定」，Checklist 與 Tips 整合在每趟行程內。繁體中文原生介面、資料留在裝置、零帳號。
 
 ## 亮點：「這個能帶嗎？」🐶
 
@@ -16,11 +16,11 @@
 
 ## 功能總覽
 
-| 分頁 | 內容 |
+| 入口 | 內容 |
 |---|---|
-| 行程 | 出發地＋目的地（東亞：台/日/韓，含城市）、日期；名稱自動命名；偏好設定隨時可改 |
-| 清單 | 依「目的地規定＋文化＋**即時天氣**＋**你的偏好**」四層規則生成，「因為是…」分組；前一晚模式、回程模式（防遺留）、分享清單 |
-| Tips | 「能帶嗎」查詢＋海關規定（去程/回程雙向）＋航空安檢＋城市文化（東京手扶梯靠左、大阪靠右） |
+| 行程 Tab | 未開始／進行中／已完成；日期到達時顯示開始或完成快捷提示；新增與管理行程 |
+| 設定 Tab | 編輯首次設定的年齡層、性別、同行組成與旅行經驗 |
+| 行程詳細頁 | 以「行程資訊／Checklist／Tips」切換；Checklist 含前一晚與回程模式，Tips 含「能帶嗎」、海關、安檢與城市文化 |
 
 **小旅犬 🐾**：浮動吉祥物，左右緣皆可停靠（拖曳吸附、點擊縮放），做 D-day 行前提醒（D-1「行動電源充飽了嗎？」）、天氣播報與查詢回答。
 
@@ -40,7 +40,7 @@
 
 ### 2. 建立行程：三步驟完成行前準備
 
-行程基本資訊 → 採納／取消推薦清單並加入自訂物品 → 閱讀去回程海關與航空安檢提醒。中途離開會保留草稿，完成後依日期自動分類為未開始、進行中或歷史行程。
+行程基本資訊 → 採納／取消推薦清單並加入自訂物品 → 閱讀去回程海關與航空安檢提醒。完成前資料只保留在建立畫面，放棄後不留下草稿；完成後先列為未開始，日期到達時由使用者手動開始或完成行程。
 
 ### 3. 清單：先知道天氣，再開始打包
 
@@ -65,7 +65,7 @@
 - Xcode 26+，開啟 `TravelGenius.xcodeproj`，scheme `TravelGenius`，Cmd+R
 - **Branch**：`focus`＝本聚焦版；`main`＝完整四模組版（含記帳、報帳匯出、醫療卡）
 - CLI 建置：`DEVELOPER_DIR=/Applications/Xcode.app xcodebuild -project TravelGenius.xcodeproj -scheme TravelGenius -destination 'platform=iOS Simulator,name=iPhone 17' build`
-- 開發用啟動引數：`-seedDemo`（示範行程）、`-resetOnboarding`、`-openPackTab` / `-openTipsTab`、`-checkItem 肉鬆`（log 印出能帶嗎判定）、`-mascotDockOnLeft YES`
+- 開發用啟動引數：`-seedDemo`（示範行程）、`-seedDemoDueToday`（今天出發的示範行程）、`-resetOnboarding`、`-openSettingsTab`、`-openPackTab` / `-openTipsTab`（行程詳細頁預設區段）、`-checkItem 肉鬆`（log 印出能帶嗎判定）、`-mascotDockOnLeft YES`
 - 靜態資料在 `TravelGenius/Resources/SeedData/*.json`（海關/安檢規則含 `aliases` 口語別名與 `sourceUrl`），直接編輯即可擴充
 - 實機安裝需在兩個 target 設定 Development Team 並註冊 App Group（`group.com.example.TravelGenius`）
 

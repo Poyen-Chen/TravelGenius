@@ -8,8 +8,7 @@ import Observation
 
 enum AppTab: Hashable {
     case trips
-    case checklist
-    case tips
+    case settings
 }
 
 @Observable
@@ -26,9 +25,6 @@ final class AppState {
             }
         }
     }
-
-    /// 詳細頁可請求切換頂層分頁；RootTabView 消費後會清空。
-    var requestedTab: AppTab?
 
     init() {
         activeTripID = UserDefaults.standard.string(forKey: Self.activeTripKey)
@@ -59,8 +55,4 @@ final class AppState {
         return true
     }
 
-    func open(_ tab: AppTab, for trip: Trip? = nil) {
-        if let trip { setActive(trip) }
-        requestedTab = tab
-    }
 }

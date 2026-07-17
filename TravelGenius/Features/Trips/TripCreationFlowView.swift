@@ -6,6 +6,13 @@
 import SwiftUI
 import SwiftData
 
+private struct CustomPackingDraft: Identifiable {
+    let id = UUID()
+    var name: String
+    var category: PackingCategory
+    var quantity: Int
+}
+
 /// 新版三步驟行程建立流程：基本資訊 → 推薦清單 → 海關提醒。
 struct TripCreationFlowView: View {
     private enum Step: Int, CaseIterable {
@@ -30,8 +37,6 @@ struct TripCreationFlowView: View {
         }
     }
 
-    let initialTrip: Trip?
-
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -48,28 +53,29 @@ struct TripCreationFlowView: View {
     @State private var endDate: Date
     @State private var recommendations: [PackingListGenerator.GeneratedItem] = []
     @State private var selectedRecommendationNames: Set<String> = []
+    @State private var customItems: [CustomPackingDraft] = []
     @State private var showingAddItem = false
+    @State private var showingDiscardConfirmation = false
     @State private var saveFeedback = false
 
-    init(trip: Trip? = nil) {
-        initialTrip = trip
+    init() {
         let arguments = ProcessInfo.processInfo.arguments
         let debugStep: Int? = arguments.firstIndex(of: "-createTripStep").flatMap { index in
             guard index + 1 < arguments.count else { return nil }
             return Int(arguments[index + 1])
         }
-        let defaultCountryCode = trip?.countryCode ?? "JP"
-        let defaultOriginCode = trip?.originCountryCode ?? "TW"
+        let defaultCountryCode = "JP"
+        let defaultOriginCode = "TW"
         let today = Calendar.current.startOfDay(for: .now)
-        _step = State(initialValue: Step(rawValue: trip?.draftCreationStep ?? debugStep ?? 1) ?? .basics)
-        _workingTrip = State(initialValue: trip)
-        _name = State(initialValue: trip?.name ?? "")
+        _step = State(initialValue: Step(rawValue: debugStep ?? 1) ?? .basics)
+        _workingTrip = State(initialValue: nil)
+        _name = State(initialValue: "")
         _countryCode = State(initialValue: defaultCountryCode)
-        _city = State(initialValue: trip?.city ?? StaticDataStore.shared.defaultCity(countryCode: defaultCountryCode)?.cityZh ?? "")
+        _city = State(initialValue: StaticDataStore.shared.defaultCity(countryCode: defaultCountryCode)?.cityZh ?? "")
         _originCountryCode = State(initialValue: defaultOriginCode)
-        _originCity = State(initialValue: trip?.originCity ?? StaticDataStore.shared.defaultCity(countryCode: defaultOriginCode)?.cityZh ?? "")
-        _startDate = State(initialValue: trip?.startDate ?? today)
-        _endDate = State(initialValue: trip?.endDate ?? Calendar.current.date(byAdding: .day, value: 4, to: today) ?? today)
+        _originCity = State(initialValue: StaticDataStore.shared.defaultCity(countryCode: defaultOriginCode)?.cityZh ?? "")
+        _startDate = State(initialValue: today)
+        _endDate = State(initialValue: Calendar.current.date(byAdding: .day, value: 4, to: today) ?? today)
     }
 
     private var availableCities: [City] {
@@ -88,12 +94,6 @@ struct TripCreationFlowView: View {
             to: Calendar.current.startOfDay(for: endDate)
         ).day ?? 0
         return "\(countryName)\(city.isEmpty ? "" : "・\(city)") \(max(days + 1, 1)) 天"
-    }
-
-    private var customItems: [PackingItem] {
-        (workingTrip?.packingItems ?? [])
-            .filter(\.isCustom)
-            .sorted { $0.sortIndex < $1.sortIndex }
     }
 
     var body: some View {
@@ -124,8 +124,7 @@ struct TripCreationFlowView: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("關閉") {
-                        persistDraftBeforeDismissal()
-                        dismiss()
+                        showingDiscardConfirmation = true
                     }
                 }
             }
@@ -133,9 +132,17 @@ struct TripCreationFlowView: View {
                 actionBar
             }
             .sheet(isPresented: $showingAddItem) {
-                if let workingTrip {
-                    AddPackingItemView(trip: workingTrip)
-                }
+                AddCustomPackingDraftView(items: $customItems)
+            }
+            .confirmationDialog(
+                "放棄建立這趟行程？",
+                isPresented: $showingDiscardConfirmation,
+                titleVisibility: .visible
+            ) {
+                Button("放棄建立", role: .destructive) { dismiss() }
+                Button("繼續編輯", role: .cancel) {}
+            } message: {
+                Text("行程尚未建立，離開後不會保留目前輸入。")
             }
             .sensoryFeedback(.success, trigger: saveFeedback)
             .onAppear {
@@ -143,9 +150,8 @@ struct TripCreationFlowView: View {
                     prepareRecommendations()
                 }
             }
-            .onDisappear(perform: persistDraftBeforeDismissal)
         }
-        .interactiveDismissDisabled(step != .basics)
+        .interactiveDismissDisabled()
     }
 
     private var basicsForm: some View {
@@ -263,9 +269,7 @@ struct TripCreationFlowView: View {
                     Label("\(item.name)\(item.quantity > 1 ? " ×\(item.quantity)" : "")", systemImage: item.category.symbolName)
                 }
                 .onDelete { offsets in
-                    for index in offsets {
-                        context.delete(customItems[index])
-                    }
+                    customItems.remove(atOffsets: offsets)
                 }
                 Button("新增自訂物品", systemImage: "plus.circle.fill") {
                     showingAddItem = true
@@ -323,13 +327,9 @@ struct TripCreationFlowView: View {
     private func advance() {
         switch step {
         case .basics:
-            guard let trip = saveBasics(asDraft: true) else { return }
-            trip.draftCreationStep = Step.recommendations.rawValue
             prepareRecommendations()
             step = .recommendations
         case .recommendations:
-            persistRecommendations()
-            workingTrip?.draftCreationStep = Step.travelRules.rawValue
             step = .travelRules
         case .travelRules:
             finishCreation()
@@ -341,17 +341,13 @@ struct TripCreationFlowView: View {
         case .basics:
             break
         case .recommendations:
-            persistRecommendations()
-            workingTrip?.draftCreationStep = Step.basics.rawValue
             step = .basics
         case .travelRules:
-            workingTrip?.draftCreationStep = Step.recommendations.rawValue
             step = .recommendations
         }
     }
 
-    @discardableResult
-    private func saveBasics(asDraft: Bool) -> Trip? {
+    private func prepareWorkingTrip() -> Trip {
         let resolvedName = name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? automaticName : name.trimmingCharacters(in: .whitespacesAndNewlines)
         let trip: Trip
         if let workingTrip {
@@ -368,7 +364,6 @@ struct TripCreationFlowView: View {
                 totalBudget: 0,
                 tripType: .leisure
             )
-            context.insert(trip)
             workingTrip = trip
         }
         trip.name = resolvedName
@@ -378,29 +373,25 @@ struct TripCreationFlowView: View {
         trip.originCity = originCity
         trip.startDate = startDate
         trip.endDate = endDate
-        trip.isDraft = asDraft
-        try? context.save()
+        trip.localCurrencyCode = StaticDataStore.shared.country(code: countryCode)?.currencyCode ?? "TWD"
+        trip.isDraft = false
         return trip
     }
 
     private func prepareRecommendations() {
-        guard let trip = workingTrip ?? saveBasics(asDraft: true) else { return }
+        let previouslyExcluded = Set(recommendations.map(\.name)).subtracting(selectedRecommendationNames)
+        let trip = prepareWorkingTrip()
         recommendations = PackingListGenerator.generate(for: trip)
-        let excluded = trip.excludedPackingNames
-        selectedRecommendationNames = Set(recommendations.map(\.name)).subtracting(excluded)
+        selectedRecommendationNames = Set(recommendations.map(\.name)).subtracting(previouslyExcluded)
     }
 
-    private func persistRecommendations() {
-        guard let trip = workingTrip else { return }
-        let allNames = Set(recommendations.map(\.name))
-        trip.excludedPackingNames = allNames.subtracting(selectedRecommendationNames)
+    private func finishCreation() {
+        let trip = prepareWorkingTrip()
+        trip.excludedPackingNames = Set(recommendations.map(\.name)).subtracting(selectedRecommendationNames)
+        trip.hasReviewedTravelRules = true
+        context.insert(trip)
 
-        let existingAutomatic = (trip.packingItems ?? []).filter { !$0.isCustom }
-        for item in existingAutomatic where !selectedRecommendationNames.contains(item.name) {
-            context.delete(item)
-        }
-        let existingNames = Set(existingAutomatic.map(\.name))
-        for item in recommendations where selectedRecommendationNames.contains(item.name) && !existingNames.contains(item.name) {
+        for item in recommendations where selectedRecommendationNames.contains(item.name) {
             context.insert(PackingItem(
                 name: item.name,
                 category: item.category,
@@ -411,29 +402,63 @@ struct TripCreationFlowView: View {
                 trip: trip
             ))
         }
-        try? context.save()
-    }
-
-    private func finishCreation() {
-        guard let trip = saveBasics(asDraft: false) else { return }
-        persistRecommendations()
-        trip.isDraft = false
-        trip.hasReviewedTravelRules = true
-        trip.draftCreationStep = Step.travelRules.rawValue
+        for (index, item) in customItems.enumerated() {
+            context.insert(PackingItem(
+                name: item.name,
+                category: item.category,
+                reasonKey: PackingListGenerator.customReason,
+                quantity: item.quantity,
+                isCustom: true,
+                sortIndex: PackingListGenerator.customSortIndex + index,
+                trip: trip
+            ))
+        }
         appState.setActive(trip)
         WidgetSync.update(trip: trip)
         try? context.save()
         saveFeedback.toggle()
         dismiss()
     }
+}
 
-    private func persistDraftBeforeDismissal() {
-        guard let workingTrip, workingTrip.isDraft else { return }
-        _ = saveBasics(asDraft: true)
-        if step != .basics {
-            persistRecommendations()
+private struct AddCustomPackingDraftView: View {
+    @Binding var items: [CustomPackingDraft]
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var name = ""
+    @State private var category: PackingCategory = .other
+    @State private var quantity = 1
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                TextField("物品名稱", text: $name)
+                Picker("分類", selection: $category) {
+                    ForEach(PackingCategory.allCases) { category in
+                        Label(category.label, systemImage: category.symbolName).tag(category)
+                    }
+                }
+                Stepper("數量：\(quantity)", value: $quantity, in: 1...99)
+            }
+            .navigationTitle("新增物品")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("取消") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("加入") {
+                        items.append(.init(
+                            name: name.trimmingCharacters(in: .whitespacesAndNewlines),
+                            category: category,
+                            quantity: quantity
+                        ))
+                        dismiss()
+                    }
+                    .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                }
+            }
         }
-        workingTrip.draftCreationStep = step.rawValue
-        try? context.save()
+        .presentationDetents([.medium])
     }
 }

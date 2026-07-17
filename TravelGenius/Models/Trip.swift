@@ -25,28 +25,25 @@ enum TripType: String, Codable, CaseIterable, Identifiable {
 }
 
 enum TripLifecycleStatus: String, CaseIterable, Identifiable {
-    case draft
     case upcoming
     case inProgress
-    case history
+    case completed
 
     var id: String { rawValue }
 
     var label: String {
         switch self {
-        case .draft: "草稿"
         case .upcoming: "未開始"
         case .inProgress: "進行中"
-        case .history: "歷史行程"
+        case .completed: "已完成"
         }
     }
 
     var symbolName: String {
         switch self {
-        case .draft: "doc.badge.clock"
         case .upcoming: "calendar"
         case .inProgress: "airplane.departure"
-        case .history: "clock.arrow.circlepath"
+        case .completed: "checkmark.circle"
         }
     }
 }
@@ -68,10 +65,14 @@ final class Trip {
     var totalBudget: Decimal = 0
     var tripTypeRaw: String = TripType.leisure.rawValue
     var isClosed: Bool = false
-    /// 建立流程尚未完成；草稿不會成為「目前行程」。
+    /// 舊版相容欄位。新版建立流程不再產生草稿。
     var isDraft: Bool = false
-    /// 草稿停留的建立步驟（1...3）。
+    /// 舊版相容欄位。
     var draftCreationStep: Int = 1
+    /// 使用者主動按下「開始行程」的時間；日期本身不會自動改變狀態。
+    var startedAt: Date?
+    /// 使用者主動按下「完成行程」的時間。
+    var completedAt: Date?
     /// 使用者在建立流程中已看過海關與出入境提醒。
     var hasReviewedTravelRules: Bool = false
     /// 使用者主動取消的自動推薦，避免重新產生清單時又被加入。
@@ -110,18 +111,42 @@ final class Trip {
     }
 
     var lifecycleStatus: TripLifecycleStatus {
-        lifecycleStatus(relativeTo: .now)
+        if completedAt != nil || isClosed { return .completed }
+        if startedAt != nil { return .inProgress }
+        return .upcoming
     }
 
     func lifecycleStatus(relativeTo date: Date) -> TripLifecycleStatus {
-        if isDraft { return .draft }
-        let calendar = Calendar.current
-        let today = calendar.startOfDay(for: date)
-        let start = calendar.startOfDay(for: startDate)
-        let end = calendar.startOfDay(for: endDate)
-        if isClosed || today > end { return .history }
-        if today < start { return .upcoming }
-        return .inProgress
+        lifecycleStatus
+    }
+
+    func shouldPromptToStart(relativeTo date: Date = .now) -> Bool {
+        guard lifecycleStatus == .upcoming else { return false }
+        return Calendar.current.startOfDay(for: date) >= Calendar.current.startOfDay(for: startDate)
+    }
+
+    func shouldPromptToComplete(relativeTo date: Date = .now) -> Bool {
+        guard lifecycleStatus == .inProgress else { return false }
+        return Calendar.current.startOfDay(for: date) >= Calendar.current.startOfDay(for: endDate)
+    }
+
+    func start(relativeTo date: Date = .now) {
+        startedAt = date
+        completedAt = nil
+        isClosed = false
+        isDraft = false
+    }
+
+    func complete(relativeTo date: Date = .now) {
+        if startedAt == nil { startedAt = date }
+        completedAt = date
+        isClosed = true
+    }
+
+    func reopen(relativeTo date: Date = .now) {
+        startedAt = date
+        completedAt = nil
+        isClosed = false
     }
 
     var excludedPackingNames: Set<String> {
