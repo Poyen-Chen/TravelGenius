@@ -19,42 +19,57 @@ struct FloatingMascotDock: View {
     @AppStorage("mascotDockY") private var storedY: Double = 0.6
     /// 停靠側（跨啟動記憶）
     @AppStorage("mascotDockOnLeft") private var dockOnLeft: Bool = false
-    @GestureState private var dragOffset: CGSize = .zero
+    /// 拖曳中的即時位移（不經動畫，純跟手）
+    @State private var dragTranslation: CGSize = .zero
+    @State private var isDragging = false
 
     var body: some View {
         GeometryReader { proxy in
             let topInset: CGFloat = 70
             let bottomInset: CGFloat = 120
             let travel = max(proxy.size.height - topInset - bottomInset, 1)
-            let y = min(max(topInset + travel * storedY + dragOffset.height, topInset), topInset + travel)
+            let y = min(max(topInset + travel * storedY + dragTranslation.height, topInset), topInset + travel)
             // 縮起時狗頭半露出停靠側；拖曳中跟著手指水平移動
             let restingX: CGFloat = mascot.isExpanded ? (dockOnLeft ? 6 : -6) : (dockOnLeft ? -28 : 28)
-            let x = restingX + dragOffset.width
+            let x = restingX + dragTranslation.width
 
             dock
                 .contentShape(Rectangle())
-                .onTapGesture {
-                    let willExpand = !mascot.isExpanded
-                    withAnimation(reduceMotion ? nil : .spring(duration: 0.35)) {
-                        mascot.isExpanded.toggle()
-                    }
-                    if willExpand {
-                        onExpand?()
-                    }
-                }
+                // 單一手勢同時處理點擊與拖曳：minimumDistance 0 → 起手零延遲、
+                // 不需等待 tap/drag 消歧義；放開時依移動距離判斷是點擊還是拖曳
                 .gesture(
-                    DragGesture()
-                        .updating($dragOffset) { value, state, _ in
-                            state = value.translation
+                    DragGesture(minimumDistance: 0)
+                        .onChanged { value in
+                            if !isDragging,
+                               hypot(value.translation.width, value.translation.height) > 4 {
+                                isDragging = true
+                            }
+                            if isDragging {
+                                dragTranslation = value.translation
+                            }
                         }
                         .onEnded { value in
+                            defer { isDragging = false }
+                            guard isDragging else {
+                                // 視為點擊：切換展開／縮起
+                                let willExpand = !mascot.isExpanded
+                                withAnimation(reduceMotion ? nil : .spring(duration: 0.35)) {
+                                    mascot.isExpanded.toggle()
+                                }
+                                if willExpand {
+                                    onExpand?()
+                                }
+                                return
+                            }
+                            // 落點：更新記憶位置（基準位置與位移互相抵銷，不跳動），
+                            // 超出邊界或換側的部分以 spring 吸附
                             let landedY = topInset + travel * storedY + value.translation.height
                             storedY = Double(min(max((landedY - topInset) / travel, 0), 1))
-                            // 依放開位置吸附較近的一側
                             let anchorX = dockOnLeft ? CGFloat(60) : proxy.size.width - 60
                             let landedX = anchorX + value.translation.width
                             withAnimation(reduceMotion ? nil : .spring(duration: 0.35)) {
                                 dockOnLeft = landedX < proxy.size.width / 2
+                                dragTranslation = .zero
                             }
                         }
                 )
