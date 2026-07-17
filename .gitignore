@@ -17,3 +17,6 @@ DerivedData/
 *.ipa
 *.dSYM.zip
 *.dSYM
+
+# API secrets（勿提交）
+TravelGenius/Resources/Secrets.plist

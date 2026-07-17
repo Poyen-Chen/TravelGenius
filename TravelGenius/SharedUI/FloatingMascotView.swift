@@ -9,6 +9,9 @@
 import SwiftUI
 
 struct FloatingMascotDock: View {
+    /// 由收合點開時呼叫（用來換一則冷知識）
+    var onExpand: (() -> Void)? = nil
+
     @Environment(MascotState.self) private var mascot
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -31,8 +34,12 @@ struct FloatingMascotDock: View {
             dock
                 .contentShape(Rectangle())
                 .onTapGesture {
+                    let willExpand = !mascot.isExpanded
                     withAnimation(reduceMotion ? nil : .spring(duration: 0.35)) {
                         mascot.isExpanded.toggle()
+                    }
+                    if willExpand {
+                        onExpand?()
                     }
                 }
                 .gesture(

@@ -90,7 +90,7 @@ struct RootTabView: View {
             }
         }
         .overlay {
-            FloatingMascotDock()
+            FloatingMascotDock(onExpand: speakTrivia)
         }
         .onAppear {
             clampSelectionToStage()
@@ -130,7 +130,8 @@ struct RootTabView: View {
         }
     }
 
-    /// 依目前行程狀態更新小史萊姆的預設情境訊息（不強制展開）
+    /// 依目前行程狀態更新小史萊姆訊息：
+    /// 警戒類提醒（出發日、回程日、D-1 充電）照常顯示，其餘時候講旅遊冷知識
     private func refreshMascotMessage() {
         guard let trip = activeTrip else {
             mascot.message = "先建立一個行程，我就開始幫你倒數、盯行李！"
@@ -141,5 +142,26 @@ struct RootTabView: View {
         let contextual = MascotMessenger.message(for: trip, unpackedCount: unpacked, weather: nil)
         mascot.message = contextual.text
         mascot.expression = contextual.expression
+
+        if contextual.expression != .alert {
+            Task {
+                let fact = await TriviaService.nextFact(for: trip)
+                // 期間若有更重要的話（天氣警報、查詢結果）就不蓋掉
+                if mascot.expression != .alert {
+                    mascot.message = "冷知識：\(fact)"
+                    mascot.expression = .happy
+                }
+            }
+        }
+    }
+
+    /// 點開小史萊姆 → 換下一則冷知識
+    private func speakTrivia() {
+        guard let trip = activeTrip else { return }
+        Task {
+            let fact = await TriviaService.nextFact(for: trip)
+            mascot.message = "冷知識：\(fact)"
+            mascot.expression = .happy
+        }
     }
 }
