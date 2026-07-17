@@ -2,7 +2,7 @@
 //  MascotMessenger.swift
 //  TravelGenius
 //
-//  小旅犬的情境訊息：依距出發天數、打包進度與天氣挑一句話（D-day 行前提醒）。
+//  小史萊姆的情境訊息：依距出發天數、打包進度與天氣挑一句話（D-day 行前提醒）。
 //
 
 import Foundation
@@ -36,7 +36,7 @@ enum MascotMessenger {
             return ("全部打包完成，太可靠了！出發前想到什麼隨時回來加", .happy)
         }
         if daysToStart == 1 {
-            return ("明天就出發！行動電源充飽了嗎？睡前開「前一晚模式」掃一遍", .alert)
+            return ("明天就出發！行動電源充飽了嗎？睡前把清單掃一遍", .alert)
         }
         if daysToStart <= 3 {
             if let weather, weather.rainDays > 0 {

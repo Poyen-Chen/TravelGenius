@@ -2,13 +2,16 @@
 //  FloatingMascotView.swift
 //  TravelGenius
 //
-//  浮動小史萊姆：固定在右下角、底部分頁列上方；點一下可顯示提醒，
-//  但不支援拖曳。對話泡泡不攔截下方 UI 操作。
+//  浮動小史萊姆固定在右下角、底部分頁列上方；點一下可顯示提醒與換冷知識，
+//  不支援拖曳。對話泡泡不攔截下方 UI 操作。
 //
 
 import SwiftUI
 
 struct FloatingMascotDock: View {
+    /// Jelly 展開時呼叫，用來換下一則冷知識。
+    var onExpand: (() -> Void)? = nil
+
     @Environment(MascotState.self) private var mascot
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -33,9 +36,11 @@ struct FloatingMascotDock: View {
             }
 
             Button {
+                let willExpand = !mascot.isExpanded
                 withAnimation(reduceMotion ? nil : .spring(duration: 0.35)) {
                     mascot.isExpanded.toggle()
                 }
+                if willExpand { onExpand?() }
             } label: {
                 mascotHead
             }
@@ -43,11 +48,11 @@ struct FloatingMascotDock: View {
             .accessibilityLabel(mascot.isExpanded ? "Jelly：\(mascot.message)" : "Jelly")
             .accessibilityHint(mascot.isExpanded ? "點一下隱藏提醒" : "點一下顯示提醒")
         }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
-            .padding(.trailing, 16)
-            // Keeps the mascot above the tab bar and clear of its controls.
-            .padding(.bottom, 82)
-            .animation(reduceMotion ? nil : .spring(duration: 0.35), value: mascot.isExpanded)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
+        .padding(.trailing, 16)
+        // Keeps the mascot above the tab bar and clear of its controls.
+        .padding(.bottom, 82)
+        .animation(reduceMotion ? nil : .spring(duration: 0.35), value: mascot.isExpanded)
     }
 
     private var mascotHead: some View {

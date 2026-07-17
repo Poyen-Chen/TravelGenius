@@ -3,7 +3,7 @@
 //  TravelGenius
 //
 //  物品 checklist：吉祥物情境提醒、偏好＋天氣客製清單、
-//  前一晚模式與回程模式。海關與文化內容在 Tips 分頁。
+//  回程模式防遺留。海關與文化內容在 Tips 分頁。
 //
 
 import SwiftUI
@@ -15,7 +15,6 @@ struct PackingListView: View {
     @Environment(\.modelContext) private var context
     @Environment(MascotState.self) private var mascot
     @State private var showingAddItem = false
-    @State private var showingNightMode = false
     @State private var showingReturnMode = false
     @State private var confirmReturnMode = false
     /// 進入回程模式前的已打包項目快照（誤觸時自動還原用）
@@ -45,7 +44,6 @@ struct PackingListView: View {
         }
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
-                Button("前一晚模式", systemImage: "moon.stars") { showingNightMode = true }
                 Menu {
                     Button("新增物品", systemImage: "plus") { showingAddItem = true }
                     Button("重新產生清單", systemImage: "arrow.clockwise") {
@@ -65,9 +63,8 @@ struct PackingListView: View {
             }
         }
         .sheet(isPresented: $showingAddItem) { AddPackingItemView(trip: trip) }
-        .fullScreenCover(isPresented: $showingNightMode) { NightBeforeModeView(trip: trip, mode: .nightBefore) }
         .fullScreenCover(isPresented: $showingReturnMode, onDismiss: restoreIfUntouched) {
-            NightBeforeModeView(trip: trip, mode: .returnTrip)
+            ReturnModeView(trip: trip)
         }
         .confirmationDialog(
             "回程模式會將全部項目重設為未打包，用同一份清單反向檢查，避免把東西留在住宿處。",
@@ -88,7 +85,7 @@ struct PackingListView: View {
         }
     }
 
-    /// 抓目的地天氣，成功後以天氣標籤重新合併清單（離線自動退回月份規則），並讓小旅犬播報
+    /// 抓目的地天氣，成功後以天氣標籤重新合併清單（離線自動退回月份規則），並讓小史萊姆播報
     private func refreshWeather() async {
         guard let summary = await WeatherService.fetch(for: trip) else { return }
         weather = summary

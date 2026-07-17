@@ -2,23 +2,37 @@
 //  PreferenceSettingsView.swift
 //  TravelGenius
 //
-//  修改四項使用者偏好；儲存後重新合併目前行程的清單，個人化立即可見。
+//  五項使用者偏好（含行李偏好）；變更後重新合併目前行程的清單，個人化立即可見。
+//  embedded = true 時作為分頁使用（即時儲存、無取消/儲存鈕）。
 //
 
 import SwiftUI
 import SwiftData
 
 struct PreferenceSettingsView: View {
+    var embedded = false
+
     @Environment(\.modelContext) private var context
+    @Environment(\.dismiss) private var dismiss
     @Environment(AppState.self) private var appState
     @Query private var trips: [Trip]
 
     @State private var preferences = UserPreferences.load()
-    @State private var saveFeedback = false
+    @AppStorage(AppAppearance.storageKey) private var appearanceRaw = AppAppearance.system.rawValue
 
     var body: some View {
         NavigationStack {
             Form {
+                Section("外觀") {
+                    Picker("外觀", selection: $appearanceRaw) {
+                        ForEach(AppAppearance.allCases) { option in
+                            Text(option.label).tag(option.rawValue)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+                }
+
                 Section {
                     Picker("年齡層", selection: $preferences.ageBand) {
                         ForEach(AgeBand.allCases) { Text($0.label).tag($0) }
@@ -32,31 +46,57 @@ struct PreferenceSettingsView: View {
                     Picker("旅行經驗", selection: $preferences.experience) {
                         ForEach(TravelExperience.allCases) { Text($0.label).tag($0) }
                     }
-                } header: {
-                    Text("基本資料")
-                } footer: {
-                    Text("偏好會直接影響清單內容（例如家庭出遊會加入兒童用品），儲存後立即重新客製目前行程的清單。")
                 }
 
                 Section {
-                    Button("儲存設定", systemImage: "checkmark.circle.fill") {
-                        save()
+                    Picker("行李偏好", selection: $preferences.packingStyle) {
+                        ForEach(PackingStyle.allCases) { Text($0.label).tag($0) }
                     }
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .font(.headline)
+                    .pickerStyle(.segmented)
+                    Text(preferences.packingStyle.detail)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                } header: {
+                    Text("行李偏好")
+                } footer: {
+                    Text("偏好會直接影響清單內容（例如輕便會略過加分項目、家庭出遊會加入兒童用品）\(embedded ? "，變更立即生效。" : "，儲存後立即重新客製目前行程的清單。")")
                 }
             }
-            .navigationTitle("設定")
-            .sensoryFeedback(.success, trigger: saveFeedback)
+            .navigationTitle("偏好設定")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                if !embedded {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("取消") { dismiss() }
+                    }
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("儲存", action: saveAndSync)
+                    }
+                }
+            }
+            .onChange(of: preferences.ageBand) { autoSaveIfEmbedded() }
+            .onChange(of: preferences.gender) { autoSaveIfEmbedded() }
+            .onChange(of: preferences.party) { autoSaveIfEmbedded() }
+            .onChange(of: preferences.experience) { autoSaveIfEmbedded() }
+            .onChange(of: preferences.packingStyle) { autoSaveIfEmbedded() }
         }
     }
 
-    private func save() {
+    private func autoSaveIfEmbedded() {
+        guard embedded else { return }
+        applyPreferences()
+    }
+
+    private func saveAndSync() {
+        applyPreferences()
+        dismiss()
+    }
+
+    private func applyPreferences() {
         preferences.save()
         if let trip = appState.activeTrip(in: trips),
            !(trip.packingItems ?? []).isEmpty {
             PackingListGenerator.sync(trip: trip, context: context, preferences: preferences)
         }
-        saveFeedback.toggle()
     }
 }

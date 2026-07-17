@@ -40,10 +40,13 @@ enum PackingListGenerator {
                 weatherTags: weatherTags
             ) else { continue }
             for (itemIndex, item) in rule.items.enumerated() {
+                // 輕便打包：略過「完整才帶」的加分項目
+                if preferences.packingStyle == .light && item.fullOnly == true { continue }
                 // 同名項目只取第一次出現（例如夏季與換季都有摺疊傘）
                 guard !seenNames.contains(item.nameZh) else { continue }
                 seenNames.insert(item.nameZh)
-                let quantity = item.perDay == true ? min(trip.totalDays, 7) : (item.quantity ?? 1)
+                let perDayCap = preferences.packingStyle == .light ? 4 : 7
+                let quantity = item.perDay == true ? min(trip.totalDays, perDayCap) : (item.quantity ?? 1)
                 results.append(GeneratedItem(
                     name: item.nameZh,
                     category: PackingCategory(rawValue: item.category) ?? .other,
@@ -53,6 +56,24 @@ enum PackingListGenerator {
                 ))
             }
         }
+
+        // 插座轉接頭：比對出發地與目的地的插座規格，不相容才建議帶
+        // （台灣→日本同為 Type-A/B 就不會出現）
+        let store = StaticDataStore.shared
+        if let destination = store.country(code: trip.countryCode),
+           let origin = store.country(code: trip.originCountryCode),
+           Set(destination.plugTypes).isDisjoint(with: origin.plugTypes) {
+            let types = destination.plugTypes.joined(separator: "/")
+            let originName = origin.nameZh
+            results.append(GeneratedItem(
+                name: "插座轉接頭（當地 Type-\(types)）",
+                category: .electronics,
+                quantity: 1,
+                reason: "因為插座規格與\(originName)不同",
+                sortIndex: 90
+            ))
+        }
+
         return results
     }
 

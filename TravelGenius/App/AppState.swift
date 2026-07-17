@@ -8,7 +8,9 @@ import Observation
 
 enum AppTab: Hashable {
     case trips
-    case settings
+    case preferences
+    case checklist
+    case tips
 }
 
 @Observable
@@ -25,6 +27,19 @@ final class AppState {
             }
         }
     }
+
+    /// 詳細頁可請求切換頂層分頁；RootTabView 消費後會清空。
+    var requestedTab: AppTab?
+
+    /// 本次 session 是否已進入旅行模式（清單＋Tips）。
+    /// 不跨啟動保存 — 每次冷啟動都從「行程」頁開始；開發引數可直接跳轉。
+    var hasEnteredTrip: Bool = {
+        let arguments = ProcessInfo.processInfo.arguments
+        return arguments.contains("-openPackTab")
+            || arguments.contains("-openTipsTab")
+            || arguments.contains("-showProhibited")
+            || arguments.contains("-showEtiquette")
+    }()
 
     init() {
         activeTripID = UserDefaults.standard.string(forKey: Self.activeTripKey)
@@ -47,6 +62,10 @@ final class AppState {
 
     func setActive(_ trip: Trip?) {
         activeTripID = trip?.id.uuidString
+        // 明確選定／建立行程 → 本次 session 進入旅行模式
+        if trip != nil {
+            hasEnteredTrip = true
+        }
     }
 
     func consumeCreateTripLaunchRequest() -> Bool {
@@ -55,4 +74,8 @@ final class AppState {
         return true
     }
 
+    func open(_ tab: AppTab, for trip: Trip? = nil) {
+        if let trip { setActive(trip) }
+        requestedTab = tab
+    }
 }

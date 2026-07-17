@@ -157,7 +157,7 @@ struct TipsRootView: View {
 
     private func bubbleText(for verdict: BringVerdict) -> String {
         switch verdict.kind {
-        case .banned: "汪！這個不能帶 — \(verdict.matchedName)"
+        case .banned: "噗！這個不能帶 — \(verdict.matchedName)"
         case .permit: "要先申請許可才行 — \(verdict.matchedName)"
         case .declare: "可以帶，但要記得申報 — \(verdict.matchedName)"
         case .carryOnOnly: "只能隨身、不能托運 — \(verdict.matchedName)"

@@ -2,7 +2,7 @@
 //  MascotState.swift
 //  TravelGenius
 //
-//  浮動小旅犬的共享狀態：各畫面（情境提醒、能帶嗎查詢）把訊息寫進來，
+//  浮動小史萊姆的共享狀態：各畫面（情境提醒、能帶嗎查詢）把訊息寫進來，
 //  右緣浮動 dock 讀取顯示。
 //
 
@@ -11,7 +11,7 @@ import Observation
 
 @Observable
 final class MascotState {
-    var message: String = "嗨！我是小史萊姆！"
+    var message: String = "嗨！我是小史萊姆 🐾"
     var expression: MascotExpression = .normal
     var isExpanded: Bool = false
 

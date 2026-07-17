@@ -70,7 +70,13 @@ enum CanIBringService {
 
         func customsMatches(countryCode: String, context: String) {
             for item in store.prohibitedItems(countryCode: countryCode)
-            where matches(query: normalized, name: item.itemZh, aliases: item.aliases) {
+            where matches(
+                query: normalized,
+                name: item.itemZh,
+                aliases: item.aliases,
+                keywords: item.keywords,
+                exclusions: item.exclusions
+            ) {
                 verdicts.append(BringVerdict(
                     kind: kind(for: item.severity),
                     matchedName: item.itemZh,
@@ -118,13 +124,39 @@ enum CanIBringService {
         return Array(verdicts.sorted { $0.kind.rawValue < $1.kind.rawValue }.prefix(3))
     }
 
-    /// 雙向包含比對：查詢詞含規則名（「日本的感冒藥」）或規則名/別名含查詢詞（「肉」不算，至少 2 字）
-    private static func matches(query: String, name: String, aliases: [String]?) -> Bool {
+    /// 異體字正規化：讓「電子菸」「臺灣」等寫法也能命中
+    private static func canonicalize(_ text: String) -> String {
+        text.lowercased()
+            .replacingOccurrences(of: "菸", with: "煙")
+            .replacingOccurrences(of: "臺", with: "台")
+            .replacingOccurrences(of: "裏", with: "裡")
+    }
+
+    /// 三層比對：
+    /// 1. 別名雙向包含（「日本的感冒藥」⇋「感冒藥」，查詢至少 2 字）
+    /// 2. 語意關鍵字（「肉絲」含「肉」→ 肉類製品），排除詞優先（「肉桂」不是肉品）
+    private static func matches(
+        query: String,
+        name: String,
+        aliases: [String]?,
+        keywords: [String]? = nil,
+        exclusions: [String]? = nil
+    ) -> Bool {
+        let query = canonicalize(query)
+
+        if let exclusions, exclusions.contains(where: { query.contains(canonicalize($0)) }) {
+            return false
+        }
+
         let candidates = [name] + (aliases ?? [])
         for candidate in candidates {
-            let lowered = candidate.lowercased()
+            let lowered = canonicalize(candidate)
             if query.contains(lowered) { return true }
             if query.count >= 2 && lowered.contains(query) { return true }
+        }
+
+        if let keywords, keywords.contains(where: { query.contains(canonicalize($0)) }) {
+            return true
         }
         return false
     }
