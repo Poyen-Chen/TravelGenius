@@ -68,9 +68,6 @@ struct TripListView: View {
             .navigationTitle("行程")
             .toolbar {
                 ToolbarItemGroup(placement: .primaryAction) {
-                    Button("基本設定", systemImage: "person.crop.circle") {
-                        presentedSheet = .preferences
-                    }
                     Button("新增行程", systemImage: "plus") {
                         presentedSheet = .create
                     }

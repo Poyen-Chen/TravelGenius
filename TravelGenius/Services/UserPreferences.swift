@@ -89,16 +89,39 @@ enum TravelExperience: String, CaseIterable, Identifiable {
     }
 }
 
+enum PackingStyle: String, CaseIterable, Identifiable {
+    case light
+    case full
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .light: "輕便"
+        case .full: "完整"
+        }
+    }
+
+    var detail: String {
+        switch self {
+        case .light: "只帶必需品，行李越輕越好"
+        case .full: "寧可多帶，不想到了才缺東西"
+        }
+    }
+}
+
 struct UserPreferences {
     var ageBand: AgeBand
     var gender: GenderPreference
     var party: TravelParty
     var experience: TravelExperience
+    var packingStyle: PackingStyle
 
     static let ageKey = "pref.ageBand"
     static let genderKey = "pref.gender"
     static let partyKey = "pref.party"
     static let experienceKey = "pref.experience"
+    static let packingStyleKey = "pref.packingStyle"
 
     static func load() -> UserPreferences {
         let defaults = UserDefaults.standard
@@ -106,7 +129,8 @@ struct UserPreferences {
             ageBand: AgeBand(rawValue: defaults.string(forKey: ageKey) ?? "") ?? .adult,
             gender: GenderPreference(rawValue: defaults.string(forKey: genderKey) ?? "") ?? .undisclosed,
             party: TravelParty(rawValue: defaults.string(forKey: partyKey) ?? "") ?? .solo,
-            experience: TravelExperience(rawValue: defaults.string(forKey: experienceKey) ?? "") ?? .some
+            experience: TravelExperience(rawValue: defaults.string(forKey: experienceKey) ?? "") ?? .some,
+            packingStyle: PackingStyle(rawValue: defaults.string(forKey: packingStyleKey) ?? "") ?? .full
         )
     }
 
@@ -116,5 +140,6 @@ struct UserPreferences {
         defaults.set(gender.rawValue, forKey: Self.genderKey)
         defaults.set(party.rawValue, forKey: Self.partyKey)
         defaults.set(experience.rawValue, forKey: Self.experienceKey)
+        defaults.set(packingStyle.rawValue, forKey: Self.packingStyleKey)
     }
 }

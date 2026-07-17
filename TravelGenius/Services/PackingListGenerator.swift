@@ -40,10 +40,13 @@ enum PackingListGenerator {
                 weatherTags: weatherTags
             ) else { continue }
             for (itemIndex, item) in rule.items.enumerated() {
+                // 輕便打包：略過「完整才帶」的加分項目
+                if preferences.packingStyle == .light && item.fullOnly == true { continue }
                 // 同名項目只取第一次出現（例如夏季與換季都有摺疊傘）
                 guard !seenNames.contains(item.nameZh) else { continue }
                 seenNames.insert(item.nameZh)
-                let quantity = item.perDay == true ? min(trip.totalDays, 7) : (item.quantity ?? 1)
+                let perDayCap = preferences.packingStyle == .light ? 4 : 7
+                let quantity = item.perDay == true ? min(trip.totalDays, perDayCap) : (item.quantity ?? 1)
                 results.append(GeneratedItem(
                     name: item.nameZh,
                     category: PackingCategory(rawValue: item.category) ?? .other,

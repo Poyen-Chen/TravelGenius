@@ -8,6 +8,7 @@ import Observation
 
 enum AppTab: Hashable {
     case trips
+    case preferences
     case checklist
     case tips
 }

@@ -15,6 +15,7 @@ struct OnboardingView: View {
         case gender
         case party
         case experience
+        case packingStyle
     }
 
     @State private var step: Step = .welcome
@@ -22,6 +23,7 @@ struct OnboardingView: View {
     @State private var gender: GenderPreference = .undisclosed
     @State private var party: TravelParty = .solo
     @State private var experience: TravelExperience = .some
+    @State private var packingStyle: PackingStyle = .full
 
     private var progress: Double {
         Double(step.rawValue) / Double(Step.allCases.count - 1)
@@ -77,6 +79,15 @@ struct OnboardingView: View {
                         options: TravelExperience.allCases,
                         selection: $experience,
                         label: { $0.label },
+                        next: { step = .packingStyle }
+                    )
+                case .packingStyle:
+                    preferenceStep(
+                        title: "你的行李風格是？",
+                        subtitle: "輕便會略過加分項目、減少衣物數量；完整則寧多勿缺。",
+                        options: PackingStyle.allCases,
+                        selection: $packingStyle,
+                        label: { "\($0.label) — \($0.detail)" },
                         buttonTitle: "完成基本設定",
                         next: finish
                     )
@@ -176,7 +187,8 @@ struct OnboardingView: View {
             ageBand: ageBand,
             gender: gender,
             party: party,
-            experience: experience
+            experience: experience,
+            packingStyle: packingStyle
         ).save()
         onComplete()
     }

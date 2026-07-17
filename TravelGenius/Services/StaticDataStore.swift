@@ -58,6 +58,8 @@ struct PackingRule: Codable {
         let category: String
         let quantity: Int?
         let perDay: Bool?
+        /// true = 僅「完整打包」風格納入（輕便風格略過）
+        let fullOnly: Bool?
     }
 
     let layer: String
@@ -125,6 +127,10 @@ struct ProhibitedItem: Codable, Identifiable {
     let sourceUrl: String?
     /// 「能帶嗎」查詢用的口語同義詞（肉鬆、香腸 → 肉類製品）
     let aliases: [String]?
+    /// 語意關鍵字：查詢詞含任一關鍵字即命中（肉絲、肉脯 → 含「肉」）
+    let keywords: [String]?
+    /// 排除詞：查詢詞含任一排除詞則不命中（肉桂、素肉不是肉品）
+    let exclusions: [String]?
 
     var id: String { "\(countryCode)-\(itemZh)" }
 }

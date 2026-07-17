@@ -21,7 +21,8 @@ struct RootGateView: View {
     }
 }
 
-/// 設定行程後才出現「清單」「Tips」分頁；沒有進行中行程時只有行程頁
+/// 階段式分頁：建行程前 =「行程＋偏好設定」；有進行中行程後 =「清單＋Tips」。
+/// 旅行階段仍可從清單頁工具列回到行程管理與偏好設定（sheet）。
 struct RootTabView: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(AppState.self) private var appState
@@ -43,14 +44,12 @@ struct RootTabView: View {
         appState.activeTrip(in: trips)
     }
 
+    private var hasActiveTrip: Bool { activeTrip != nil }
+
     var body: some View {
         Group {
-            if activeTrip != nil {
+            if hasActiveTrip {
                 TabView(selection: $selection) {
-                    TripListView()
-                        .tabItem { Label("行程", systemImage: "airplane") }
-                        .tag(AppTab.trips)
-
                     PackingRootView()
                         .tabItem { Label("清單", systemImage: "checklist") }
                         .tag(AppTab.checklist)
@@ -60,24 +59,51 @@ struct RootTabView: View {
                         .tag(AppTab.tips)
                 }
             } else {
-                TripListView()
+                TabView(selection: $selection) {
+                    TripListView()
+                        .tabItem { Label("行程", systemImage: "airplane") }
+                        .tag(AppTab.trips)
+
+                    PreferenceSettingsView(embedded: true)
+                        .tabItem { Label("偏好設定", systemImage: "person.crop.circle") }
+                        .tag(AppTab.preferences)
+                }
             }
         }
         .overlay {
             FloatingMascotDock()
         }
-        .onAppear(perform: refreshMascotMessage)
+        .onAppear {
+            clampSelectionToStage()
+            refreshMascotMessage()
+        }
         .onChange(of: selection) { _, _ in refreshMascotMessage() }
         .onChange(of: appState.requestedTab) { _, requested in
             guard let requested else { return }
             selection = requested
             appState.requestedTab = nil
         }
-        .onChange(of: activeTrip?.id) { _, _ in refreshMascotMessage() }
+        .onChange(of: activeTrip?.id) { _, _ in
+            clampSelectionToStage()
+            refreshMascotMessage()
+        }
         .onChange(of: scenePhase) { _, newPhase in
             // 離開前景時更新主畫面小工具
             if newPhase != .active {
                 WidgetSync.update(trip: activeTrip)
+            }
+        }
+    }
+
+    /// 階段切換時把選中分頁夾到該階段可見的分頁
+    private func clampSelectionToStage() {
+        if hasActiveTrip {
+            if selection == .trips || selection == .preferences {
+                selection = .checklist
+            }
+        } else {
+            if selection == .checklist || selection == .tips {
+                selection = .trips
             }
         }
     }
