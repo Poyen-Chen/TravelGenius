@@ -2,71 +2,73 @@
 
 > **出國前，先看懂海關風險，再開始打包。**
 
-聚焦兩件事的旅行助手 iOS App（SwiftUI + SwiftData，iOS 17+）：**行程 → 專屬打包清單＋當地 Tips**。繁體中文原生介面、資料留在裝置、零帳號。
+聚焦兩件事的旅行助手 iOS App（SwiftUI + SwiftData，iOS 17+）：**行程 → 專屬打包清單＋當地 Tips**。繁體中文原生介面、資料留在裝置、零帳號，吉祥物**小史萊姆**全程陪跑。
 
-## 亮點：「這個能帶嗎？」🐶
+## 亮點：「這個能帶嗎？」🟢
 
-在 Tips 分頁輸入任何物品，小旅犬**即問即答**——同時查「去程入境海關」「回程入境海關」「航線安檢」三處規則，附官方來源與最後查證日期，完全離線：
+在 Tips 分頁輸入任何物品，小史萊姆**即問即答** — 同時查「去程入境海關」「回程入境海關」「航線安檢」三處規則，附官方來源與最後查證日期，完全離線：
 
-- 輸入「**肉鬆**」→ 🚫 兩筆禁止：入境日本（動物檢疫所）＋回程入境台灣（防檢署，最高罰 100 萬）
-- 輸入「**行動電源**」→ ✈️ 限隨身・禁托運（IATA Wh 分級；韓國航線加嚴規則自動出現）
-- 輸入「**雨傘**」→ ✅ 查無限制
+- 「**肉鬆**」或「**肉絲**」→ 🚫 兩筆禁止：入境日本（動物檢疫所）＋回程入境台灣（防檢署，最高罰 100 萬）— **語意判定**，不是死板的關鍵字表
+- 「**肉桂**」→ ✅ 查無限制（排除詞防誤判，有「肉」字不代表是肉品）
+- 「**行動電源**」「充電寶」→ ✈️ 限隨身・禁托運（IATA Wh 分級；韓國航線加嚴規則依出發地/目的地自動出現）
+- 「**電子菸**」→ 異體字（菸/煙）自動正規化命中
 
-口語別名都聽得懂（充電寶、香腸、斯斯…）。**沒有任何打包 App 做物品層級的合法性問答。**
+比對三層：口語別名 → 語意關鍵字＋排除詞 → 異體字正規化。**沒有任何打包 App 做物品層級的合法性問答。**
 
-## 功能總覽
+## UI Flow
 
-| 分頁 | 內容 |
-|---|---|
-| 行程 | 出發地＋目的地（東亞：台/日/韓，含城市）、日期；名稱自動命名；偏好設定隨時可改 |
-| 清單 | 依「目的地規定＋文化＋**即時天氣**＋**你的偏好**」四層規則生成，「因為是…」分組；前一晚模式、回程模式（防遺留）、分享清單 |
-| Tips | 「能帶嗎」查詢＋海關規定（去程/回程雙向）＋航空安檢＋城市文化（東京手扶梯靠左、大阪靠右） |
-
-**小旅犬 🐾**：浮動吉祥物，左右緣皆可停靠（拖曳吸附、點擊縮放），做 D-day 行前提醒（D-1「行動電源充飽了嗎？」）、天氣播報與查詢回答。
-
-**個人化**：首次啟動四個問題（年齡層/性別/同行組成/旅行經驗）直接改變清單——家庭出遊多兒童常備藥、第一次出國多護照影本與旅平險、同事出差多名片正裝。
-
-**即時天氣**：[Open-Meteo](https://open-meteo.com) 抓目的地城市在旅行日期的預報，預計有雨自動加傘；離線退回月份規則。
-
-**Widget**：主畫面「出發倒數」D-n＋打包進度（倒數以日期即時計算，跨日自動翻頁）。
+```
+首次啟動 ── 5 題偏好（年齡/性別/同行/經驗/行李偏好）
+    ▼
+階段一：底部分頁「行程＋偏好設定」──三步驟建行程（出發地/目的地/日期）
+    ▼  建立或選定行程後自動切換
+階段二：底部分頁「清單＋Tips」──打包與查規則（工具列可回行程管理）
+    ▼  行程結束
+自動退回階段一
+```
 
 ## 操作步驟
 
-### 1. 首次啟動：完成四項基本設定
+### 1. 首次啟動：小史萊姆帶你回答五個問題
 
-<img src="docs/screenshots/01-onboarding.png" width="240" alt="Onboarding 首屏">
+<img src="docs/screenshots/01-onboarding.png" width="240" alt="Onboarding 歡迎頁">
 
-年齡層 → 性別（可略過）→ 同行組成 → 旅行經驗。完成後進入行程列表，所有設定都能稍後修改。
+年齡層 → 性別（可略過）→ 同行組成 → 旅行經驗 → **行李偏好（輕便/完整）**。答案直接改變清單：家庭出遊多兒童用品、第一次出國多保命文件、輕便風格略過加分項目並減少衣物數量。
 
-### 2. 建立行程：三步驟完成行前準備
+### 2. 行程：三步驟建立，分類管理
 
-行程基本資訊 → 採納／取消推薦清單並加入自訂物品 → 閱讀去回程海關與航空安檢提醒。中途離開會保留草稿，完成後依日期自動分類為未開始、進行中或歷史行程。
+<img src="docs/screenshots/02-trips.png" width="240" alt="行程列表">
+
+「未開始／進行中／歷史」分段檢視；「＋」進入三步驟建行程（出發地＋目的地，東亞台/日/韓含城市，自動帶預設城市）。建立後 App 切換為旅行模式。
 
 ### 3. 清單：先知道天氣，再開始打包
 
-<img src="docs/screenshots/02-checklist.png" width="240" alt="打包清單與天氣">
+<img src="docs/screenshots/03-checklist.png" width="240" alt="打包清單與小史萊姆">
 
-清單依四層規則生成、「因為是…」分組說明理由；小旅犬播報旅行期間預報（有雨自動加傘）。工具列：前一晚模式（大字掃未打包）、回程模式（重設反向檢查，誤觸自動還原）、分享清單。
+依「目的地規定＋文化＋**即時天氣**（Open-Meteo）＋**你的偏好**」生成，「因為是…」分組說明理由；預計有雨小史萊姆會自動加傘並跳出播報。工具列：前一晚模式、回程模式（防遺留，誤觸自動還原）、分享清單；左上可回行程管理與偏好設定。
 
 ### 4. Tips：能帶嗎＋雙向海關＋城市文化
 
-<img src="docs/screenshots/03-tips.png" width="240" alt="Tips 分頁">
+<img src="docs/screenshots/04-tips.png" width="240" alt="Tips 與能帶嗎查詢">
 
-頂部輸入框即問即答；海關規定分「去程入境」與「回程入境」兩段；城市文化提醒城市限定優先。每條法規附官方來源連結。
+頂部輸入框即問即答；海關規定分「去程入境」與「回程入境」兩段；城市文化提醒城市限定優先（東京手扶梯靠左、大阪靠右）。每條法規附官方來源連結。
 
-### 5. 小旅犬：想放哪就放哪
+### 小史萊姆 🟢
 
-<img src="docs/screenshots/04-mascot-left.png" width="240" alt="小旅犬停靠左緣">
+動畫吉祥物浮動於左右任一緣（拖曳吸附、位置記憶），點一下縮成半露、再點展開。D-day 行前提醒（D-1「行動電源充飽了嗎？」）、天氣播報、查詢回答，表情隨情境變化。
 
-拖曳到任一側自動吸附（位置記憶），點一下縮成半露狗頭、再點展開。
+### 主畫面 Widget
+
+「出發倒數」D-n＋打包進度（小／中尺寸），倒數以日期即時計算、跨日自動翻頁。
 
 ## 開發
 
 - Xcode 26+，開啟 `TravelGenius.xcodeproj`，scheme `TravelGenius`，Cmd+R
-- **Branch**：`focus`＝本聚焦版；`main`＝完整四模組版（含記帳、報帳匯出、醫療卡）
+- **Branch**：`main`＝聚焦版（本版）；`full-app`＝早期完整四模組版（含記帳、報帳匯出、醫療卡）
 - CLI 建置：`DEVELOPER_DIR=/Applications/Xcode.app xcodebuild -project TravelGenius.xcodeproj -scheme TravelGenius -destination 'platform=iOS Simulator,name=iPhone 17' build`
-- 開發用啟動引數：`-seedDemo`（示範行程）、`-resetOnboarding`、`-openPackTab` / `-openTipsTab`、`-checkItem 肉鬆`（log 印出能帶嗎判定）、`-mascotDockOnLeft YES`
-- 靜態資料在 `TravelGenius/Resources/SeedData/*.json`（海關/安檢規則含 `aliases` 口語別名與 `sourceUrl`），直接編輯即可擴充
+- 開發用啟動引數：`-seedDemo`（示範行程）、`-resetOnboarding`、`-openPackTab` / `-openTipsTab`、`-checkItem 肉絲`（log 印出能帶嗎判定）、`-mascotDockOnLeft YES`
+- 靜態資料在 `TravelGenius/Resources/SeedData/*.json` — 海關/安檢規則支援 `aliases`（口語別名）、`keywords`／`exclusions`（語意判定）與 `sourceUrl`，直接編輯即可擴充
+- 設計系統：`TravelGenius/SharedUI/PackSmartDesignSystem.swift`＋`design-system/` 文件
 - 實機安裝需在兩個 target 設定 Development Team 並註冊 App Group（`group.com.example.TravelGenius`）
 
 ## 資料來源
@@ -84,8 +86,9 @@
 
 ## 架構
 
-- SwiftData：`Trip`（出發地/目的地/日期）←`PackingItem`；偏好存 UserDefaults（`UserPreferences`）
-- 規則引擎：`packing_rules.json` 四＋偏好層（base/regulation/culture/weather/party/experience/age/gender），`PackingListGenerator.sync` 合併式重生成（永不動自訂與已打包項目）
-- `CanIBringService`：物品名／別名雙向比對 → 嚴重度排序判定
+- SwiftData：`Trip`（出發地/目的地/日期）←`PackingItem`；偏好存 UserDefaults（`UserPreferences`，五欄位）
+- 階段式導航：`RootTabView` 依「是否有進行中行程」切換分頁組；onboarding 完成後鎖定行程階段直到明確選定行程
+- 規則引擎：`packing_rules.json` 多層（base/regulation/culture/weather/party/experience/age/gender＋fullOnly 輕便過濾），`PackingListGenerator.sync` 合併式重生成（永不動自訂與已打包項目）
+- `CanIBringService`：別名／關鍵字＋排除詞／異體字三層比對 → 嚴重度排序，去程回程雙向
 - `WeatherService`：Open-Meteo，6 小時快取，16 天預報範圍外自動退回
-- `MascotState`（@Observable）＋`FloatingMascotDock`：全 App 浮動吉祥物
+- 小史萊姆：`MascotState`（@Observable）＋`FloatingMascotDock`＋`AnimatedGIFView`（縮圖解碼、尊重減少動態）
