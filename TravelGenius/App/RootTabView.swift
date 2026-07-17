@@ -108,7 +108,7 @@ struct RootTabView: View {
         }
     }
 
-    /// 依目前行程狀態更新小旅犬的預設情境訊息（不強制展開）
+    /// 依目前行程狀態更新小史萊姆的預設情境訊息（不強制展開）
     private func refreshMascotMessage() {
         guard let trip = activeTrip else {
             mascot.message = "先建立一個行程，我就開始幫你倒數、盯行李！"

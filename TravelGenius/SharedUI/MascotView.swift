@@ -2,11 +2,13 @@
 //  MascotView.swift
 //  TravelGenius
 //
-//  吉祥物「小旅犬」：SwiftUI shapes 繪製的簡約小狗＋對話泡泡。
+//  吉祥物「小史萊姆」：動畫 GIF（checklist-slime-idle）＋表情徽章。
 //  表情隨情境變化（一般／開心／警戒）。
 //
 
 import SwiftUI
+import UIKit
+import ImageIO
 
 enum MascotExpression {
     case normal
@@ -18,106 +20,93 @@ struct MascotView: View {
     var expression: MascotExpression = .normal
     var size: CGFloat = 56
 
-    private var earColor: Color { Color(red: 0.55, green: 0.38, blue: 0.24) }
-    private var faceColor: Color { Color(red: 0.91, green: 0.76, blue: 0.55) }
-    private var muzzleColor: Color { Color(red: 0.98, green: 0.93, blue: 0.83) }
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         ZStack {
-            // 垂耳
-            HStack(spacing: size * 0.62) {
-                Capsule().fill(earColor)
-                    .frame(width: size * 0.26, height: size * 0.5)
-                    .rotationEffect(.degrees(18))
-                Capsule().fill(earColor)
-                    .frame(width: size * 0.26, height: size * 0.5)
-                    .rotationEffect(.degrees(-18))
-            }
-            .offset(y: -size * 0.18)
+            AnimatedGIFView(name: "checklist-slime-idle", isAnimating: !reduceMotion)
+                .frame(width: size * 1.2, height: size * 1.2)
+                .clipShape(Circle())
 
-            // 臉
-            Circle()
-                .fill(faceColor)
-                .frame(width: size, height: size)
-
-            // 吻部
-            Ellipse()
-                .fill(muzzleColor)
-                .frame(width: size * 0.52, height: size * 0.4)
-                .offset(y: size * 0.18)
-
-            // 鼻子
-            RoundedRectangle(cornerRadius: size * 0.06)
-                .fill(Color(red: 0.28, green: 0.2, blue: 0.16))
-                .frame(width: size * 0.16, height: size * 0.11)
-                .offset(y: size * 0.08)
-
-            // 眼睛
-            eyes
-
-            // 嘴（依表情）
-            mouth
-
-            // 警戒符號
+            // 表情徽章
             if expression == .alert {
                 Text("!")
-                    .font(.system(size: size * 0.42, weight: .heavy, design: .rounded))
+                    .font(.system(size: size * 0.4, weight: .heavy, design: .rounded))
                     .foregroundStyle(.orange)
-                    .offset(x: size * 0.58, y: -size * 0.42)
+                    .offset(x: size * 0.52, y: -size * 0.45)
+            }
+            if expression == .happy {
+                Image(systemName: "sparkles")
+                    .font(.system(size: size * 0.3, weight: .bold))
+                    .foregroundStyle(.yellow)
+                    .offset(x: size * 0.5, y: -size * 0.42)
             }
         }
         .frame(width: size * 1.35, height: size * 1.2)
         .accessibilityHidden(true)
     }
+}
 
-    @ViewBuilder
-    private var eyes: some View {
-        let eyeOffsetX = size * 0.2
-        let eyeOffsetY = -size * 0.08
-        if expression == .happy {
-            // 開心：彎彎的眼睛
-            HStack(spacing: size * 0.24) {
-                HappyEye().stroke(Color.black.opacity(0.75), style: StrokeStyle(lineWidth: size * 0.05, lineCap: .round))
-                    .frame(width: size * 0.16, height: size * 0.08)
-                HappyEye().stroke(Color.black.opacity(0.75), style: StrokeStyle(lineWidth: size * 0.05, lineCap: .round))
-                    .frame(width: size * 0.16, height: size * 0.08)
-            }
-            .offset(y: eyeOffsetY)
-        } else {
-            HStack(spacing: size * 0.28) {
-                Circle().fill(Color.black.opacity(0.8)).frame(width: size * 0.11, height: size * 0.11)
-                Circle().fill(Color.black.opacity(0.8)).frame(width: size * 0.11, height: size * 0.11)
-            }
-            .offset(x: expression == .alert ? 0 : 0, y: eyeOffsetY)
+/// 播放 bundle 內 GIF 的輕量元件（縮圖解碼控制記憶體；尊重減少動態設定）
+struct AnimatedGIFView: UIViewRepresentable {
+    let name: String
+    var isAnimating: Bool = true
+
+    func makeUIView(context: Context) -> UIImageView {
+        let imageView = UIImageView()
+        imageView.contentMode = .scaleAspectFit
+        imageView.clipsToBounds = true
+        imageView.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        imageView.setContentHuggingPriority(.defaultLow, for: .vertical)
+        imageView.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        imageView.setContentCompressionResistancePriority(.defaultLow, for: .vertical)
+
+        let (frames, duration) = Self.decodeFrames(named: name)
+        if isAnimating && frames.count > 1 {
+            imageView.animationImages = frames
+            imageView.animationDuration = duration
+            imageView.startAnimating()
         }
-        let _ = eyeOffsetX
+        imageView.image = frames.first
+        return imageView
     }
 
-    @ViewBuilder
-    private var mouth: some View {
-        if expression == .happy {
-            // 吐舌
-            Capsule()
-                .fill(Color(red: 0.93, green: 0.45, blue: 0.45))
-                .frame(width: size * 0.14, height: size * 0.18)
-                .offset(y: size * 0.3)
+    func updateUIView(_ imageView: UIImageView, context: Context) {
+        if isAnimating && !(imageView.isAnimating) && (imageView.animationImages?.count ?? 0) > 1 {
+            imageView.startAnimating()
+        } else if !isAnimating && imageView.isAnimating {
+            imageView.stopAnimating()
         }
+    }
+
+    /// 以縮圖解碼（最長邊 240px）避免 512² × 40 幀吃掉數十 MB 記憶體
+    private static func decodeFrames(named name: String) -> ([UIImage], TimeInterval) {
+        guard let url = Bundle.main.url(forResource: name, withExtension: "gif"),
+              let source = CGImageSourceCreateWithURL(url as CFURL, nil) else {
+            return ([], 0)
+        }
+        let thumbnailOptions: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceThumbnailMaxPixelSize: 240,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+        ]
+        var frames: [UIImage] = []
+        var duration: TimeInterval = 0
+        for index in 0..<CGImageSourceGetCount(source) {
+            guard let cgImage = CGImageSourceCreateThumbnailAtIndex(source, index, thumbnailOptions as CFDictionary) else { continue }
+            let properties = CGImageSourceCopyPropertiesAtIndex(source, index, nil) as? [CFString: Any]
+            let gifProperties = properties?[kCGImagePropertyGIFDictionary] as? [CFString: Any]
+            let unclamped = gifProperties?[kCGImagePropertyGIFUnclampedDelayTime] as? Double
+            let clamped = gifProperties?[kCGImagePropertyGIFDelayTime] as? Double
+            let delay = (unclamped ?? 0) > 0 ? unclamped! : (clamped ?? 0.1)
+            duration += max(delay, 0.02)
+            frames.append(UIImage(cgImage: cgImage))
+        }
+        return (frames, duration)
     }
 }
 
-private struct HappyEye: Shape {
-    func path(in rect: CGRect) -> Path {
-        var path = Path()
-        path.move(to: CGPoint(x: rect.minX, y: rect.maxY))
-        path.addQuadCurve(
-            to: CGPoint(x: rect.maxX, y: rect.maxY),
-            control: CGPoint(x: rect.midX, y: rect.minY - rect.height)
-        )
-        return path
-    }
-}
-
-/// 吉祥物＋對話泡泡橫列（清單頁頂、Tips 查詢結果、空狀態共用）
+/// 吉祥物＋對話泡泡橫列（onboarding 等處使用）
 struct MascotBubbleRow: View {
     var expression: MascotExpression = .normal
     let message: String
@@ -136,7 +125,7 @@ struct MascotBubbleRow: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("小旅犬提醒：\(message)")
+        .accessibilityLabel("小史萊姆提醒：\(message)")
     }
 }
 

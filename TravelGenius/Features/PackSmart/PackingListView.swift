@@ -88,7 +88,7 @@ struct PackingListView: View {
         }
     }
 
-    /// 抓目的地天氣，成功後以天氣標籤重新合併清單（離線自動退回月份規則），並讓小旅犬播報
+    /// 抓目的地天氣，成功後以天氣標籤重新合併清單（離線自動退回月份規則），並讓小史萊姆播報
     private func refreshWeather() async {
         guard let summary = await WeatherService.fetch(for: trip) else { return }
         weather = summary

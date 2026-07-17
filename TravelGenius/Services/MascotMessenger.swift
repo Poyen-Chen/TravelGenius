@@ -2,7 +2,7 @@
 //  MascotMessenger.swift
 //  TravelGenius
 //
-//  小旅犬的情境訊息：依距出發天數、打包進度與天氣挑一句話（D-day 行前提醒）。
+//  小史萊姆的情境訊息：依距出發天數、打包進度與天氣挑一句話（D-day 行前提醒）。
 //
 
 import Foundation
