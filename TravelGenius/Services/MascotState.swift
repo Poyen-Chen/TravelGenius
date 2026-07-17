@@ -13,7 +13,7 @@ import Observation
 final class MascotState {
     var message: String = "嗨！我是小史萊姆！"
     var expression: MascotExpression = .normal
-    var isExpanded: Bool = true
+    var isExpanded: Bool = false
 
     /// 更新訊息並自動展開（有新話要說時跳出來）
     func speak(_ message: String, expression: MascotExpression = .normal) {
