@@ -6,18 +6,26 @@
 import SwiftUI
 import SwiftData
 
-/// 首次啟動顯示 onboarding，完成後進入主畫面
+/// 首次啟動顯示 onboarding，完成後進入主畫面；外觀設定在此套用（涵蓋 onboarding）
 struct RootGateView: View {
     @AppStorage("hasOnboarded") private var hasOnboarded = false
+    @AppStorage(AppAppearance.storageKey) private var appearanceRaw = AppAppearance.system.rawValue
+
+    private var appearance: AppAppearance {
+        AppAppearance(rawValue: appearanceRaw) ?? .system
+    }
 
     var body: some View {
-        if hasOnboarded {
-            RootTabView()
-        } else {
-            OnboardingView {
-                hasOnboarded = true
+        Group {
+            if hasOnboarded {
+                RootTabView()
+            } else {
+                OnboardingView {
+                    hasOnboarded = true
+                }
             }
         }
+        .preferredColorScheme(appearance.colorScheme)
     }
 }
 

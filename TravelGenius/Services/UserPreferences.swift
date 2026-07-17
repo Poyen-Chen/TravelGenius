@@ -2,10 +2,11 @@
 //  UserPreferences.swift
 //  TravelGenius
 //
-//  開 App 前詢問的四項偏好，直接影響清單生成與吉祥物語氣。
+//  使用者偏好：五項打包相關偏好（影響清單生成）＋外觀設定。
 //
 
 import Foundation
+import SwiftUI
 
 enum AgeBand: String, CaseIterable, Identifiable {
     case teen
@@ -85,6 +86,33 @@ enum TravelExperience: String, CaseIterable, Identifiable {
         case .first: "第一次出國"
         case .some: "去過幾次"
         case .frequent: "常常出國"
+        }
+    }
+}
+
+enum AppAppearance: String, CaseIterable, Identifiable {
+    case system
+    case light
+    case dark
+
+    var id: String { rawValue }
+
+    static let storageKey = "pref.appearance"
+
+    var label: String {
+        switch self {
+        case .system: "跟隨系統"
+        case .light: "淺色"
+        case .dark: "深色"
+        }
+    }
+
+    /// nil = 跟隨系統
+    var colorScheme: ColorScheme? {
+        switch self {
+        case .system: nil
+        case .light: .light
+        case .dark: .dark
         }
     }
 }

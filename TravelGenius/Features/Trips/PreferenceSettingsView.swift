@@ -18,10 +18,21 @@ struct PreferenceSettingsView: View {
     @Query private var trips: [Trip]
 
     @State private var preferences = UserPreferences.load()
+    @AppStorage(AppAppearance.storageKey) private var appearanceRaw = AppAppearance.system.rawValue
 
     var body: some View {
         NavigationStack {
             Form {
+                Section("外觀") {
+                    Picker("外觀", selection: $appearanceRaw) {
+                        ForEach(AppAppearance.allCases) { option in
+                            Text(option.label).tag(option.rawValue)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+                }
+
                 Section {
                     Picker("年齡層", selection: $preferences.ageBand) {
                         ForEach(AgeBand.allCases) { Text($0.label).tag($0) }
