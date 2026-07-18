@@ -18,7 +18,7 @@ struct TripListView: View {
             switch self {
             case .upcoming: .upcoming
             case .active: .inProgress
-            case .history: .history
+            case .history: .completed
             }
         }
     }
@@ -45,7 +45,7 @@ struct TripListView: View {
     @State private var pendingDeletion: Trip?
 
     private var drafts: [Trip] {
-        trips.filter { $0.lifecycleStatus == .draft }
+        trips.filter { $0.isDraft }
     }
 
     private var scopedTrips: [Trip] {
@@ -77,8 +77,8 @@ struct TripListView: View {
                 switch destination {
                 case .create:
                     TripCreationFlowView()
-                case .resume(let trip):
-                    TripCreationFlowView(trip: trip)
+                case .resume:
+                    TripCreationFlowView()
                 case .preferences:
                     PreferenceSettingsView()
                 }
@@ -195,11 +195,11 @@ private struct TripRow: View {
     }
 
     private var statusTint: Color {
-        switch trip.lifecycleStatus {
-        case .draft: .orange
+        if trip.isDraft { return .orange }
+        return switch trip.lifecycleStatus {
         case .upcoming: .blue
         case .inProgress: .green
-        case .history: .secondary
+        case .completed: .secondary
         }
     }
 
