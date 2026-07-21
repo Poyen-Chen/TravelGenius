@@ -77,6 +77,8 @@ final class Trip {
     var hasReviewedTravelRules: Bool = false
     /// 使用者主動取消的自動推薦，避免重新產生清單時又被加入。
     var excludedPackingNamesRaw: String = ""
+    /// 行李限重（公斤），預設 23（多數航空託運上限）
+    var baggageAllowanceKg: Double = 23
     var createdAt: Date = Date()
 
     @Relationship(deleteRule: .cascade, inverse: \Expense.trip)
@@ -170,6 +172,16 @@ final class Trip {
         var names = excludedPackingNames
         names.remove(name)
         excludedPackingNames = names
+    }
+
+    /// 全部行李估計總重（公克）
+    var estimatedTotalGrams: Int {
+        (packingItems ?? []).reduce(0) { $0 + $1.estimatedTotalGrams }
+    }
+
+    /// 依總重（單件×數量）由重到輕排序 — 供「該砍哪些」提示。
+    var itemsByWeightDescending: [PackingItem] {
+        (packingItems ?? []).sorted { $0.estimatedTotalGrams > $1.estimatedTotalGrams }
     }
 
     /// 旅程總天數（含出發與回程當日）

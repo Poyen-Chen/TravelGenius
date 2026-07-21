@@ -85,6 +85,7 @@ struct TravelGeniusApp: App {
         let tripCount = (try? container.mainContext.fetchCount(FetchDescriptor<Trip>())) ?? 0
         if hasDebugArgs || tripCount > 0 {
             defaults.set(true, forKey: "hasOnboarded")
+            if hasDebugArgs { defaults.set(true, forKey: "hasSeenFirstLaunchGuide") }
         }
     }
 

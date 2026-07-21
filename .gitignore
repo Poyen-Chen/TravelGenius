@@ -23,3 +23,7 @@ TravelGenius/Resources/Secrets.plist
 
 # Local Codex workspace configuration
 .codex/
+
+# Marketing / demo media（保留在本機，不入庫）
+*.mp4
+*.pdf

@@ -52,6 +52,8 @@ final class PackingItem {
     var isCustom: Bool = false
     /// 顯示排序（規則檔順序；自訂項目固定最後）
     var sortIndex: Int = 0
+    /// 使用者覆寫的單件重量（公克）；0 = 用估計值
+    var weightGrams: Int = 0
     var trip: Trip?
 
     init(
@@ -75,5 +77,15 @@ final class PackingItem {
     var category: PackingCategory {
         get { PackingCategory(rawValue: categoryRaw) ?? .other }
         set { categoryRaw = newValue.rawValue }
+    }
+
+    /// 單件估計重量（公克）：優先用使用者覆寫，否則用估計器
+    var estimatedUnitGrams: Int {
+        weightGrams > 0 ? weightGrams : PackingWeight.grams(for: self)
+    }
+
+    /// 此項目總重（單件 × 數量）
+    var estimatedTotalGrams: Int {
+        estimatedUnitGrams * max(quantity, 1)
     }
 }

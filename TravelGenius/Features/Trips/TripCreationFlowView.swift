@@ -139,7 +139,10 @@ struct TripCreationFlowView: View {
                 isPresented: $showingDiscardConfirmation,
                 titleVisibility: .visible
             ) {
-                Button("放棄建立", role: .destructive) { dismiss() }
+                Button("放棄建立", role: .destructive) {
+                    // 延後一個 runloop：confirmationDialog 收起時同步呼叫 dismiss() 會被吞掉
+                    DispatchQueue.main.async { dismiss() }
+                }
                 Button("繼續編輯", role: .cancel) {}
             } message: {
                 Text("行程尚未建立，離開後不會保留目前輸入。")

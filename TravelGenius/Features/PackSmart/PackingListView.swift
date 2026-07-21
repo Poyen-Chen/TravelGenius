@@ -15,6 +15,11 @@ struct PackingListView: View {
     @Environment(\.modelContext) private var context
     @Environment(MascotState.self) private var mascot
     @State private var showingAddItem = false
+    @State private var showingPackingImage = false
+    @State private var showingSuitcaseLayout = false
+    @State private var didAutoOpenPackingImage = false
+    @State private var didAutoOpenSuitcase = false
+    @State private var editingWeightItem: PackingItem?
     @State private var showingReturnMode = false
     @State private var confirmReturnMode = false
     /// 進入回程模式前的已打包項目快照（誤觸時自動還原用）
@@ -53,6 +58,12 @@ struct PackingListView: View {
                         confirmReturnMode = true
                     }
                     if !items.isEmpty {
+                        Button("生成打包圖", systemImage: "photo.on.rectangle.angled") {
+                            showingPackingImage = true
+                        }
+                        Button("行李箱擺位", systemImage: "camera.viewfinder") {
+                            showingSuitcaseLayout = true
+                        }
                         ShareLink(item: PackingShareText.make(for: trip)) {
                             Label("分享清單", systemImage: "square.and.arrow.up")
                         }
@@ -63,6 +74,26 @@ struct PackingListView: View {
             }
         }
         .sheet(isPresented: $showingAddItem) { AddPackingItemView(trip: trip) }
+        .sheet(isPresented: $showingPackingImage) { PackingImageView(trip: trip) }
+        .sheet(isPresented: $showingSuitcaseLayout) { SuitcaseLayoutView(trip: trip) }
+        .sheet(item: $editingWeightItem) { WeightEditSheet(item: $0) }
+        .onAppear {
+            let args = ProcessInfo.processInfo.arguments
+            if !didAutoOpenPackingImage, args.contains("-openPackingImage") {
+                didAutoOpenPackingImage = true
+                Task {
+                    try? await Task.sleep(for: .seconds(15)) // 讓啟動時的天氣重算先完成
+                    showingPackingImage = true
+                }
+            }
+            if !didAutoOpenSuitcase, args.contains("-openSuitcaseLayout") {
+                didAutoOpenSuitcase = true
+                Task {
+                    try? await Task.sleep(for: .seconds(8))
+                    showingSuitcaseLayout = true
+                }
+            }
+        }
         .fullScreenCover(isPresented: $showingReturnMode, onDismiss: restoreIfUntouched) {
             ReturnModeView(trip: trip)
         }
@@ -162,12 +193,22 @@ struct PackingListView: View {
                     .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16))
             }
 
+            Section {
+                WeightSummaryHeader(items: items, trip: trip)
+                    .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16))
+            }
+
             ForEach(sections, id: \.reason) { section in
                 Section(section.reason) {
                     ForEach(section.items) { item in
                         PackingItemRow(item: item) {
                             item.isPacked.toggle()
                             packToggle.toggle()
+                        }
+                        .contextMenu {
+                            Button("調整重量", systemImage: "scalemass") {
+                                editingWeightItem = item
+                            }
                         }
                     }
                     .onDelete { offsets in
@@ -263,13 +304,16 @@ struct PackingItemRow: View {
                         .foregroundStyle(.secondary)
                 }
                 Spacer()
+                Text(PackingWeight.format(grams: item.estimatedTotalGrams))
+                    .font(.caption2.monospacedDigit())
+                    .foregroundStyle(item.weightGrams > 0 ? AnyShapeStyle(.tint) : AnyShapeStyle(.tertiary))
                 Image(systemName: item.category.symbolName)
                     .font(.caption)
                     .foregroundStyle(.tertiary)
             }
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("\(item.name)\(item.isPacked ? "，已打包" : "，未打包")")
+        .accessibilityLabel("\(item.name)\(item.isPacked ? "，已打包" : "，未打包")，約 \(PackingWeight.format(grams: item.estimatedTotalGrams))")
     }
 }
 
@@ -318,6 +362,140 @@ struct AddPackingItemView: View {
                     .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
             }
+        }
+        .presentationDetents([.medium])
+    }
+}
+
+// MARK: - 行李重量摘要（估算總重、預警超重）
+
+struct WeightSummaryHeader: View {
+    let items: [PackingItem]
+    @Bindable var trip: Trip
+
+    private static let allowancePresets: [Double] = [7, 10, 20, 23, 30]
+
+    private var totalGrams: Int { items.reduce(0) { $0 + $1.estimatedTotalGrams } }
+    private var totalKg: Double { Double(totalGrams) / 1000 }
+    private var allowance: Double { trip.baggageAllowanceKg }
+    private var ratio: Double { allowance <= 0 ? 0 : totalKg / allowance }
+
+    private var tint: Color {
+        if ratio > 1 { return .red }
+        if ratio > 0.85 { return .orange }
+        return .green
+    }
+
+    private var statusText: String {
+        if ratio > 1 { return String(format: "超重 %.1f kg，建議減量", totalKg - allowance) }
+        if ratio > 0.85 { return "接近上限，別再加太多" }
+        return "重量充裕"
+    }
+
+    private var heaviest: [PackingItem] {
+        Array(items.sorted { $0.estimatedTotalGrams > $1.estimatedTotalGrams }.prefix(3))
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("預估行李重量")
+                        .font(.subheadline.weight(.semibold))
+                    HStack(alignment: .firstTextBaseline, spacing: 4) {
+                        Text(String(format: "%.1f", totalKg))
+                            .font(.title2.bold().monospacedDigit())
+                            .foregroundStyle(tint)
+                        Text("kg")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Menu {
+                            Picker("行李限重", selection: $trip.baggageAllowanceKg) {
+                                ForEach(Self.allowancePresets, id: \.self) { kg in
+                                    Text(kg == 7 ? "7 kg（隨身）" : "\(Int(kg)) kg").tag(kg)
+                                }
+                            }
+                        } label: {
+                            Text("/ \(Int(allowance)) kg 上限")
+                                .font(.caption)
+                                .foregroundStyle(.tint)
+                        }
+                    }
+                }
+                Spacer()
+                Image(systemName: ratio > 1 ? "exclamationmark.triangle.fill" : "suitcase.rolling")
+                    .font(.title3)
+                    .foregroundStyle(tint)
+            }
+
+            ProgressView(value: min(ratio, 1))
+                .tint(tint)
+
+            Text(statusText)
+                .font(.caption)
+                .foregroundStyle(tint)
+
+            if ratio > 0.85, !heaviest.isEmpty {
+                Text("最重：" + heaviest.map { "\($0.name) \(PackingWeight.format(grams: $0.estimatedTotalGrams))" }.joined(separator: "、"))
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+
+            Text("重量為估計值，長按項目可調整")
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+        }
+    }
+}
+
+// MARK: - 單件重量調整
+
+struct WeightEditSheet: View {
+    @Bindable var item: PackingItem
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var grams: Int = 0
+
+    private var estimate: Int { PackingWeight.grams(for: item) }
+    private var effectiveUnit: Int { grams > 0 ? grams : estimate }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("單件重量") {
+                    Stepper(value: $grams, in: 0...5000, step: 10) {
+                        if grams > 0 {
+                            Text("\(grams) g").monospacedDigit()
+                        } else {
+                            Text("用估計值（約 \(estimate) g）")
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    if grams > 0 {
+                        Button("改用估計值") { grams = 0 }
+                    }
+                }
+                if item.quantity > 1 {
+                    Section("總重") {
+                        Text("×\(item.quantity) = 約 \(PackingWeight.format(grams: effectiveUnit * item.quantity))")
+                            .monospacedDigit()
+                    }
+                }
+            }
+            .navigationTitle(item.name)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("取消") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("儲存") {
+                        item.weightGrams = grams
+                        dismiss()
+                    }
+                }
+            }
+            .onAppear { grams = item.weightGrams }
         }
         .presentationDetents([.medium])
     }

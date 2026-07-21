@@ -38,6 +38,9 @@ enum PackingShareText {
         }
 
         lines.append("")
+        lines.append("預估行李重量：約 \(PackingWeight.format(grams: trip.estimatedTotalGrams))（上限 \(Int(trip.baggageAllowanceKg)) kg）")
+
+        lines.append("")
         lines.append("— 由 TravelGenius 產生")
         return lines.joined(separator: "\n")
     }

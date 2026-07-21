@@ -10,14 +10,22 @@
 import Foundation
 
 enum Secrets {
-    static let anthropicAPIKey: String? = {
+    static let anthropicAPIKey: String? = value(forKey: "ANTHROPIC_API_KEY", requiredPrefix: "sk-ant-")
+
+    /// Google AI Studio 金鑰（以 "AIza" 開頭）；供行李打包圖生成使用。
+    static let geminiAPIKey: String? = value(forKey: "GEMINI_API_KEY", requiredPrefix: "AIza")
+
+    /// OpenAI 金鑰（以 "sk-" 開頭）；供行李打包圖生成使用。
+    static let openAIAPIKey: String? = value(forKey: "OPENAI_API_KEY", requiredPrefix: "sk-")
+
+    private static func value(forKey key: String, requiredPrefix: String) -> String? {
         guard let url = Bundle.main.url(forResource: "Secrets", withExtension: "plist"),
               let data = try? Data(contentsOf: url),
               let plist = try? PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any],
-              let key = plist["ANTHROPIC_API_KEY"] as? String,
-              key.hasPrefix("sk-ant-") else { return nil }
-        return key
-    }()
+              let value = plist[key] as? String,
+              value.hasPrefix(requiredPrefix) else { return nil }
+        return value
+    }
 }
 
 enum TriviaService {
