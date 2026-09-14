@@ -2,10 +2,10 @@
 //  SuitcaseLayoutView.swift
 //  TravelGenius
 //
-//  行李箱擺位：拍/選一張行李箱照片當固定 2D 畫布，用每件物品去背照片的「輪廓」
-//  （alpha ＝ 現成 segmentation）做非矩形、compact 的形狀打包，像真的把東西塞進去。
-//  未打包＝淡化待放；已打包＝滿版清楚。冷門品項退回 emoji。
-//  模擬器沒相機 → 走相簿或內建示意行李箱；實機才顯示「拍照」。
+//  行李箱擺位（3D 互動版）：打開的硬殼箱裡，每件物品用去背照片依實際大小躺在箱底，
+//  可以直接用手指搬動、疊高、轉視角。初始擺位由 PackingLayoutPacker 的輪廓打包算出。
+//  拍/選一張行李箱照片會貼成箱底襯裡；未打包＝淡化待放；已打包＝滿版清楚，點一下可切換。
+//  模擬器沒相機 → 走相簿；實機才顯示「拍照」。
 //
 
 import SwiftUI
@@ -16,17 +16,21 @@ struct SuitcaseLayoutView: View {
     let trip: Trip
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var context
     @State private var suitcaseImage: UIImage?
     @State private var photoItem: PhotosPickerItem?
     @State private var showingCamera = false
-    @State private var packResult: PackingLayoutPacker.Result?
+    /// 打包結果與其物品簽章一起發布（見 SuitcaseLayout）
+    @State private var layout: SuitcaseLayout?
+    @State private var resetToken = 0
 
     private var items: [PackingItem] {
         (trip.packingItems ?? []).sorted { $0.sortIndex < $1.sortIndex }
     }
-    /// 只由「物品集合」決定版面（打包勾選只改透明度，不重排）。
-    private var layoutSignature: String {
-        items.map(\.name).sorted().joined(separator: "|")
+    /// 只由「物品集合」決定初始版面（打包勾選只改透明度，不重排）。
+    private var layoutSignature: String { SuitcaseLayout.signature(of: items) }
+    private var packedIDs: Set<UUID> {
+        Set(items.filter(\.isPacked).map(\.id))
     }
     private var cameraAvailable: Bool {
         UIImagePickerController.isSourceTypeAvailable(.camera)
@@ -34,19 +38,29 @@ struct SuitcaseLayoutView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 14) {
-                    Text("依物品實際大小與輪廓擺進行李箱：淡色是還沒打包的，打包好就變清楚。")
-                        .font(.footnote)
+            VStack(spacing: 12) {
+                Text("拖動物品擺進箱子，疊到別的東西上會自動堆高。拖空白處旋轉、雙指縮放、點一下切換打包。")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                stage
+
+                HStack {
+                    Label("已打包 \(packedIDs.count) / \(items.count)", systemImage: "checkmark.circle")
+                        .font(.subheadline)
+                        .monospacedDigit()
                         .foregroundStyle(.secondary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-
-                    canvas
-
-                    sourceButtons
+                    Spacer()
+                    Button("重新排列", systemImage: "arrow.triangle.2.circlepath") {
+                        resetToken += 1
+                    }
+                    .font(.subheadline)
                 }
-                .padding()
+
+                sourceButtons
             }
+            .padding()
             .navigationTitle("行李箱擺位")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -55,8 +69,11 @@ struct SuitcaseLayoutView: View {
                 }
             }
             .task(id: layoutSignature) {
-                packResult = PackingLayoutPacker.pack(items)
+                // 用同一份快照算簽章與結果，兩者一起發布
+                let snapshot = items
+                layout = SuitcaseLayout(signature: SuitcaseLayout.signature(of: snapshot), result: PackingLayoutPacker.pack(snapshot))
             }
+            .task { await runStressIfRequested() }
             .onChange(of: photoItem) { _, newItem in
                 guard let newItem else { return }
                 Task {
@@ -73,67 +90,67 @@ struct SuitcaseLayoutView: View {
         }
     }
 
-    private var canvas: some View {
-        GeometryReader { geo in
-            if let result = packResult, !result.placed.isEmpty {
-                let cell = min(geo.size.width / CGFloat(result.cols),
-                               500.0 / CGFloat(max(result.rows, 1)))
-                let cw = CGFloat(result.cols) * cell
-                let ch = CGFloat(result.rows) * cell
-                ZStack(alignment: .topLeading) {
-                    ForEach(result.placed) { placed in
-                        itemArt(placed.item)
-                            .frame(width: CGFloat(placed.w) * cell, height: CGFloat(placed.h) * cell)
-                            .opacity(placed.item.isPacked ? 1 : 0.35)
-                            .shadow(color: .black.opacity(placed.item.isPacked ? 0.25 : 0), radius: 3, y: 2)
-                            .position(
-                                x: (CGFloat(placed.x) + CGFloat(placed.w) / 2) * cell,
-                                y: (CGFloat(placed.y) + CGFloat(placed.h) / 2) * cell
-                            )
+    private var stage: some View {
+        ZStack {
+            if let layout, !layout.result.placed.isEmpty {
+                Suitcase3DView(
+                    layout: layout,
+                    packedIDs: packedIDs,
+                    floorImage: suitcaseImage,
+                    resetToken: resetToken,
+                    onToggle: { id in
+                        items.first { $0.id == id }?.isPacked.toggle()
                     }
-                }
-                .frame(width: cw, height: ch)
-                .padding(10)
-                .background {
-                    if let suitcaseImage {
-                        Image(uiImage: suitcaseImage).resizable().scaledToFill()
-                    } else {
-                        DrawnSuitcase()
-                    }
-                }
-                .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 20, style: .continuous)
-                        .strokeBorder(Color.black.opacity(0.12))
                 )
-                .frame(maxWidth: .infinity, maxHeight: .infinity) // 在固定框內置中
+            } else if layout == nil {
+                ProgressView()
             } else {
-                ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
+                ContentUnavailableView("還沒有行李", systemImage: "suitcase", description: Text("先產生清單，再回來擺箱。"))
             }
         }
-        .frame(height: 520)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(
+            LinearGradient(
+                colors: [Color(.secondarySystemGroupedBackground), Color(.systemGroupedBackground)],
+                startPoint: .top, endPoint: .bottom
+            )
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .strokeBorder(Color.black.opacity(0.08))
+        )
     }
 
-    @ViewBuilder
-    private func itemArt(_ item: PackingItem) -> some View {
-        if let image = PackingItemImage.image(for: item) {
-            Image(uiImage: image)
-                .resizable()
-                .scaledToFit()
-        } else {
-            GeometryReader { g in
-                Text(PackingGlyph.emoji(for: item))
-                    .font(.system(size: min(g.size.width, g.size.height) * 0.82))
-                    .minimumScaleFactor(0.1)
-                    .frame(width: g.size.width, height: g.size.height)
-            }
+    /// 模擬器驗證用（`-suitcaseLayoutStress`）：擺位頁開著時新增再刪除一件物品，
+    /// 對照 log 裡 SUITCASE-3D 的 nodes 與這裡的 items 數量。
+    private func runStressIfRequested() async {
+        #if DEBUG
+        guard ProcessInfo.processInfo.arguments.contains("-suitcaseLayoutStress") else { return }
+        try? await Task.sleep(for: .seconds(4))
+        let added = PackingItem(
+            name: "壓力測試物品",
+            category: .other,
+            reasonKey: PackingListGenerator.customReason,
+            quantity: 1,
+            isCustom: true,
+            sortIndex: PackingListGenerator.customSortIndex,
+            trip: trip
+        )
+        context.insert(added)
+        NSLog("SUITCASE-3D stress items=%d after insert", items.count)
+        try? await Task.sleep(for: .seconds(4))
+        if let victim = items.first(where: { $0.id != added.id }) {
+            context.delete(victim)
         }
+        NSLog("SUITCASE-3D stress items=%d after delete", items.count)
+        #endif
     }
 
     private var sourceButtons: some View {
         HStack(spacing: 10) {
             PhotosPicker(selection: $photoItem, matching: .images) {
-                Label("從相簿選", systemImage: "photo.on.rectangle")
+                Label("箱底用相簿照片", systemImage: "photo.on.rectangle")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.bordered)
@@ -153,28 +170,12 @@ struct SuitcaseLayoutView: View {
                     suitcaseImage = nil
                     photoItem = nil
                 } label: {
-                    Label("用示意圖", systemImage: "arrow.uturn.backward")
+                    Label("還原襯裡", systemImage: "arrow.uturn.backward")
                 }
                 .buttonStyle(.bordered)
             }
         }
         .font(.subheadline)
-    }
-}
-
-// MARK: - 內建示意行李箱（無照片時的固定畫布）
-
-private struct DrawnSuitcase: View {
-    var body: some View {
-        ZStack {
-            LinearGradient(
-                colors: [Color(red: 0.80, green: 0.68, blue: 0.52), Color(red: 0.66, green: 0.53, blue: 0.39)],
-                startPoint: .top, endPoint: .bottom
-            )
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .strokeBorder(Color.white.opacity(0.35), lineWidth: 2)
-                .padding(10)
-        }
     }
 }
 
