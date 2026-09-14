@@ -1,8 +1,8 @@
 [
-  { "countryCode": "TW", "cityZh": "台北", "lat": 25.033, "lon": 121.5654, "isDefault": true },
-  { "countryCode": "JP", "cityZh": "東京", "lat": 35.6762, "lon": 139.6503, "isDefault": true },
-  { "countryCode": "JP", "cityZh": "大阪", "lat": 34.6937, "lon": 135.5023, "isDefault": false },
-  { "countryCode": "JP", "cityZh": "京都", "lat": 35.0116, "lon": 135.7681, "isDefault": false },
-  { "countryCode": "KR", "cityZh": "首爾", "lat": 37.5665, "lon": 126.978, "isDefault": true },
-  { "countryCode": "KR", "cityZh": "釜山", "lat": 35.1796, "lon": 129.0756, "isDefault": false }
+  { "countryCode": "TW", "cityZh": "台北", "lat": 25.05306, "lon": 121.52639, "isDefault": true, "sourceUrl": "https://www.geonames.org/1668341" },
+  { "countryCode": "JP", "cityZh": "東京", "lat": 35.6895, "lon": 139.69171, "isDefault": true, "sourceUrl": "https://www.geonames.org/1850147" },
+  { "countryCode": "JP", "cityZh": "大阪", "lat": 34.69379, "lon": 135.50107, "isDefault": false, "sourceUrl": "https://www.geonames.org/1853909" },
+  { "countryCode": "JP", "cityZh": "京都", "lat": 35.02107, "lon": 135.75385, "isDefault": false, "sourceUrl": "https://www.geonames.org/1857910" },
+  { "countryCode": "KR", "cityZh": "首爾", "lat": 37.566, "lon": 126.9784, "isDefault": true, "sourceUrl": "https://www.geonames.org/1835848" },
+  { "countryCode": "KR", "cityZh": "釜山", "lat": 35.10168, "lon": 129.03004, "isDefault": false, "sourceUrl": "https://www.geonames.org/1838524" }
 ]
