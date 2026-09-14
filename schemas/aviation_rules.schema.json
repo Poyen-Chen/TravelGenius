@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "aviation_rules.json",
+  "description": "航空隨身與托運規則。人工策展，每筆強制附官方來源與最後查證月份。",
+  "type": "array",
+  "minItems": 1,
+  "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["itemZh", "restriction", "detailZh", "lastVerified", "sourceName", "sourceUrl"],
+    "properties": {
+      "itemZh": { "type": "string", "minLength": 1 },
+      "restriction": { "enum": ["banned", "carryOnOnly", "checkedOnly", "limited"] },
+      "detailZh": { "type": "string", "minLength": 1 },
+      "lastVerified": { "type": "string", "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])$" },
+      "sourceName": { "type": "string", "minLength": 1 },
+      "sourceUrl": { "type": "string", "pattern": "^https://" },
+      "countries": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "pattern": "^[A-Z]{2}$" } },
+      "aliases": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } }
+    }
+  }
+}

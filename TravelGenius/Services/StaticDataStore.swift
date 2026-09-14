@@ -20,6 +20,8 @@ struct Country: Codable, Identifiable, Hashable {
     let emergency: EmergencyNumbers
     let plugTypes: [String]
     let voltage: String
+    /// 自動欄位的開放資料來源（由 scripts/fetch_reference.py 產生）
+    let sourceUrl: String?
 
     var id: String { code }
 
@@ -37,6 +39,8 @@ struct City: Codable, Identifiable, Hashable {
     let lat: Double
     let lon: Double
     let isDefault: Bool
+    /// 自動欄位的開放資料來源（由 scripts/fetch_reference.py 產生）
+    let sourceUrl: String?
 
     var id: String { "\(countryCode)-\(cityZh)" }
 }

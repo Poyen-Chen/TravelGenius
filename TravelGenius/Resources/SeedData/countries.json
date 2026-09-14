@@ -7,7 +7,8 @@
     "languageCode": "ja",
     "emergency": { "police": "110", "ambulance": "119", "fire": "119" },
     "plugTypes": ["A", "B"],
-    "voltage": "100V"
+    "voltage": "100V",
+    "sourceUrl": "https://github.com/mledoze/countries/blob/c8015eebdd94c533358406b0d709f441389e1f2e/countries.json"
   },
   {
     "code": "KR",
@@ -17,7 +18,8 @@
     "languageCode": "ko",
     "emergency": { "police": "112", "ambulance": "119", "fire": "119" },
     "plugTypes": ["C", "F"],
-    "voltage": "220V"
+    "voltage": "220V",
+    "sourceUrl": "https://github.com/mledoze/countries/blob/c8015eebdd94c533358406b0d709f441389e1f2e/countries.json"
   },
   {
     "code": "TH",
@@ -27,7 +29,8 @@
     "languageCode": "th",
     "emergency": { "police": "191", "ambulance": "1669", "fire": "199" },
     "plugTypes": ["A", "B", "C", "O"],
-    "voltage": "230V"
+    "voltage": "230V",
+    "sourceUrl": "https://github.com/mledoze/countries/blob/c8015eebdd94c533358406b0d709f441389e1f2e/countries.json"
   },
   {
     "code": "US",
@@ -37,7 +40,8 @@
     "languageCode": "en",
     "emergency": { "police": "911", "ambulance": "911", "fire": "911" },
     "plugTypes": ["A", "B"],
-    "voltage": "120V"
+    "voltage": "120V",
+    "sourceUrl": "https://github.com/mledoze/countries/blob/c8015eebdd94c533358406b0d709f441389e1f2e/countries.json"
   },
   {
     "code": "VN",
@@ -47,7 +51,8 @@
     "languageCode": "vi",
     "emergency": { "police": "113", "ambulance": "115", "fire": "114" },
     "plugTypes": ["A", "C", "D"],
-    "voltage": "220V"
+    "voltage": "220V",
+    "sourceUrl": "https://github.com/mledoze/countries/blob/c8015eebdd94c533358406b0d709f441389e1f2e/countries.json"
   },
   {
     "code": "SG",
@@ -57,7 +62,8 @@
     "languageCode": "en",
     "emergency": { "police": "999", "ambulance": "995", "fire": "995" },
     "plugTypes": ["G"],
-    "voltage": "230V"
+    "voltage": "230V",
+    "sourceUrl": "https://github.com/mledoze/countries/blob/c8015eebdd94c533358406b0d709f441389e1f2e/countries.json"
   },
   {
     "code": "TW",
@@ -67,7 +73,8 @@
     "languageCode": "zh-Hant",
     "emergency": { "police": "110", "ambulance": "119", "fire": "119" },
     "plugTypes": ["A", "B"],
-    "voltage": "110V"
+    "voltage": "110V",
+    "sourceUrl": "https://github.com/mledoze/countries/blob/c8015eebdd94c533358406b0d709f441389e1f2e/countries.json"
   },
   {
     "code": "GB",
@@ -77,7 +84,8 @@
     "languageCode": "en",
     "emergency": { "police": "999", "ambulance": "999", "fire": "999" },
     "plugTypes": ["G"],
-    "voltage": "230V"
+    "voltage": "230V",
+    "sourceUrl": "https://github.com/mledoze/countries/blob/c8015eebdd94c533358406b0d709f441389e1f2e/countries.json"
   },
   {
     "code": "IT",
@@ -87,6 +95,7 @@
     "languageCode": "it",
     "emergency": { "police": "112", "ambulance": "118", "fire": "115" },
     "plugTypes": ["C", "F", "L"],
-    "voltage": "230V"
+    "voltage": "230V",
+    "sourceUrl": "https://github.com/mledoze/countries/blob/c8015eebdd94c533358406b0d709f441389e1f2e/countries.json"
   }
 ]
