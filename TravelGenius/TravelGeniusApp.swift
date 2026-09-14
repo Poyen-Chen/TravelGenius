@@ -13,6 +13,8 @@ struct TravelGeniusApp: App {
     private let container: ModelContainer
 
     init() {
+        // 上次啟動下載的參考資料在這裡整批生效，必須早於任何 StaticDataStore 讀取
+        ReferenceDataUpdater.promoteStagedUpdates()
         do {
             // 聚焦版仍註冊全部模型，避免既有安裝的 schema migration 問題
             container = try ModelContainer(
@@ -29,6 +31,14 @@ struct TravelGeniusApp: App {
         }
         configureOnboardingGate()
         logCheckerDebugQuery()
+        // 背景檢查 CDN 上的參考資料，新資料下次啟動生效
+        Task.detached(priority: .utility) {
+            let outcomes = await ReferenceDataUpdater.refresh()
+            #if DEBUG
+            let summary = outcomes.sorted { $0.key < $1.key }.map { "\($0.key)=\($0.value.rawValue)" }.joined(separator: " ")
+            NSLog("REFERENCE-DATA refresh %@", summary)
+            #endif
+        }
     }
 
     /// 將舊版由日期推導的狀態轉成使用者操作狀態，並移除舊草稿。

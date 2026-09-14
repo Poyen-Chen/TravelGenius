@@ -3,6 +3,7 @@ name: Seed data
 # 品質閘門：
 #   push / PR 修改 SeedData 時：schema 與一致性錯誤會擋下；逾期只標警告，不擋無關的改動。
 #   每週排程與手動執行：逾期視為失敗（GitHub 會寄失敗通知），並檢查開放資料是否有更新。
+#   push 到 main 且檢查通過後：清除 jsDelivr 快取，App 下次啟動就能取得新資料。
 
 on:
   push:
@@ -80,3 +81,18 @@ jobs:
 
       - name: 比對 countries.json 與 cities.json
         run: python scripts/fetch_reference.py --check
+
+  purge-cdn:
+    name: 清除 jsDelivr 快取
+    needs: validate
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: 通知 jsDelivr 重新抓取 SeedData
+        run: |
+          for name in countries cities packing_rules prohibited_items aviation_rules etiquette; do
+            url="https://purge.jsdelivr.net/gh/${GITHUB_REPOSITORY}@main/TravelGenius/Resources/SeedData/${name}.json"
+            status=$(curl -fsS --retry 3 "$url" | python3 -c 'import json, sys; print(json.load(sys.stdin)["status"])')
+            echo "${name}: ${status}"
+          done

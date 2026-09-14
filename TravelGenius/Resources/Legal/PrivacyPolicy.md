@@ -13,12 +13,13 @@
 
 以下是本 App 會傳送到外部服務的全部資料、目的與對象：
 
+- **參考資料更新**：App 啟動時會向 jsDelivr 下載最新的國家、城市、打包規則、禁帶物品、航空規則與文化禮儀等公開資料。請求只包含一般連線資訊，例如 IP 位址，不含你的行程或任何個人資料。
 - **天氣預報**：目的地城市的座標與旅行日期，傳給 Apple WeatherKit，用來產生行程期間的預報。不包含你本人的所在位置。
 - **行李打包圖**：目的地、旅行天數與清單物品名稱，傳給 OpenAI，用來產生打包示意圖。**只有在你明確同意後才會傳送。**
 - **小史萊姆冷知識**：目的地國家與城市，傳給 Anthropic，用來產生旅遊冷知識。**只有在你明確同意後才會傳送。**
 - **你主動分享時**：你用分享按鈕傳出清單或圖片時，內容交由你選擇的 App 處理。
 
-上述服務依各自的隱私權政策處理資料，並可能在台灣以外的地區處理，例如美國：[Apple](https://www.apple.com/legal/privacy/)、[OpenAI](https://openai.com/policies/privacy-policy/)、[Anthropic](https://www.anthropic.com/legal/privacy)。
+上述服務依各自的隱私權政策處理資料，並可能在台灣以外的地區處理，例如美國：[jsDelivr](https://www.jsdelivr.com/terms/privacy-policy)、[Apple](https://www.apple.com/legal/privacy/)、[OpenAI](https://openai.com/policies/privacy-policy/)、[Anthropic](https://www.anthropic.com/legal/privacy)。
 
 ## 三、我們不做的事
 

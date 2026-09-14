@@ -392,12 +392,15 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = TravelGenius/TravelGenius.entitlements;
-				EXCLUDED_SOURCE_FILE_NAMES = "Secrets.plist Secrets.example.plist";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"TravelGenius/Preview Content\"";
 				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
+				EXCLUDED_SOURCE_FILE_NAMES = (
+					Secrets.plist,
+					Secrets.example.plist,
+				);
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSCameraUsageDescription = "拍攝收據照片以附加至支出紀錄";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
