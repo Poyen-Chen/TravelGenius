@@ -79,10 +79,11 @@
 - **API 金鑰（僅 Debug 開發用）**：複製 `TravelGenius/Resources/Secrets.example.plist` 為 `Secrets.plist` 並填入所需 key（`Secrets.plist` 已被 gitignore，**絕不提交**）。Release 版不讀取金鑰，並以 `EXCLUDED_SOURCE_FILE_NAMES` 把 `Secrets.plist` 排除在 App 外；要在正式版開放雲端 AI，需先改走自家後端代理。兩把 key 各自獨立、缺席各有原生退路：
   - `ANTHROPIC_API_KEY` — 小史萊姆 AI 冷知識（缺席退回內建冷知識庫）
   - `OPENAI_API_KEY` — 打包圖走 `gpt-image-1`
+  - ⚠️ 從 App 直接呼叫 API 僅適合 demo，正式上架請改走自家後端代理
 - **雲端 AI 同意**：兩項雲端 AI 功能都要使用者在「偏好設定 › 隱私」或打包圖頁明確同意，年齡層為 13–17 時一律停用（`CloudAI`）。
 - **WeatherKit**：在 Apple Developer 的 App ID 開啟 WeatherKit capability 與 App Service；未開通時天氣自動退回月份規則。
 - **隱私**：App 與 Widget 各有 `PrivacyInfo.xcprivacy`；隱私權政策在 `TravelGenius/Resources/Legal/PrivacyPolicy.md`，App 內「偏好設定 › 隱私權政策」顯示同一份內容。
-  - ⚠️ 從 App 直接呼叫 API 僅適合 demo，正式上架請改走自家後端代理
+- **參考資料熱更新**：啟動時背景以 ETag 向 jsDelivr 檢查 `SeedData/*.json`（main 分支），驗證通過的新檔在下次啟動生效，快取依 App 版本隔離，任何失敗都退回 Bundle（`ReferenceDataUpdater`）。開發引數：`-referenceDataBaseURL <url>` 改用其他端點、`-disableReferenceDataUpdate` 停用。合併到 main 後 CI 會清除 jsDelivr 快取。
 - **裝置端生圖（選配、免金鑰）**：想跑本機開源生圖，需在 Xcode 加入 SPM 套件 [`apple/ml-stable-diffusion`](https://github.com/apple/ml-stable-diffusion)（產品 `StableDiffusion`），並把 Apple 轉好的輕量模型資料夾命名為 `StableDiffusionModel` 加入 App bundle（建議 SD 2.1-base 6-bit palettized, split_einsum）。未加入套件時 `OnDeviceImageService` 編譯成回傳 `nil` 的空殼，build 不受影響。需實機（有 Neural Engine），模擬器跑不動。
 - 設計系統：`TravelGenius/SharedUI/PackSmartDesignSystem.swift`＋`design-system/` 文件
 - 實機安裝需在兩個 target 設定 Development Team 並註冊 App Group（`group.com.example.TravelGenius`）

@@ -252,7 +252,18 @@ final class StaticDataStore {
             .filter { seen.insert($0).inserted }
     }
 
+    /// 遠端優先、Bundle 保底：有通過驗證的熱更新快取就用快取，否則讀 App 內建的 SeedData
     private func load<T: Decodable>(_ name: String) -> T {
+        if let cached = ReferenceDataUpdater.cachedData(for: name),
+           let value = try? JSONDecoder().decode(T.self, from: cached) {
+            #if DEBUG
+            NSLog("REFERENCE-DATA load %@ from cache", name)
+            #endif
+            return value
+        }
+        #if DEBUG
+        NSLog("REFERENCE-DATA load %@ from bundle", name)
+        #endif
         guard let url = Bundle.main.url(forResource: name, withExtension: "json"),
               let data = try? Data(contentsOf: url),
               let value = try? JSONDecoder().decode(T.self, from: data)
