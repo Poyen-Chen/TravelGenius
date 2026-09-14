@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "prohibited_items.json",
+  "description": "各國入境禁帶與需申報物品。人工策展，每筆強制附官方來源與最後查證月份。",
+  "type": "array",
+  "minItems": 1,
+  "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["countryCode", "itemZh", "severity", "reasonZh", "lastVerified", "sourceName", "sourceUrl"],
+    "properties": {
+      "countryCode": { "type": "string", "pattern": "^[A-Z]{2}$" },
+      "itemZh": { "type": "string", "minLength": 1 },
+      "severity": { "enum": ["banned", "permit", "declare"] },
+      "reasonZh": { "type": "string", "minLength": 1 },
+      "lastVerified": { "$ref": "#/$defs/yearMonth" },
+      "sourceName": { "type": "string", "minLength": 1 },
+      "sourceUrl": { "type": "string", "pattern": "^https://" },
+      "aliases": { "$ref": "#/$defs/terms" },
+      "keywords": { "$ref": "#/$defs/terms" },
+      "exclusions": { "$ref": "#/$defs/terms" }
+    }
+  },
+  "$defs": {
+    "yearMonth": { "type": "string", "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])$" },
+    "terms": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } }
+  }
+}

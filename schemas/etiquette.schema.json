@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "etiquette.json",
+  "description": "文化禮儀卡。來源選填，但 sourceName 與 sourceUrl 必須成對出現。",
+  "type": "array",
+  "minItems": 1,
+  "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["countryCode", "titleZh", "bodyZh"],
+    "properties": {
+      "countryCode": { "type": "string", "pattern": "^[A-Z]{2}$" },
+      "cityZh": { "type": "string", "minLength": 1 },
+      "titleZh": { "type": "string", "minLength": 1 },
+      "bodyZh": { "type": "string", "minLength": 1 },
+      "sourceName": { "type": "string", "minLength": 1 },
+      "sourceUrl": { "type": "string", "pattern": "^https://" }
+    },
+    "dependentRequired": {
+      "sourceName": ["sourceUrl"],
+      "sourceUrl": ["sourceName"]
+    }
+  }
+}
