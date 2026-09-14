@@ -61,7 +61,7 @@ struct PackingListView: View {
                         Button("生成打包圖", systemImage: "photo.on.rectangle.angled") {
                             showingPackingImage = true
                         }
-                        Button("行李箱擺位", systemImage: "camera.viewfinder") {
+                        Button("行李箱擺位", systemImage: "cube") {
                             showingSuitcaseLayout = true
                         }
                         ShareLink(item: PackingShareText.make(for: trip)) {
