@@ -3,7 +3,7 @@
 //  TravelGenius
 //
 //  行李打包圖分享頁（Firstgram「第一次就拍到理想畫面」風格）：
-//   ・理想構圖 AI 圖：風格預設 → OpenAI / Gemini 一次生出構圖漂亮的 flat-lay
+//   ・理想構圖 AI 圖：風格預設 → 裝置端模型，或經使用者同意的 OpenAI，一次生出構圖漂亮的 flat-lay
 //   ・完成度評分徽章：仿 Firstgram 分數，把「打包完成度 X%」烤進圖裡
 //   ・深色電影感呈現：深色底＋觀景窗構圖框
 //  無金鑰／離線／失敗時，以 ImageRenderer 把清單渲成原生排版卡（深色）— 永遠有圖可分享。
@@ -24,6 +24,7 @@ struct PackingImageView: View {
 
     @State private var phase: Phase = .loading
     @State private var style: PackingImageStyle = .softStudio
+    @State private var showingCloudAIConsent = false
 
     private static let slime = Color(red: 0.36, green: 0.78, blue: 0.42)
     private var packedCount: Int { (trip.packingItems ?? []).filter(\.isPacked).count }
@@ -55,6 +56,15 @@ struct PackingImageView: View {
         }
         .preferredColorScheme(.dark)
         .task(id: style) { await load() }
+        .alert(CloudAI.consentTitle, isPresented: $showingCloudAIConsent) {
+            Button("同意並生成") {
+                CloudAI.hasConsent = true
+                Task { await load() }
+            }
+            Button("不要", role: .cancel) {}
+        } message: {
+            Text(CloudAI.consentMessage)
+        }
     }
 
     private var loadingView: some View {
@@ -65,9 +75,11 @@ struct PackingImageView: View {
             Text("正在生成理想打包圖…")
                 .font(.subheadline)
                 .foregroundStyle(.white.opacity(0.85))
-            Text("AI 生成約需 10–25 秒")
-                .font(.caption)
-                .foregroundStyle(.white.opacity(0.4))
+            if CloudAI.isAllowed(.openAI) || OnDeviceImageService.isAvailable {
+                Text("AI 生成約需 10–25 秒")
+                    .font(.caption)
+                    .foregroundStyle(.white.opacity(0.4))
+            }
         }
     }
 
@@ -96,6 +108,15 @@ struct PackingImageView: View {
                 .foregroundStyle(.white.opacity(0.5))
                 .multilineTextAlignment(.center)
 
+            if !isAI && CloudAI.canOffer(.openAI) && !CloudAI.hasConsent {
+                Button {
+                    showingCloudAIConsent = true
+                } label: {
+                    Label("改用 AI 生成理想構圖", systemImage: "sparkles")
+                }
+                .foregroundStyle(Self.slime)
+            }
+
             ShareLink(
                 item: Image(uiImage: image),
                 preview: SharePreview("\(trip.name) 行李打包圖", image: Image(uiImage: image))
@@ -123,13 +144,10 @@ struct PackingImageView: View {
             phase = .ready(image: badged(onDevice), isAI: true)
             return
         }
-        // 2. OpenAI（gpt-image-1）優先，其次 Gemini
-        if let openAI = await OpenAIImageService.generate(for: trip, style: style) {
+        // 2. 雲端 OpenAI（gpt-image-1）：需使用者同意、非未成年、且有可用憑證
+        if CloudAI.isAllowed(.openAI),
+           let openAI = await OpenAIImageService.generate(for: trip, style: style) {
             phase = .ready(image: badged(openAI), isAI: true)
-            return
-        }
-        if let gemini = await PackingImageService.generate(for: trip, style: style) {
-            phase = .ready(image: badged(gemini), isAI: true)
             return
         }
         // 3. 保底：原生排版卡（深色），已含完成度

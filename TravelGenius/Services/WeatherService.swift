@@ -2,11 +2,15 @@
 //  WeatherService.swift
 //  TravelGenius
 //
-//  Open-Meteo（免費、免金鑰）抓目的地城市在旅行日期的預報，
-//  轉成天氣標籤（rain / hot / cold / mild）調整清單；離線或超出預報範圍時退回月份規則。
+//  Apple WeatherKit 抓目的地城市在旅行日期的每日預報，
+//  轉成天氣標籤（rain / hot / cold / mild）調整清單；離線、未開通或超出預報範圍時退回月份規則。
+//  WeatherKit 隨 Apple Developer Program 提供且可商用（Open-Meteo 免費方案禁止商業用途）。
+//  需在 App ID 開啟 WeatherKit capability，並依規定顯示 Apple Weather 標誌與法律聲明（WeatherAttributionView）。
 //
 
 import Foundation
+import CoreLocation
+import WeatherKit
 
 struct WeatherSummary: Codable {
     let cityZh: String
@@ -33,21 +37,14 @@ struct WeatherSummary: Codable {
 }
 
 enum WeatherService {
-    private struct OpenMeteoResponse: Decodable {
-        struct Daily: Decodable {
-            let time: [String]
-            let temperature_2m_max: [Double]
-            let temperature_2m_min: [Double]
-            let precipitation_probability_max: [Int?]
-        }
-        let daily: Daily
-    }
+    /// WeatherKit 每日預報約涵蓋今天起 10 天
+    private static let forecastDays = 10
 
     private static func cacheKey(for trip: Trip) -> String {
         "weather.\(trip.id.uuidString)"
     }
 
-    /// 抓取行程期間預報；快取 6 小時。回傳 nil = 無座標／超出 16 天預報範圍／離線
+    /// 抓取行程期間預報；快取 6 小時。回傳 nil = 無座標／超出預報範圍／離線／WeatherKit 未開通
     static func fetch(for trip: Trip) async -> WeatherSummary? {
         let store = StaticDataStore.shared
         guard let city = store.city(countryCode: trip.countryCode, name: trip.city)
@@ -64,36 +61,23 @@ enum WeatherService {
         let start = max(calendar.startOfDay(for: trip.startDate), today)
         let end = calendar.startOfDay(for: trip.endDate)
         guard end >= start,
-              let horizon = calendar.date(byAdding: .day, value: 15, to: today),
-              start <= horizon else { return nil }
-        let cappedEnd = min(end, horizon)
+              let horizon = calendar.date(byAdding: .day, value: forecastDays - 1, to: today),
+              start <= horizon,
+              // WeatherKit 的日期區間不含 endDate，因此多加一天
+              let queryEnd = calendar.date(byAdding: .day, value: 1, to: min(end, horizon)) else { return nil }
 
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        formatter.timeZone = .current
-
-        var components = URLComponents(string: "https://api.open-meteo.com/v1/forecast")!
-        components.queryItems = [
-            URLQueryItem(name: "latitude", value: String(city.lat)),
-            URLQueryItem(name: "longitude", value: String(city.lon)),
-            URLQueryItem(name: "daily", value: "temperature_2m_max,temperature_2m_min,precipitation_probability_max"),
-            URLQueryItem(name: "start_date", value: formatter.string(from: start)),
-            URLQueryItem(name: "end_date", value: formatter.string(from: cappedEnd)),
-            URLQueryItem(name: "timezone", value: "auto"),
-        ]
-        guard let url = components.url else { return nil }
-
+        let location = CLLocation(latitude: city.lat, longitude: city.lon)
         do {
-            let (data, response) = try await URLSession.shared.data(from: url)
-            guard (response as? HTTPURLResponse)?.statusCode == 200 else { return nil }
-            let decoded = try JSONDecoder().decode(OpenMeteoResponse.self, from: data)
-            let daily = decoded.daily
-            guard !daily.temperature_2m_max.isEmpty else { return nil }
+            let days = try await WeatherKit.WeatherService.shared.weather(
+                for: location,
+                including: .daily(startDate: start, endDate: queryEnd)
+            ).forecast
+            guard !days.isEmpty else { return nil }
             let summary = WeatherSummary(
                 cityZh: city.cityZh,
-                rainDays: daily.precipitation_probability_max.filter { ($0 ?? 0) >= 50 }.count,
-                tempMin: daily.temperature_2m_min.min() ?? 0,
-                tempMax: daily.temperature_2m_max.max() ?? 0,
+                rainDays: days.filter { $0.precipitationChance >= 0.5 }.count,
+                tempMin: days.map { $0.lowTemperature.converted(to: .celsius).value }.min() ?? 0,
+                tempMax: days.map { $0.highTemperature.converted(to: .celsius).value }.max() ?? 0,
                 fetchedAt: .now
             )
             saveCache(summary, for: trip)

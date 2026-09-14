@@ -2,31 +2,11 @@
 //  TriviaService.swift
 //  TravelGenius
 //
-//  小史萊姆的旅遊冷知識：透過 Claude API 依目的地生成（每 session 批次抓 5 則輪播），
-//  無金鑰或離線時退回內建冷知識庫 — demo 永不空手。
-//  金鑰放 Resources/Secrets.plist（已 gitignore），正式上架應改走自家後端代理。
+//  小史萊姆的旅遊冷知識：經使用者同意後透過 Claude API 依目的地生成（每 session 批次抓 5 則輪播），
+//  未同意、未成年、無憑證或離線時退回內建冷知識庫。閘門與金鑰讀取見 CloudAI.swift。
 //
 
 import Foundation
-
-enum Secrets {
-    static let anthropicAPIKey: String? = value(forKey: "ANTHROPIC_API_KEY", requiredPrefix: "sk-ant-")
-
-    /// Google AI Studio 金鑰（以 "AIza" 開頭）；供行李打包圖生成使用。
-    static let geminiAPIKey: String? = value(forKey: "GEMINI_API_KEY", requiredPrefix: "AIza")
-
-    /// OpenAI 金鑰（以 "sk-" 開頭）；供行李打包圖生成使用。
-    static let openAIAPIKey: String? = value(forKey: "OPENAI_API_KEY", requiredPrefix: "sk-")
-
-    private static func value(forKey key: String, requiredPrefix: String) -> String? {
-        guard let url = Bundle.main.url(forResource: "Secrets", withExtension: "plist"),
-              let data = try? Data(contentsOf: url),
-              let plist = try? PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any],
-              let value = plist[key] as? String,
-              value.hasPrefix(requiredPrefix) else { return nil }
-        return value
-    }
-}
 
 enum TriviaService {
     private static let model = "claude-sonnet-4-6"
@@ -62,7 +42,7 @@ enum TriviaService {
     }
 
     private static func fetchFacts(for trip: Trip) async -> [String]? {
-        guard let apiKey = Secrets.anthropicAPIKey else { return nil }
+        guard CloudAI.isAllowed(.anthropic), let apiKey = Secrets.anthropicAPIKey else { return nil }
         let country = StaticDataStore.shared.country(code: trip.countryCode)?.nameZh ?? trip.countryCode
         let place = trip.city.isEmpty ? country : "\(country)\(trip.city)"
 
