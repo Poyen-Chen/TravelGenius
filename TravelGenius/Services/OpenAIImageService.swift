@@ -3,8 +3,8 @@
 //  TravelGenius
 //
 //  行李打包圖（雲端）：OpenAI Images API（gpt-image-1）。以清單為素材生成氛圍 flat-lay。
-//  按張計費、需 OPENAI_API_KEY（放 gitignored Secrets.plist）；模擬器可用（純網路呼叫）。
-//  正式上架應改走自家後端代理，別把金鑰包進 App。
+//  按張計費；需使用者同意、非未成年、且有可用憑證（見 CloudAI.swift）。
+//  Release 版不含金鑰，正式開放前需改走自家後端代理。
 //
 
 import UIKit
@@ -34,7 +34,7 @@ enum OpenAIImageService {
     }
 
     private static func fetchImage(prompt: String) async -> UIImage? {
-        guard let apiKey = Secrets.openAIAPIKey else { return nil }
+        guard CloudAI.isAllowed(.openAI), let apiKey = Secrets.openAIAPIKey else { return nil }
 
         var request = URLRequest(url: URL(string: "https://api.openai.com/v1/images/generations")!)
         request.httpMethod = "POST"

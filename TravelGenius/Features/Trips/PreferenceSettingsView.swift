@@ -4,6 +4,7 @@
 //
 //  五項使用者偏好（含行李偏好）；變更後重新合併目前行程的清單，個人化立即可見。
 //  embedded = true 時作為分頁使用（即時儲存、無取消/儲存鈕）。
+//  隱私區塊：雲端 AI 同意開關（立即生效）與隱私權政策。
 //
 
 import SwiftUI
@@ -19,6 +20,30 @@ struct PreferenceSettingsView: View {
 
     @State private var preferences = UserPreferences.load()
     @AppStorage(AppAppearance.storageKey) private var appearanceRaw = AppAppearance.system.rawValue
+    @State private var cloudAIConsent = CloudAI.hasConsent
+    @State private var showingCloudAIConsent = false
+
+    private var isMinorSelected: Bool { preferences.ageBand == .teen }
+
+    private var cloudAIBinding: Binding<Bool> {
+        Binding(
+            get: { cloudAIConsent && !isMinorSelected },
+            set: { isOn in
+                if isOn {
+                    showingCloudAIConsent = true
+                } else {
+                    cloudAIConsent = false
+                    CloudAI.hasConsent = false
+                }
+            }
+        )
+    }
+
+    private var privacyFooter: String {
+        if isMinorSelected { return "未滿 18 歲無法使用雲端 AI 功能，打包圖與冷知識會在裝置上產生。" }
+        if !CloudAI.isConfiguredAny { return "此版本未提供雲端 AI 功能，打包圖與冷知識皆在裝置上產生。" }
+        return "開啟後，打包圖會把清單物品傳給 OpenAI，冷知識會把目的地傳給 Anthropic。"
+    }
 
     var body: some View {
         NavigationStack {
@@ -61,8 +86,29 @@ struct PreferenceSettingsView: View {
                 } footer: {
                     Text("偏好會直接影響清單內容（例如輕便會略過加分項目、家庭出遊會加入兒童用品）\(embedded ? "，變更立即生效。" : "，儲存後立即重新客製目前行程的清單。")")
                 }
+
+                Section {
+                    Toggle("雲端 AI 功能", isOn: cloudAIBinding)
+                        .disabled(isMinorSelected || !CloudAI.isConfiguredAny)
+                    NavigationLink("隱私權政策") {
+                        PrivacyPolicyView()
+                    }
+                } header: {
+                    Text("隱私")
+                } footer: {
+                    Text(privacyFooter)
+                }
             }
             .navigationTitle("偏好設定")
+            .alert(CloudAI.consentTitle, isPresented: $showingCloudAIConsent) {
+                Button("同意並開啟") {
+                    cloudAIConsent = true
+                    CloudAI.hasConsent = true
+                }
+                Button("不要", role: .cancel) {}
+            } message: {
+                Text(CloudAI.consentMessage)
+            }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 if !embedded {

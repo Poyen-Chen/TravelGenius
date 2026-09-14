@@ -179,12 +179,10 @@ struct PackingListView: View {
                             .foregroundStyle(.tint)
                         Text("\(weather.cityZh) 旅行期間預報：\(weather.headline)")
                             .font(.footnote)
-                        Spacer()
-                        Text("Open-Meteo")
-                            .font(.caption2)
-                            .foregroundStyle(.tertiary)
                     }
                     .accessibilityElement(children: .combine)
+                } footer: {
+                    WeatherAttributionView()
                 }
             }
 
