@@ -15,15 +15,31 @@ struct TravelGeniusApp: App {
     init() {
         // 上次啟動下載的參考資料在這裡整批生效，必須早於任何 StaticDataStore 讀取
         ReferenceDataUpdater.promoteStagedUpdates()
+        // 聚焦版仍註冊全部模型，避免既有安裝的 schema migration 問題
+        let schema = Schema([
+            Trip.self, Expense.self, PackingItem.self,
+            MedicalProfile.self, Medication.self, AllergyRecord.self,
+            VaccineRecord.self, EmergencyContact.self,
+            PackingLibraryItem.self
+        ])
         do {
-            // 聚焦版仍註冊全部模型，避免既有安裝的 schema migration 問題
+            // .automatic：有 iCloud entitlement 時鏡像到使用者自己的 CloudKit 私有資料庫，
+            // 沒有時（未簽章的模擬器建置、使用者未登入 iCloud）自動退回純本機。
             container = try ModelContainer(
-                for: Trip.self, Expense.self, PackingItem.self,
-                MedicalProfile.self, Medication.self, AllergyRecord.self,
-                VaccineRecord.self, EmergencyContact.self
+                for: schema,
+                configurations: ModelConfiguration(schema: schema, cloudKitDatabase: .automatic)
             )
         } catch {
-            fatalError("無法建立資料庫：\(error)")
+            // CloudKit 設定有問題時不該讓 App 開不起來，退回純本機儲存。
+            NSLog("CLOUDKIT container failed, falling back to local-only: %@", String(describing: error))
+            do {
+                container = try ModelContainer(
+                    for: schema,
+                    configurations: ModelConfiguration(schema: schema, cloudKitDatabase: .none)
+                )
+            } catch {
+                fatalError("無法建立資料庫：\(error)")
+            }
         }
         migrateLegacyTripLifecycleIfNeeded()
         if ProcessInfo.processInfo.arguments.contains("-seedDemo") {

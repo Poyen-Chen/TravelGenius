@@ -355,6 +355,8 @@ struct AddPackingItemView: View {
                             trip: trip
                         )
                         context.insert(item)
+                        // 收進個人行李庫，讓之後的行程認得這件東西
+                        PackingLibrary.record(name: item.name, category: category, in: context)
                         dismiss()
                     }
                     .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)

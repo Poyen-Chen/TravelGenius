@@ -9,7 +9,7 @@
 import Foundation
 
 enum TriviaService {
-    private static let model = "claude-sonnet-4-6"
+    private static let model = "claude-sonnet-5"
     private static var cache: [String: [String]] = [:]
     private static var cursor: [String: Int] = [:]
     private static var inFlight: Set<String> = []
@@ -62,6 +62,9 @@ enum TriviaService {
         let body: [String: Any] = [
             "model": model,
             "max_tokens": 1024,
+            // 產生幾則短冷知識不需要推理，且本請求只有 12 秒預算；
+            // Sonnet 5 省略此參數會預設跑 adaptive thinking，徒增延遲。
+            "thinking": ["type": "disabled"],
             "messages": [["role": "user", "content": prompt]],
         ]
         request.httpBody = try? JSONSerialization.data(withJSONObject: body)
@@ -70,7 +73,9 @@ enum TriviaService {
             let (data, response) = try await URLSession.shared.data(for: request)
             guard (response as? HTTPURLResponse)?.statusCode == 200 else { return nil }
             let decoded = try JSONDecoder().decode(MessagesResponse.self, from: data)
-            guard let text = decoded.content.first?.text else { return nil }
+            // 不要假設 content[0] 就是文字：thinking 等區塊也會出現在陣列裡。
+            guard let text = decoded.content.lazy.compactMap(\.text).first(where: { !$0.isEmpty })
+            else { return nil }
             return parseFacts(from: text)
         } catch {
             return nil

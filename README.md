@@ -86,7 +86,7 @@
 - **參考資料熱更新**：啟動時背景以 ETag 向 jsDelivr 檢查 `SeedData/*.json`（main 分支），驗證通過的新檔在下次啟動生效，快取依 App 版本隔離，任何失敗都退回 Bundle（`ReferenceDataUpdater`）。開發引數：`-referenceDataBaseURL <url>` 改用其他端點、`-disableReferenceDataUpdate` 停用。合併到 main 後 CI 會清除 jsDelivr 快取。
 - **裝置端生圖（選配、免金鑰）**：想跑本機開源生圖，需在 Xcode 加入 SPM 套件 [`apple/ml-stable-diffusion`](https://github.com/apple/ml-stable-diffusion)（產品 `StableDiffusion`），並把 Apple 轉好的輕量模型資料夾命名為 `StableDiffusionModel` 加入 App bundle（建議 SD 2.1-base 6-bit palettized, split_einsum）。未加入套件時 `OnDeviceImageService` 編譯成回傳 `nil` 的空殼，build 不受影響。需實機（有 Neural Engine），模擬器跑不動。
 - 設計系統：`TravelGenius/SharedUI/PackSmartDesignSystem.swift`＋`design-system/` 文件
-- 實機安裝需在兩個 target 設定 Development Team 並註冊 App Group（`group.com.example.TravelGenius`）
+- 實機安裝需在兩個 target 設定 Development Team 並註冊 App Group（`group.com.travelgenius.app`）
 
 ### 參考資料維護
 
@@ -103,7 +103,8 @@
 ### 上架前待辦
 
 - `TravelGenius/Resources/Legal/PrivacyPolicy.md` 填入「待填」欄位（開發者名稱、聯絡 email），請律師審閱後公開，網址填入 App Store Connect。
-- Bundle ID 從 `com.example` 改為正式 ID，並在該 App ID 開啟 WeatherKit capability 與 App Service。
+- Bundle ID 已定為 `com.travelgenius.app`（Widget `com.travelgenius.app.widget`）。需在該 App ID 開啟 WeatherKit capability 與 App Service，並建立 CloudKit container `iCloud.com.travelgenius.app`。
+- CloudKit 同步已在程式碼啟用（`ModelConfiguration(cloudKitDatabase: .automatic)`），但要實際生效必須設定 Development Team 並以含 iCloud entitlement 的 profile 簽章；未簽章或使用者未登入 iCloud 時自動退回純本機儲存。
 - App Store Connect 填寫 App 隱私標籤與年齡分級。
 - 雲端 AI 要在正式版開放，需先建立保管金鑰的後端代理（Release 版不含金鑰）。
 - App 內標示開放資料出處：GeoNames（CC BY 4.0）、mledoze/countries（ODbL）都要求標示。
