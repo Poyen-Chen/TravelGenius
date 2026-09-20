@@ -78,17 +78,29 @@ struct FlowProgressHeader: View {
     let title: String
     let subtitle: String
 
+    /// iPhone 橫向時高度只剩約 390pt，標準版面的大標＋副標會把可捲動區壓到只剩一列多。
+    /// compact 高度改走緊湊版：標題與步驟同列、省去副標（副標仍保留給輔助技術）。
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
+
+    private var isCompactHeight: Bool { verticalSizeClass == .compact }
+
     private var progress: Double {
         guard totalSteps > 0 else { return 0 }
         return Double(currentStep) / Double(totalSteps)
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: PackSmartDesign.Spacing.small) {
-            HStack {
+        VStack(alignment: .leading, spacing: isCompactHeight ? 4 : PackSmartDesign.Spacing.small) {
+            HStack(alignment: .firstTextBaseline) {
                 Text("步驟 \(currentStep)／\(totalSteps)")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.tint)
+                if isCompactHeight {
+                    Text(title)
+                        .font(.headline)
+                        .lineLimit(1)
+                        .accessibilityLabel(Text("\(title)。\(subtitle)"))
+                }
                 Spacer()
                 Text(progress, format: .percent.precision(.fractionLength(0)))
                     .font(.caption.monospacedDigit())
@@ -98,11 +110,13 @@ struct FlowProgressHeader: View {
                 .tint(.accentColor)
                 .accessibilityLabel("建立行程進度")
                 .accessibilityValue("第 \(currentStep) 步，共 \(totalSteps) 步")
-            Text(title)
-                .font(.system(.title, design: .rounded).weight(.bold))
-            Text(subtitle)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+            if !isCompactHeight {
+                Text(title)
+                    .font(.system(.title, design: .rounded).weight(.bold))
+                Text(subtitle)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
         }
     }
 }

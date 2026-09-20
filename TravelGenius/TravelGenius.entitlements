@@ -4,9 +4,21 @@
 <dict>
 	<key>com.apple.security.application-groups</key>
 	<array>
-		<string>group.com.example.TravelGenius</string>
+		<string>group.com.travelgenius.app</string>
 	</array>
 	<key>com.apple.developer.weatherkit</key>
 	<true/>
+	<key>com.apple.developer.icloud-container-identifiers</key>
+	<array>
+		<string>iCloud.com.travelgenius.app</string>
+	</array>
+	<key>com.apple.developer.icloud-services</key>
+	<array>
+		<string>CloudKit</string>
+	</array>
+	<!-- CloudKit 以靜默推播通知另一台裝置有變更；缺少此項時背景中的 App 收不到更新。
+	     上架（App Store / TestFlight）時此值必須是 production，Xcode 自動簽章匯出時會代為切換。 -->
+	<key>aps-environment</key>
+	<string>development</string>
 </dict>
 </plist>

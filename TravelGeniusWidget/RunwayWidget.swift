@@ -19,7 +19,7 @@ struct DepartureSnapshot: Codable {
     var packingTotal: Int
     var updatedAt: Date
 
-    static let appGroupID = "group.com.example.TravelGenius"
+    static let appGroupID = "group.com.travelgenius.app"
     static let defaultsKey = "departureSnapshot"
 
     static func load() -> DepartureSnapshot? {

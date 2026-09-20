@@ -81,6 +81,15 @@ final class Trip {
     var baggageAllowanceKg: Double = 23
     var createdAt: Date = Date()
 
+    // 產生此行程清單時所用的偏好快照。偏好本身存在 UserDefaults（不同步），
+    // 若清單改依裝置當下偏好重算，另一台裝置會刪掉不符合它本機偏好的項目。
+    // 快照跟著 Trip 同步，清單在哪台裝置重算都得到同一份結果。
+    var prefAgeBandRaw: String = AgeBand.adult.rawValue
+    var prefGenderRaw: String = GenderPreference.undisclosed.rawValue
+    var prefPartyRaw: String = TravelParty.solo.rawValue
+    var prefExperienceRaw: String = TravelExperience.some.rawValue
+    var prefPackingStyleRaw: String = PackingStyle.full.rawValue
+
     @Relationship(deleteRule: .cascade, inverse: \Expense.trip)
     var expenses: [Expense]? = []
 
@@ -110,6 +119,26 @@ final class Trip {
     var tripType: TripType {
         get { TripType(rawValue: tripTypeRaw) ?? .leisure }
         set { tripTypeRaw = newValue.rawValue }
+    }
+
+    /// 產生此行程清單所依據的偏好。讀取時以行程快照為準，不讀裝置當下偏好。
+    var packingPreferences: UserPreferences {
+        get {
+            UserPreferences(
+                ageBand: AgeBand(rawValue: prefAgeBandRaw) ?? .adult,
+                gender: GenderPreference(rawValue: prefGenderRaw) ?? .undisclosed,
+                party: TravelParty(rawValue: prefPartyRaw) ?? .solo,
+                experience: TravelExperience(rawValue: prefExperienceRaw) ?? .some,
+                packingStyle: PackingStyle(rawValue: prefPackingStyleRaw) ?? .full
+            )
+        }
+        set {
+            prefAgeBandRaw = newValue.ageBand.rawValue
+            prefGenderRaw = newValue.gender.rawValue
+            prefPartyRaw = newValue.party.rawValue
+            prefExperienceRaw = newValue.experience.rawValue
+            prefPackingStyleRaw = newValue.packingStyle.rawValue
+        }
     }
 
     var lifecycleStatus: TripLifecycleStatus {

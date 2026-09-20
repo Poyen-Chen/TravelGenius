@@ -148,7 +148,10 @@ struct TripFormView: View {
             newTrip.city = city
             newTrip.originCountryCode = originCountryCode
             newTrip.originCity = originCity
+            // 以建立當下的偏好做快照，之後清單一律依此重算（見 Trip.packingPreferences）
+            newTrip.packingPreferences = .load()
             context.insert(newTrip)
+            PackingLibrary.applyEssentials(to: newTrip, in: context)
             appState.setActive(newTrip)
         }
         dismiss()

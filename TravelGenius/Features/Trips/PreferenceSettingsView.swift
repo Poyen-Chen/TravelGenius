@@ -88,6 +88,16 @@ struct PreferenceSettingsView: View {
                 }
 
                 Section {
+                    NavigationLink("我的行李庫") {
+                        PackingLibraryView()
+                    }
+                } header: {
+                    Text("個人化")
+                } footer: {
+                    Text("累積你實際會帶的東西。標記「每趟必帶」的項目，新行程會自動帶入。")
+                }
+
+                Section {
                     Toggle("雲端 AI 功能", isOn: cloudAIBinding)
                         .disabled(isMinorSelected || !CloudAI.isConfiguredAny)
                     NavigationLink("隱私權政策") {

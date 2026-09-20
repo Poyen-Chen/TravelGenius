@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- CloudKit 以靜默推播通知本機「另一台裝置改了資料」。沒有這個背景模式，
+	     背景中的 App 收不到變更，會一直顯示舊清單。
+	     註：UIBackgroundModes 不在 Xcode INFOPLIST_KEY_* 的支援清單內，
+	     只能寫在真實的 Info.plist；其餘鍵仍由 GENERATE_INFOPLIST_FILE 產生後合併。 -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
+</dict>
+</plist>

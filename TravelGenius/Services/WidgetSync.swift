@@ -11,7 +11,7 @@ import Foundation
 import WidgetKit
 
 enum WidgetSync {
-    static let appGroupID = "group.com.example.TravelGenius"
+    static let appGroupID = "group.com.travelgenius.app"
     static let defaultsKey = "departureSnapshot"
 
     struct Snapshot: Codable {

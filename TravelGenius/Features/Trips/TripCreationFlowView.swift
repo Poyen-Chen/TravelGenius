@@ -40,6 +40,7 @@ struct TripCreationFlowView: View {
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
     @Environment(AppState.self) private var appState
 
     @State private var step: Step
@@ -106,8 +107,9 @@ struct TripCreationFlowView: View {
                     subtitle: step.subtitle
                 )
                 .padding(.horizontal)
-                .padding(.top, PackSmartDesign.Spacing.medium)
-                .padding(.bottom, PackSmartDesign.Spacing.small)
+                // 橫向高度吃緊，縮減標題區外距把空間讓給表單
+                .padding(.top, verticalSizeClass == .compact ? 4 : PackSmartDesign.Spacing.medium)
+                .padding(.bottom, verticalSizeClass == .compact ? 4 : PackSmartDesign.Spacing.small)
 
                 Group {
                     switch step {
@@ -367,6 +369,8 @@ struct TripCreationFlowView: View {
                 totalBudget: 0,
                 tripType: .leisure
             )
+            // 以建立當下的偏好做快照，之後清單一律依此重算（見 Trip.packingPreferences）
+            trip.packingPreferences = .load()
             workingTrip = trip
         }
         trip.name = resolvedName
@@ -415,7 +419,11 @@ struct TripCreationFlowView: View {
                 sortIndex: PackingListGenerator.customSortIndex + index,
                 trip: trip
             ))
+            // 收進個人行李庫，之後的行程就認得這件東西
+            PackingLibrary.record(name: item.name, category: item.category, in: context)
         }
+        // 「每趟必帶」的項目自動補進來（已存在同名的不重複加入）
+        PackingLibrary.applyEssentials(to: trip, in: context)
         appState.setActive(trip)
         WidgetSync.update(trip: trip)
         try? context.save()

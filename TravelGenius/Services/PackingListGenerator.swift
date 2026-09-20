@@ -21,13 +21,18 @@ enum PackingListGenerator {
 
     /// 自訂項目的分組與排序（固定最後）
     static let customReason = "自訂"
+    /// 從個人行李庫「每趟必帶」自動帶入的項目，在清單裡自成一組
+    static let libraryEssentialReason = "我的必帶"
     static let customSortIndex = 1_000_000
 
+    /// - Parameter preferences: 不傳則沿用行程快照。草稿也會同步，因此不可預設讀裝置偏好，
+    ///   否則同一份草稿在兩台裝置會看到不同的建議清單。
     static func generate(
         for trip: Trip,
-        preferences: UserPreferences = .load(),
+        preferences: UserPreferences? = nil,
         weatherTags: Set<String>? = nil
     ) -> [GeneratedItem] {
+        let preferences = preferences ?? trip.packingPreferences
         let month = Calendar.current.component(.month, from: trip.startDate)
         var results: [GeneratedItem] = []
         var seenNames = Set<String>()
@@ -78,13 +83,18 @@ enum PackingListGenerator {
     }
 
     /// 將產生結果合併進行程的清單：新項目加入、已不適用且未打包的自動項目移除
+    /// - Parameter preferences: 傳入值代表「使用者剛改了偏好」，會一併寫回行程快照。
+    ///   不傳則沿用行程既有快照——絕不可改讀裝置當下偏好，否則另一台裝置會依自己的
+    ///   偏好刪掉本機產生的項目，再同步回來造成跨裝置資料破壞。
     @MainActor
     static func sync(
         trip: Trip,
         context: ModelContext,
-        preferences: UserPreferences = .load(),
+        preferences: UserPreferences? = nil,
         weatherTags: Set<String>? = nil
     ) {
+        if let preferences { trip.packingPreferences = preferences }
+        let preferences = trip.packingPreferences
         let generated = generate(for: trip, preferences: preferences, weatherTags: weatherTags)
             .filter { !trip.excludedPackingNames.contains($0.name) }
         let existing = trip.packingItems ?? []
