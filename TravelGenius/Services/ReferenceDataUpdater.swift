@@ -24,7 +24,7 @@ enum ReferenceDataUpdater {
     static let defaultBaseURL = URL(string: "https://cdn.jsdelivr.net/gh/Poyen-Chen/TravelGenius@main/TravelGenius/Resources/SeedData/")!
 
     /// 會熱更新的檔案，與 StaticDataStore 載入的檔名一致
-    static let files = ["countries", "cities", "packing_rules", "prohibited_items", "aviation_rules", "etiquette"]
+    static let files = ["countries", "cities", "packing_items", "packing_rules", "prohibited_items", "aviation_rules", "etiquette"]
 
     /// 開發測試用引數：
     ///   `-referenceDataBaseURL <url>` 改用其他端點（例如本機測試伺服器）
@@ -168,6 +168,10 @@ enum ReferenceDataUpdater {
             return Set(StaticDataStore.focusCountryCodes).isSubset(of: Set(countries.map(\.code)))
         case "cities":
             return decodeNonEmpty([City].self, from: data) != nil
+        case "packing_items":
+            // 規則以 id 引用目錄，目錄壞掉會讓整份清單變空，必須擋在快取之前
+            guard let items = decodeNonEmpty([PackingCatalogItem].self, from: data) else { return false }
+            return !items.contains { $0.id.isEmpty || $0.nameZh.isEmpty }
         case "packing_rules":
             return decodeNonEmpty([PackingRule].self, from: data) != nil
         case "prohibited_items":

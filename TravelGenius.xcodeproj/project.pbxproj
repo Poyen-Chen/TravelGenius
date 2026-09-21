@@ -18,6 +18,13 @@
 			remoteGlobalIDString = B20000032C0000010000B002;
 			remoteInfo = TravelGeniusWidgetExtension;
 		};
+		C300000B2C0000010000B003 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A0FFFFFC2C0000010000B001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A10000032C0000010000B001;
+			remoteInfo = TravelGenius;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -37,6 +44,7 @@
 /* Begin PBXFileReference section */
 		A10000042C0000010000B001 /* TravelGenius.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TravelGenius.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B20000012C0000010000B002 /* TravelGeniusWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = TravelGeniusWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		C30000012C0000010000B003 /* TravelGeniusTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TravelGeniusTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -73,6 +81,11 @@
 			path = TravelGeniusWidget;
 			sourceTree = "<group>";
 		};
+		C30000022C0000010000B003 /* TravelGeniusTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = TravelGeniusTests;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -90,6 +103,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		C30000052C0000010000B003 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -98,6 +118,7 @@
 			children = (
 				A10000062C0000010000B001 /* TravelGenius */,
 				B20000022C0000010000B002 /* TravelGeniusWidget */,
+				C30000022C0000010000B003 /* TravelGeniusTests */,
 				A10000052C0000010000B001 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -107,6 +128,7 @@
 			children = (
 				A10000042C0000010000B001 /* TravelGenius.app */,
 				B20000012C0000010000B002 /* TravelGeniusWidgetExtension.appex */,
+				C30000012C0000010000B003 /* TravelGeniusTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -160,6 +182,29 @@
 			productReference = B20000012C0000010000B002 /* TravelGeniusWidgetExtension.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
+		C30000032C0000010000B003 /* TravelGeniusTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C30000072C0000010000B003 /* Build configuration list for PBXNativeTarget "TravelGeniusTests" */;
+			buildPhases = (
+				C30000042C0000010000B003 /* Sources */,
+				C30000052C0000010000B003 /* Frameworks */,
+				C30000062C0000010000B003 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				C300000A2C0000010000B003 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				C30000022C0000010000B003 /* TravelGeniusTests */,
+			);
+			name = TravelGeniusTests;
+			packageProductDependencies = (
+			);
+			productName = TravelGeniusTests;
+			productReference = C30000012C0000010000B003 /* TravelGeniusTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -175,6 +220,10 @@
 					};
 					B20000032C0000010000B002 = {
 						CreatedOnToolsVersion = 26.0;
+					};
+					C30000032C0000010000B003 = {
+						CreatedOnToolsVersion = 27.0;
+						TestTargetID = A10000032C0000010000B001;
 					};
 				};
 			};
@@ -195,6 +244,7 @@
 			targets = (
 				A10000032C0000010000B001 /* TravelGenius */,
 				B20000032C0000010000B002 /* TravelGeniusWidgetExtension */,
+				C30000032C0000010000B003 /* TravelGeniusTests */,
 			);
 		};
 /* End PBXProject section */
@@ -208,6 +258,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		B20000062C0000010000B002 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C30000062C0000010000B003 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -231,6 +288,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		C30000042C0000010000B003 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -238,6 +302,11 @@
 			isa = PBXTargetDependency;
 			target = B20000032C0000010000B002 /* TravelGeniusWidgetExtension */;
 			targetProxy = B200000C2C0000010000B002 /* PBXContainerItemProxy */;
+		};
+		C300000A2C0000010000B003 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A10000032C0000010000B001 /* TravelGenius */;
+			targetProxy = C300000B2C0000010000B003 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -487,6 +556,42 @@
 			};
 			name = Release;
 		};
+		C30000082C0000010000B003 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.travelgenius.app.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/TravelGenius.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/TravelGenius";
+			};
+			name = Debug;
+		};
+		C30000092C0000010000B003 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.travelgenius.app.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/TravelGenius.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/TravelGenius";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -513,6 +618,15 @@
 			buildConfigurations = (
 				B20000082C0000010000B002 /* Debug */,
 				B20000092C0000010000B002 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		C30000072C0000010000B003 /* Build configuration list for PBXNativeTarget "TravelGeniusTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C30000082C0000010000B003 /* Debug */,
+				C30000092C0000010000B003 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

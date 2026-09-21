@@ -45,56 +45,57 @@ struct City: Codable, Identifiable, Hashable {
     var id: String { "\(countryCode)-\(cityZh)" }
 }
 
-struct PackingRule: Codable {
-    struct Match: Codable {
-        let countries: [String]?
-        let months: [Int]?
-        /// 線上天氣模式下取代 months 的標籤（rain / hot / cold / mild）
-        let weatherTags: [String]?
-        let parties: [String]?
-        let experiences: [String]?
-        let ageBands: [String]?
-        let genders: [String]?
-    }
+/// 物品目錄：每件東西只在這裡定義一次，規則以 id 引用。
+/// `satisfies` 讓多件物品成為同一需求的候選（例如摺疊傘與輕便雨衣都能擋雨），
+/// 解析時依 priority 取最優先的一件。
+struct PackingCatalogItem: Codable, Identifiable {
+    let id: String
+    let nameZh: String
+    let category: String
+    let weightGrams: Int?
+    let tags: [String]?
+    let satisfies: [String]?
+    /// 同一需求的候選排序，數字小的優先。未指定視為 10。
+    let priority: Int?
 
-    struct Item: Codable {
-        let nameZh: String
-        let category: String
-        let quantity: Int?
-        let perDay: Bool?
-        /// true = 僅「完整打包」風格納入（輕便風格略過）
-        let fullOnly: Bool?
-    }
+    var resolvedPriority: Int { priority ?? 10 }
+    var packingCategory: PackingCategory { PackingCategory(rawValue: category) ?? .other }
+}
 
-    let layer: String
-    let match: Match?
-    let reasonZh: String
-    let items: [Item]
+/// Tag 條件式。三個欄位都省略代表「永遠成立」。
+/// all：全部都要在 context 裡；any：至少一個；none：一個都不能有。
+struct TagCondition: Codable {
+    let all: [String]?
+    let any: [String]?
+    let none: [String]?
 
-    func applies(
-        countryCode: String,
-        month: Int,
-        preferences: UserPreferences,
-        weatherTags: Set<String>?
-    ) -> Bool {
-        guard let match else { return true }
-        if let countries = match.countries, !countries.contains(countryCode) { return false }
-        if let parties = match.parties, !parties.contains(preferences.party.rawValue) { return false }
-        if let experiences = match.experiences, !experiences.contains(preferences.experience.rawValue) { return false }
-        if let ageBands = match.ageBands, !ageBands.contains(preferences.ageBand.rawValue) { return false }
-        if let genders = match.genders, !genders.contains(preferences.gender.rawValue) { return false }
-
-        // 天氣層：有即時預報時以 weatherTags 判定，否則退回月份規則
-        if layer == "weather" {
-            if let weatherTags {
-                guard let ruleTags = match.weatherTags else { return false }
-                return !weatherTags.isDisjoint(with: ruleTags)
-            }
-            if let months = match.months { return months.contains(month) }
-            return false
-        }
-        if let months = match.months, !months.contains(month) { return false }
+    func matches(_ context: Set<String>) -> Bool {
+        if let all, !Set(all).isSubset(of: context) { return false }
+        if let any, Set(any).isDisjoint(with: context) { return false }
+        if let none, !Set(none).isDisjoint(with: context) { return false }
         return true
+    }
+}
+
+struct PackingRule: Codable {
+    /// 一項需求：指定 itemId 直接取該物品，指定 need 則透過 satisfies 索引解析。
+    struct Need: Codable {
+        let itemId: String?
+        let need: String?
+        let quantity: Int?
+        /// true = 數量隨天數成長（受打包風格上限節制）
+        let perDay: Bool?
+        /// 這一項自己的條件，讓同一條規則能依情境增減內容
+        let when: TagCondition?
+    }
+
+    let id: String
+    let when: TagCondition?
+    let reasonZh: String
+    let needs: [Need]
+
+    func applies(to context: Set<String>) -> Bool {
+        when?.matches(context) ?? true
     }
 }
 
@@ -206,6 +207,20 @@ final class StaticDataStore {
     private(set) lazy var countries: [Country] = load("countries")
     private(set) lazy var cities: [City] = load("cities")
     private(set) lazy var packingRules: [PackingRule] = load("packing_rules")
+    private(set) lazy var packingCatalog: [PackingCatalogItem] = load("packing_items")
+
+    /// id → 物品。規則以 id 引用，去重也用 id，不再比對顯示名稱。
+    private(set) lazy var packingCatalogByID: [String: PackingCatalogItem] =
+        Dictionary(packingCatalog.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+
+    /// need → 候選物品（已依 priority 排序）。這是 need 解析用的索引。
+    private(set) lazy var packingItemsBySatisfiedNeed: [String: [PackingCatalogItem]] = {
+        var index: [String: [PackingCatalogItem]] = [:]
+        for item in packingCatalog {
+            for need in item.satisfies ?? [] { index[need, default: []].append(item) }
+        }
+        return index.mapValues { $0.sorted { $0.resolvedPriority < $1.resolvedPriority } }
+    }()
     private(set) lazy var prohibitedItems: [ProhibitedItem] = load("prohibited_items")
     private(set) lazy var etiquetteCards: [EtiquetteCard] = load("etiquette")
     private(set) lazy var aviationRules: [AviationRule] = load("aviation_rules")

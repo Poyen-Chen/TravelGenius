@@ -43,6 +43,9 @@ enum PackingCategory: String, Codable, CaseIterable, Identifiable {
 final class PackingItem {
     var id: UUID = UUID()
     var name: String = ""
+    /// 對應 packing_items.json 的目錄 id。自訂項目與舊版建立的項目為空字串，
+    /// 比對時會退回用名稱，避免升級後重複加入。
+    var catalogItemId: String = ""
     var categoryRaw: String = PackingCategory.other.rawValue
     /// 「因為是…」分組（例如：因為是日本、基本必備、自訂）
     var reasonKey: String = ""

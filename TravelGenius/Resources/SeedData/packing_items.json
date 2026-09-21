@@ -1,0 +1,50 @@
+[
+  { "id": "passport", "nameZh": "護照", "category": "documents", "weightGrams": 30, "tags": ["id-document"] },
+  { "id": "clothes-change", "nameZh": "換洗衣物", "category": "clothing", "weightGrams": 200, "tags": ["wearable"] },
+  { "id": "power-bank", "nameZh": "行動電源", "category": "electronics", "weightGrams": 250, "tags": ["battery", "carry-on-only"] },
+  { "id": "charging-cable", "nameZh": "充電線與充電頭", "category": "electronics", "weightGrams": 80, "tags": [] },
+  { "id": "toiletry-kit", "nameZh": "牙刷盥洗組", "category": "toiletries", "weightGrams": 150, "tags": ["liquid"] },
+  { "id": "daily-meds", "nameZh": "常用藥", "category": "health", "weightGrams": 60, "tags": ["medication"] },
+
+  { "id": "cash-local", "nameZh": "現金（多現金支付）", "category": "documents", "weightGrams": 100, "tags": [] },
+  { "id": "slip-on-shoes", "nameZh": "方便穿脫的鞋（室內脫鞋）", "category": "clothing", "weightGrams": 700, "tags": ["bulky", "wearable"] },
+  { "id": "hand-towel", "nameZh": "小方巾（廁所常無擦手紙）", "category": "toiletries", "weightGrams": 80, "tags": [] },
+  { "id": "tmoney-card", "nameZh": "T-money 交通卡（可機場買）", "category": "documents", "weightGrams": 15, "tags": ["buy-on-arrival"] },
+  { "id": "stomach-meds", "nameZh": "腸胃藥（辣食多）", "category": "health", "weightGrams": 60, "tags": ["medication"] },
+
+  { "id": "sunscreen", "nameZh": "防曬乳", "category": "toiletries", "weightGrams": 120, "tags": ["liquid"], "satisfies": ["sun-protection"] },
+  { "id": "sun-hat", "nameZh": "遮陽帽", "category": "clothing", "weightGrams": 100, "tags": ["wearable"], "satisfies": ["sun-protection"], "priority": 20 },
+  { "id": "sunglasses", "nameZh": "太陽眼鏡", "category": "other", "weightGrams": 30, "tags": [] },
+  { "id": "water-bottle", "nameZh": "隨身水瓶", "category": "other", "weightGrams": 300, "tags": ["bulky"] },
+
+  { "id": "warm-jacket", "nameZh": "保暖外套", "category": "clothing", "weightGrams": 600, "tags": ["bulky", "wearable"], "satisfies": ["warm-layer"] },
+  { "id": "fleece-mid-layer", "nameZh": "刷毛中層", "category": "clothing", "weightGrams": 320, "tags": ["wearable"], "satisfies": ["warm-layer"], "priority": 20 },
+  { "id": "scarf-gloves", "nameZh": "圍巾手套", "category": "clothing", "weightGrams": 250, "tags": ["wearable"] },
+  { "id": "hand-warmer", "nameZh": "暖暖包", "category": "other", "weightGrams": 20, "tags": [] },
+  { "id": "light-jacket", "nameZh": "薄外套", "category": "clothing", "weightGrams": 300, "tags": ["wearable"], "satisfies": ["warm-layer"], "priority": 30 },
+
+  { "id": "umbrella-folding", "nameZh": "摺疊傘", "category": "other", "weightGrams": 350, "tags": ["bulky"], "satisfies": ["rain-cover"] },
+  { "id": "rain-poncho", "nameZh": "輕便雨衣", "category": "other", "weightGrams": 90, "tags": [], "satisfies": ["rain-cover"], "priority": 20 },
+  { "id": "dry-bag", "nameZh": "防水袋（護 3C）", "category": "other", "weightGrams": 60, "tags": [] },
+
+  { "id": "luggage-lock", "nameZh": "行李鎖", "category": "other", "weightGrams": 200, "tags": [] },
+  { "id": "document-pouch", "nameZh": "證件現金分放袋", "category": "documents", "weightGrams": 100, "tags": [] },
+  { "id": "selfie-tripod", "nameZh": "自拍腳架", "category": "electronics", "weightGrams": 250, "tags": ["bulky"] },
+  { "id": "split-bill-cash", "nameZh": "分帳 App 或小額零錢", "category": "other", "weightGrams": 100, "tags": [] },
+  { "id": "kids-meds", "nameZh": "兒童常備藥", "category": "health", "weightGrams": 60, "tags": ["medication"] },
+  { "id": "wet-wipes", "nameZh": "濕紙巾", "category": "toiletries", "weightGrams": 80, "tags": [] },
+  { "id": "snacks", "nameZh": "小點心", "category": "other", "weightGrams": 150, "tags": [] },
+  { "id": "business-cards", "nameZh": "名片", "category": "documents", "weightGrams": 15, "tags": [] },
+  { "id": "formal-wear", "nameZh": "正式服裝", "category": "clothing", "weightGrams": 500, "tags": ["bulky", "wearable"] },
+  { "id": "laptop", "nameZh": "筆電與充電器", "category": "electronics", "weightGrams": 1500, "tags": ["battery", "carry-on-only", "bulky"] },
+
+  { "id": "passport-copy", "nameZh": "護照影本（分開放）", "category": "documents", "weightGrams": 15, "tags": [] },
+  { "id": "insurance-copy", "nameZh": "旅平險保單影本", "category": "documents", "weightGrams": 15, "tags": [] },
+  { "id": "emergency-card", "nameZh": "緊急聯絡卡（手寫）", "category": "documents", "weightGrams": 15, "tags": [] },
+  { "id": "prescription-meds", "nameZh": "處方藥（多帶三天份）", "category": "health", "weightGrams": 60, "tags": ["medication"] },
+  { "id": "reading-glasses", "nameZh": "老花眼鏡", "category": "health", "weightGrams": 30, "tags": [] },
+  { "id": "student-id", "nameZh": "學生證（部分景點優惠）", "category": "documents", "weightGrams": 15, "tags": [] },
+  { "id": "sanitary-products", "nameZh": "衛生用品", "category": "toiletries", "weightGrams": 100, "tags": [] },
+
+  { "id": "plug-adapter", "nameZh": "插座轉接頭", "category": "electronics", "weightGrams": 100, "tags": [] }
+]
