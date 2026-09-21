@@ -1,383 +1,158 @@
 [
   {
-    "layer": "base",
+    "id": "base",
     "reasonZh": "基本必備",
-    "items": [
-      {
-        "nameZh": "護照",
-        "category": "documents",
-        "quantity": 1
-      },
-      {
-        "nameZh": "換洗衣物",
-        "category": "clothing",
-        "perDay": true
-      },
-      {
-        "nameZh": "行動電源",
-        "category": "electronics",
-        "quantity": 1
-      },
-      {
-        "nameZh": "充電線與充電頭",
-        "category": "electronics",
-        "quantity": 1
-      },
-      {
-        "nameZh": "牙刷盥洗組",
-        "category": "toiletries",
-        "quantity": 1
-      },
-      {
-        "nameZh": "常用藥",
-        "category": "health",
-        "quantity": 1
-      }
+    "needs": [
+      { "itemId": "passport" },
+      { "itemId": "clothes-change", "perDay": true },
+      { "itemId": "power-bank" },
+      { "itemId": "charging-cable" },
+      { "itemId": "toiletry-kit" },
+      { "itemId": "daily-meds" }
     ]
   },
   {
-    "layer": "culture",
-    "match": {
-      "countries": [
-        "JP"
-      ]
-    },
+    "id": "culture-jp",
+    "when": { "all": ["country:JP"] },
     "reasonZh": "因為是日本",
-    "items": [
-      {
-        "nameZh": "現金（多現金支付）",
-        "category": "documents",
-        "quantity": 1
-      },
-      {
-        "nameZh": "方便穿脫的鞋（室內脫鞋）",
-        "category": "clothing",
-        "quantity": 1
-      },
-      {
-        "nameZh": "小方巾（廁所常無擦手紙）",
-        "category": "toiletries",
-        "quantity": 1
-      }
+    "needs": [
+      { "itemId": "cash-local" },
+      { "itemId": "slip-on-shoes" },
+      { "itemId": "hand-towel" }
     ]
   },
   {
-    "layer": "culture",
-    "match": {
-      "countries": [
-        "KR"
-      ]
-    },
+    "id": "culture-kr",
+    "when": { "all": ["country:KR"] },
     "reasonZh": "因為是韓國",
-    "items": [
-      {
-        "nameZh": "T-money 交通卡（可機場買）",
-        "category": "documents",
-        "quantity": 1
-      },
-      {
-        "nameZh": "腸胃藥（辣食多）",
-        "category": "health",
-        "quantity": 1
-      }
+    "needs": [
+      { "itemId": "tmoney-card" },
+      { "itemId": "stomach-meds" }
     ]
   },
   {
-    "layer": "weather",
-    "match": {
-      "months": [
-        6,
-        7,
-        8,
-        9
-      ],
-      "weatherTags": [
-        "hot"
-      ]
-    },
+    "id": "weather-hot",
+    "when": { "all": ["weather:hot"] },
     "reasonZh": "因為天氣炎熱",
-    "items": [
-      {
-        "nameZh": "防曬乳",
-        "category": "toiletries",
-        "quantity": 1
-      },
-      {
-        "nameZh": "太陽眼鏡",
-        "category": "other",
-        "quantity": 1,
-        "fullOnly": true
-      },
-      {
-        "nameZh": "隨身水瓶",
-        "category": "other",
-        "quantity": 1,
-        "fullOnly": true
-      }
+    "needs": [
+      { "need": "sun-protection" },
+      { "itemId": "sunglasses", "when": { "none": ["style:light"] } },
+      { "itemId": "water-bottle", "when": { "none": ["style:light"] } }
     ]
   },
   {
-    "layer": "weather",
-    "match": {
-      "months": [
-        12,
-        1,
-        2
-      ],
-      "weatherTags": [
-        "cold"
-      ]
-    },
+    "id": "weather-cold",
+    "when": { "all": ["weather:cold"] },
     "reasonZh": "因為天氣寒冷",
-    "items": [
-      {
-        "nameZh": "保暖外套",
-        "category": "clothing",
-        "quantity": 1
-      },
-      {
-        "nameZh": "圍巾手套",
-        "category": "clothing",
-        "quantity": 1
-      },
-      {
-        "nameZh": "暖暖包",
-        "category": "other",
-        "quantity": 5
-      }
+    "needs": [
+      { "need": "warm-layer" },
+      { "itemId": "scarf-gloves" },
+      { "itemId": "hand-warmer", "quantity": 5 }
     ]
   },
   {
-    "layer": "weather",
-    "match": {
-      "months": [
-        3,
-        4,
-        5,
-        10,
-        11
-      ],
-      "weatherTags": [
-        "mild"
-      ]
-    },
+    "id": "weather-mild",
+    "when": { "all": ["weather:mild"] },
     "reasonZh": "因為是換季天氣",
-    "items": [
-      {
-        "nameZh": "薄外套",
-        "category": "clothing",
-        "quantity": 1
-      }
+    "needs": [
+      { "need": "warm-layer" }
     ]
   },
   {
-    "layer": "weather",
-    "match": {
-      "months": [],
-      "weatherTags": [
-        "rain"
-      ]
-    },
+    "id": "weather-rain",
+    "when": { "all": ["weather:rain"] },
     "reasonZh": "因為預報有雨",
-    "items": [
-      {
-        "nameZh": "摺疊傘",
-        "category": "other",
-        "quantity": 1
-      },
-      {
-        "nameZh": "防水袋（護3C）",
-        "category": "other",
-        "quantity": 1,
-        "fullOnly": true
-      }
+    "needs": [
+      { "need": "rain-cover" },
+      { "itemId": "dry-bag", "when": { "none": ["style:light"] } }
     ]
   },
   {
-    "layer": "party",
-    "match": {
-      "parties": [
-        "solo"
-      ]
-    },
+    "id": "plug-mismatch",
+    "when": { "all": ["plug:incompatible"] },
+    "reasonZh": "因為插座規格與{originCountry}不同（當地 Type-{plugTypes}）",
+    "needs": [
+      { "itemId": "plug-adapter" }
+    ]
+  },
+  {
+    "id": "party-solo",
+    "when": { "all": ["party:solo"] },
     "reasonZh": "因為是獨旅",
-    "items": [
-      {
-        "nameZh": "行李鎖",
-        "category": "other",
-        "quantity": 1
-      },
-      {
-        "nameZh": "證件現金分放袋",
-        "category": "documents",
-        "quantity": 1
-      }
+    "needs": [
+      { "itemId": "luggage-lock" },
+      { "itemId": "document-pouch" }
     ]
   },
   {
-    "layer": "party",
-    "match": {
-      "parties": [
-        "couple"
-      ]
-    },
+    "id": "party-couple",
+    "when": { "all": ["party:couple"], "none": ["style:light"] },
     "reasonZh": "因為是伴侶出遊",
-    "items": [
-      {
-        "nameZh": "自拍腳架",
-        "category": "electronics",
-        "quantity": 1,
-        "fullOnly": true
-      }
+    "needs": [
+      { "itemId": "selfie-tripod" }
     ]
   },
   {
-    "layer": "party",
-    "match": {
-      "parties": [
-        "friends"
-      ]
-    },
+    "id": "party-friends",
+    "when": { "all": ["party:friends"], "none": ["style:light"] },
     "reasonZh": "因為是朋友出遊",
-    "items": [
-      {
-        "nameZh": "分帳 App 或小額零錢",
-        "category": "other",
-        "quantity": 1,
-        "fullOnly": true
-      }
+    "needs": [
+      { "itemId": "split-bill-cash" }
     ]
   },
   {
-    "layer": "party",
-    "match": {
-      "parties": [
-        "family"
-      ]
-    },
+    "id": "party-family",
+    "when": { "all": ["party:family"] },
     "reasonZh": "因為是家庭出遊",
-    "items": [
-      {
-        "nameZh": "兒童常備藥",
-        "category": "health",
-        "quantity": 1
-      },
-      {
-        "nameZh": "濕紙巾",
-        "category": "toiletries",
-        "quantity": 2
-      },
-      {
-        "nameZh": "小點心",
-        "category": "other",
-        "quantity": 1,
-        "fullOnly": true
-      }
+    "needs": [
+      { "itemId": "kids-meds" },
+      { "itemId": "wet-wipes", "quantity": 2 },
+      { "itemId": "snacks", "when": { "none": ["style:light"] } }
     ]
   },
   {
-    "layer": "party",
-    "match": {
-      "parties": [
-        "colleagues"
-      ]
-    },
+    "id": "party-colleagues",
+    "when": { "all": ["party:colleagues"] },
     "reasonZh": "因為是同事出差",
-    "items": [
-      {
-        "nameZh": "名片",
-        "category": "documents",
-        "quantity": 1
-      },
-      {
-        "nameZh": "正式服裝",
-        "category": "clothing",
-        "quantity": 1
-      },
-      {
-        "nameZh": "筆電與充電器",
-        "category": "electronics",
-        "quantity": 1
-      }
+    "needs": [
+      { "itemId": "business-cards" },
+      { "itemId": "formal-wear" },
+      { "itemId": "laptop" }
     ]
   },
   {
-    "layer": "experience",
-    "match": {
-      "experiences": [
-        "first"
-      ]
-    },
+    "id": "experience-first",
+    "when": { "all": ["experience:first"] },
     "reasonZh": "因為是第一次出國",
-    "items": [
-      {
-        "nameZh": "護照影本×2（分開放）",
-        "category": "documents",
-        "quantity": 2
-      },
-      {
-        "nameZh": "旅平險保單影本",
-        "category": "documents",
-        "quantity": 1
-      },
-      {
-        "nameZh": "緊急聯絡卡（手寫）",
-        "category": "documents",
-        "quantity": 1
-      }
+    "needs": [
+      { "itemId": "passport-copy", "quantity": 2 },
+      { "itemId": "insurance-copy" },
+      { "itemId": "emergency-card" }
     ]
   },
   {
-    "layer": "age",
-    "match": {
-      "ageBands": [
-        "senior"
-      ]
-    },
+    "id": "age-senior",
+    "when": { "all": ["age:senior"] },
     "reasonZh": "因為要照顧好自己",
-    "items": [
-      {
-        "nameZh": "處方藥（多帶三天份）",
-        "category": "health",
-        "quantity": 1
-      },
-      {
-        "nameZh": "老花眼鏡",
-        "category": "health",
-        "quantity": 1
-      }
+    "needs": [
+      { "itemId": "prescription-meds" },
+      { "itemId": "reading-glasses" }
     ]
   },
   {
-    "layer": "age",
-    "match": {
-      "ageBands": [
-        "teen"
-      ]
-    },
+    "id": "age-teen",
+    "when": { "all": ["age:teen"] },
     "reasonZh": "因為有學生身分",
-    "items": [
-      {
-        "nameZh": "學生證（部分景點優惠）",
-        "category": "documents",
-        "quantity": 1
-      }
+    "needs": [
+      { "itemId": "student-id" }
     ]
   },
   {
-    "layer": "gender",
-    "match": {
-      "genders": [
-        "female"
-      ]
-    },
+    "id": "gender-female",
+    "when": { "all": ["gender:female"] },
     "reasonZh": "個人衛生用品",
-    "items": [
-      {
-        "nameZh": "衛生用品",
-        "category": "toiletries",
-        "quantity": 1
-      }
+    "needs": [
+      { "itemId": "sanitary-products" }
     ]
   }
 ]
