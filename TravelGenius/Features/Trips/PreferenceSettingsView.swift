@@ -19,6 +19,7 @@ struct PreferenceSettingsView: View {
 
     @State private var preferences = UserPreferences.load()
     @AppStorage(AppAppearance.storageKey) private var appearanceRaw = AppAppearance.system.rawValue
+    @AppStorage(PackmonThemeID.storageKey) private var designThemeRaw = PackmonThemeID.structureC.rawValue
 
     var body: some View {
         NavigationStack {
@@ -31,6 +32,24 @@ struct PreferenceSettingsView: View {
                     }
                     .pickerStyle(.segmented)
                     .labelsHidden()
+                }
+
+                Section {
+                    ForEach(PackmonThemeID.allCases) { themeID in
+                        Button {
+                            designThemeRaw = themeID.rawValue
+                        } label: {
+                            DesignThemeOptionRow(
+                                themeID: themeID,
+                                isSelected: designThemeRaw == themeID.rawValue
+                            )
+                        }
+                        .buttonStyle(.plain)
+                    }
+                } header: {
+                    Text("設計驗證")
+                } footer: {
+                    Text("切換後會立即套用。兩個品牌提案都是測試選項，不代表已定案；導航、內容與資料不會跟著改變。")
                 }
 
                 Section {
@@ -98,5 +117,54 @@ struct PreferenceSettingsView: View {
            !(trip.packingItems ?? []).isEmpty {
             PackingListGenerator.sync(trip: trip, context: context, preferences: preferences)
         }
+    }
+}
+
+private struct DesignThemeOptionRow: View {
+    let themeID: PackmonThemeID
+    let isSelected: Bool
+
+    private var colors: PackmonTheme.Colors { themeID.theme.colors }
+
+    var body: some View {
+        HStack(spacing: 12) {
+            HStack(spacing: -5) {
+                Circle().fill(colors.accent)
+                Circle().fill(colors.secondaryAccent)
+                Circle().fill(colors.canvas)
+                    .overlay { Circle().stroke(.secondary.opacity(0.28), lineWidth: 0.5) }
+            }
+            .frame(width: 54, height: 24)
+            .accessibilityHidden(true)
+
+            VStack(alignment: .leading, spacing: 3) {
+                HStack(spacing: 6) {
+                    Text(themeID.label)
+                        .font(.subheadline.weight(.semibold))
+                    if themeID.isExperimental {
+                        Text("實驗")
+                            .font(.caption2.weight(.bold))
+                            .foregroundStyle(colors.accent)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(colors.accentSoft, in: Capsule())
+                    }
+                }
+                Text(themeID.detail)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer(minLength: 4)
+
+            Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                .foregroundStyle(isSelected ? colors.accent : Color.secondary)
+                .imageScale(.large)
+        }
+        .padding(.vertical, 4)
+        .contentShape(Rectangle())
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }

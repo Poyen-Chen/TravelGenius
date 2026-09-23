@@ -1,4 +1,4 @@
-# TravelGenius 旅行天才
+# Packmon（目前 Xcode target：TravelGenius）
 
 > **出國前，先看懂海關風險，再開始打包。**
 
@@ -69,7 +69,7 @@
 - 開發用啟動引數：`-seedDemo`（示範行程）、`-resetOnboarding`、`-openPackTab` / `-openTipsTab`、`-checkItem 肉絲`（log 印出能帶嗎判定）、`-mascotDockOnLeft YES`
 - 靜態資料在 `TravelGenius/Resources/SeedData/*.json` — 海關/安檢規則支援 `aliases`（口語別名）、`keywords`／`exclusions`（語意判定）與 `sourceUrl`，直接編輯即可擴充
 - **AI 冷知識金鑰（選配）**：複製 `TravelGenius/Resources/Secrets.example.plist` 為 `Secrets.plist` 並填入 Anthropic API key（`Secrets.plist` 已被 gitignore，**絕不提交**）。未設定時小史萊姆自動使用內建冷知識庫。⚠️ 從 App 直接呼叫 API 僅適合 demo，正式上架請改走自家後端代理
-- 設計系統：`TravelGenius/SharedUI/PackSmartDesignSystem.swift`＋`design-system/` 文件
+- 設計系統：`TravelGenius/SharedUI/PackmonDesignSystem.swift`；可在「偏好設定 → 設計驗證」即時切換，導入流程見 `design-system/packmon/INTEGRATION.md`
 - 實機安裝需在兩個 target 設定 Development Team 並註冊 App Group（`group.com.example.TravelGenius`）
 
 ## 資料來源

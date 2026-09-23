@@ -10,6 +10,8 @@ import SwiftUI
 struct FirstLaunchGuideView: View {
     var onComplete: () -> Void
 
+    @Environment(\.packmonTheme) private var theme
+
     @State private var page = 0
 
     private let slides: [GuideSlide] = [
@@ -42,7 +44,7 @@ struct FirstLaunchGuideView: View {
                     .foregroundStyle(.secondary)
                     .frame(minWidth: 44, minHeight: 44)
             }
-            .padding(.horizontal, PackSmartDesign.Spacing.medium)
+            .padding(.horizontal, theme.spacing.medium)
 
             TabView(selection: $page) {
                 ForEach(Array(slides.enumerated()), id: \.offset) { index, slide in
@@ -60,7 +62,7 @@ struct FirstLaunchGuideView: View {
                 }
             }
             .animation(.easeInOut(duration: 0.2), value: page)
-            .padding(.bottom, PackSmartDesign.Spacing.medium)
+            .padding(.bottom, theme.spacing.medium)
 
             Button(page == slides.count - 1 ? "開始使用" : "下一步") {
                 if page == slides.count - 1 {
@@ -69,21 +71,21 @@ struct FirstLaunchGuideView: View {
                     withAnimation { page += 1 }
                 }
             }
-            .buttonStyle(PackSmartPrimaryButtonStyle())
+            .buttonStyle(PackmonPrimaryButtonStyle())
             .padding(.horizontal)
-            .padding(.bottom, PackSmartDesign.Spacing.large)
+            .padding(.bottom, theme.spacing.large)
         }
-        .background(PackSmartDesign.ColorToken.canvas)
+        .background(theme.colors.canvas)
     }
 
     private func guidePage(_ slide: GuideSlide) -> some View {
-        VStack(spacing: PackSmartDesign.Spacing.large) {
-            Spacer(minLength: PackSmartDesign.Spacing.medium)
+        VStack(spacing: theme.spacing.large) {
+            Spacer(minLength: theme.spacing.medium)
 
             slideArtwork(for: slide)
                 .frame(maxWidth: 330)
 
-            VStack(spacing: PackSmartDesign.Spacing.small) {
+            VStack(spacing: theme.spacing.small) {
                 Text(slide.title)
                     .font(.system(.title, design: .rounded).weight(.bold))
                     .multilineTextAlignment(.center)
@@ -93,7 +95,7 @@ struct FirstLaunchGuideView: View {
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            .padding(.horizontal, PackSmartDesign.Spacing.xLarge)
+            .padding(.horizontal, theme.spacing.xLarge)
 
             Spacer()
         }

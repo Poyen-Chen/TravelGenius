@@ -14,6 +14,7 @@ struct PackingListView: View {
 
     @Environment(\.modelContext) private var context
     @Environment(MascotState.self) private var mascot
+    @Environment(\.packmonTheme) private var theme
     @State private var showingAddItem = false
     @State private var showingReturnMode = false
     @State private var confirmReturnMode = false
@@ -116,33 +117,24 @@ struct PackingListView: View {
     }
 
     private var emptyGenerateView: some View {
-        List {
-            Section {
-                VStack(spacing: 12) {
-                    Image(systemName: "suitcase")
-                        .font(.largeTitle)
-                        .foregroundStyle(.secondary)
-                    Text("產生專屬打包清單")
-                        .font(.headline)
-                    Text("每個項目都說明「因為是什麼」才建議帶。")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
-                    Button("產生清單") {
-                        PackingListGenerator.sync(trip: trip, context: context, weatherTags: weather?.tags)
-                    }
-                    .buttonStyle(.borderedProminent)
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 12)
-            }
+        VStack(spacing: 14) {
+            Spacer()
+            MascotView(size: 100)
+            Text("產生專屬打包清單").font(.title3.weight(.black))
+            Text("每個項目都會告訴你為什麼建議帶。")
+                .font(.footnote).foregroundStyle(theme.colors.secondaryText)
+            Button("產生清單") { PackingListGenerator.sync(trip: trip, context: context, weatherTags: weather?.tags) }
+                .buttonStyle(PackmonPrimaryButtonStyle()).padding(.horizontal, 32)
+            Spacer()
         }
+        .background(theme.colors.canvas)
     }
 
     private var packingList: some View {
-        List {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 14) {
             if let weather {
-                Section {
+                PackmonRowCard {
                     HStack(spacing: 8) {
                         Image(systemName: weather.rainDays > 0 ? "cloud.rain" : "sun.max")
                             .foregroundStyle(.tint)
@@ -157,31 +149,34 @@ struct PackingListView: View {
                 }
             }
 
-            Section {
+            PackmonCard {
                 PackingProgressHeader(items: items)
-                    .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16))
             }
 
             ForEach(sections, id: \.reason) { section in
-                Section(section.reason) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(section.reason)
+                        .font(.subheadline.weight(.bold))
+                        .foregroundStyle(theme.colors.secondaryText)
                     ForEach(section.items) { item in
                         PackingItemRow(item: item) {
                             item.isPacked.toggle()
                             packToggle.toggle()
                         }
-                    }
-                    .onDelete { offsets in
-                        for index in offsets {
-                            let item = section.items[index]
-                            if !item.isCustom {
-                                trip.excludePackingItem(named: item.name)
+                        .contextMenu {
+                            Button("刪除", systemImage: "trash", role: .destructive) {
+                                if !item.isCustom { trip.excludePackingItem(named: item.name) }
+                                context.delete(item)
                             }
-                            context.delete(item)
                         }
                     }
                 }
             }
+            }
+            .padding(.horizontal, theme.spacing.medium)
+            .padding(.bottom, 30)
         }
+        .background(theme.colors.canvas)
     }
 }
 
@@ -189,6 +184,7 @@ struct PackingListView: View {
 
 struct PackingProgressHeader: View {
     let items: [PackingItem]
+    @Environment(\.packmonTheme) private var theme
 
     private var packedCount: Int { items.filter(\.isPacked).count }
 
@@ -214,7 +210,7 @@ struct PackingProgressHeader: View {
                     .monospacedDigit()
             }
             .gaugeStyle(.accessoryCircularCapacity)
-            .tint(overall >= 1 ? .green : .blue)
+            .tint(overall >= 1 ? theme.colors.success : theme.colors.secondaryAccent)
             .scaleEffect(1.15)
             .accessibilityLabel("打包進度 \(Int(overall * 100))%")
 
@@ -247,13 +243,14 @@ struct PackingProgressHeader: View {
 struct PackingItemRow: View {
     let item: PackingItem
     var onToggle: () -> Void
+    @Environment(\.packmonTheme) private var theme
 
     var body: some View {
         Button(action: onToggle) {
             HStack(spacing: 12) {
                 Image(systemName: item.isPacked ? "checkmark.circle.fill" : "circle")
                     .font(.title3)
-                    .foregroundStyle(item.isPacked ? .green : .secondary)
+                    .foregroundStyle(item.isPacked ? theme.colors.success : theme.colors.secondaryText)
                 Text(item.name)
                     .strikethrough(item.isPacked)
                     .foregroundStyle(item.isPacked ? .secondary : .primary)
@@ -269,6 +266,10 @@ struct PackingItemRow: View {
             }
         }
         .buttonStyle(.plain)
+        .padding(.horizontal, 14)
+        .frame(minHeight: 50)
+        .background(theme.colors.elevatedSurface, in: RoundedRectangle(cornerRadius: theme.radius.medium, style: .continuous))
+        .overlay { RoundedRectangle(cornerRadius: theme.radius.medium).stroke(theme.colors.separator, lineWidth: 0.75) }
         .accessibilityLabel("\(item.name)\(item.isPacked ? "，已打包" : "，未打包")")
     }
 }

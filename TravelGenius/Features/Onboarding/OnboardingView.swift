@@ -9,6 +9,8 @@ import SwiftUI
 struct OnboardingView: View {
     var onComplete: () -> Void
 
+    @Environment(\.packmonTheme) private var theme
+
     private enum Step: Int, CaseIterable {
         case welcome
         case age
@@ -95,16 +97,16 @@ struct OnboardingView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .background(PackSmartDesign.ColorToken.canvas)
+        .background(theme.colors.canvas)
     }
 
     private var welcomeStep: some View {
-        VStack(spacing: PackSmartDesign.Spacing.large) {
+        VStack(spacing: theme.spacing.large) {
             Spacer()
             MascotBubbleRow(expression: .happy, message: "回答五個小問題，我會依你的旅行方式調整打包建議。")
-                .padding(.horizontal, PackSmartDesign.Spacing.large)
+                .padding(.horizontal, theme.spacing.large)
 
-            VStack(spacing: PackSmartDesign.Spacing.small) {
+            VStack(spacing: theme.spacing.small) {
                 Text("先把每趟旅程準備好")
                     .font(.system(.largeTitle, design: .rounded).weight(.bold))
                     .multilineTextAlignment(.center)
@@ -113,13 +115,13 @@ struct OnboardingView: View {
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
             }
-            .padding(.horizontal, PackSmartDesign.Spacing.xLarge)
+            .padding(.horizontal, theme.spacing.xLarge)
             Spacer()
 
             Button("開始設定") { step = .age }
-                .buttonStyle(PackSmartPrimaryButtonStyle())
+                .buttonStyle(PackmonPrimaryButtonStyle())
                 .padding(.horizontal)
-                .padding(.bottom, PackSmartDesign.Spacing.large)
+                .padding(.bottom, theme.spacing.large)
         }
     }
 
@@ -132,8 +134,8 @@ struct OnboardingView: View {
         buttonTitle: String = "繼續",
         next: @escaping () -> Void
     ) -> some View {
-        VStack(alignment: .leading, spacing: PackSmartDesign.Spacing.medium) {
-            VStack(alignment: .leading, spacing: PackSmartDesign.Spacing.small) {
+        VStack(alignment: .leading, spacing: theme.spacing.medium) {
+            VStack(alignment: .leading, spacing: theme.spacing.small) {
                 Text(title)
                     .font(.system(.title, design: .rounded).weight(.bold))
                 Text(subtitle)
@@ -141,9 +143,9 @@ struct OnboardingView: View {
                     .foregroundStyle(.secondary)
             }
             .padding(.horizontal)
-            .padding(.top, PackSmartDesign.Spacing.large)
+            .padding(.top, theme.spacing.large)
 
-            VStack(spacing: PackSmartDesign.Spacing.small) {
+            VStack(spacing: theme.spacing.small) {
                 ForEach(options) { option in
                     Button {
                         selection.wrappedValue = option
@@ -160,11 +162,11 @@ struct OnboardingView: View {
                         .padding()
                         .frame(minHeight: 52)
                         .background(
-                            PackSmartDesign.ColorToken.elevatedSurface,
-                            in: RoundedRectangle(cornerRadius: PackSmartDesign.Radius.medium, style: .continuous)
+                            theme.colors.elevatedSurface,
+                            in: RoundedRectangle(cornerRadius: theme.radius.medium, style: .continuous)
                         )
                         .overlay {
-                            RoundedRectangle(cornerRadius: PackSmartDesign.Radius.medium, style: .continuous)
+                            RoundedRectangle(cornerRadius: theme.radius.medium, style: .continuous)
                                 .stroke(selection.wrappedValue == option ? Color.accentColor : Color.clear, lineWidth: 1.5)
                         }
                     }
@@ -176,9 +178,9 @@ struct OnboardingView: View {
 
             Spacer()
             Button(buttonTitle, action: next)
-                .buttonStyle(PackSmartPrimaryButtonStyle())
+                .buttonStyle(PackmonPrimaryButtonStyle())
                 .padding(.horizontal)
-                .padding(.bottom, PackSmartDesign.Spacing.large)
+                .padding(.bottom, theme.spacing.large)
         }
     }
 
