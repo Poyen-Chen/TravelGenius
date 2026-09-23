@@ -186,3 +186,11 @@ This log records accepted product choices that affect behavior, navigation, scop
 - Context: The old creation UI offered multiple selections but saved only the first city. Single-city scope was offered as the default in an optional clarification, not explicitly approved by the user. This candidate makes the UI honest without a data migration; multi-city remains a separate decision if requested.
 - Consequences: Initial cities: Japan—Tokyo, Osaka, Kyoto; South Korea—Seoul, Busan; Hong Kong—Hong Kong; USA—New York, Los Angeles; Vietnam—Hanoi, Da Nang, Ho Chi Minh City. Taiwan and existing origin/return options remain unchanged. No PWA changes, account sync, recommendation-policy changes, or complete customs-coverage claim. No SwiftData schema change. User must review this candidate before stage 2.
 - Data provenance: Existing Japan/Korea/Taipei entries retained. US/Vietnam coordinates reuse the PWA destination reference data derived from Open-Meteo geocoding; they are representative city points, not precise trip locations. Hong Kong point uses HKO headquarters coordinates (https://www.hko.gov.hk/en/cis/stn.htm). Hong Kong electricity and emergency metadata checked against Hong Kong Tourism Board (https://www.discoverhongkong.com/tc/travel-guide/traveller-essentials.html and https://www.discoverhongkong.com/eng/travel-guide/traveller-essentials/emergency-useful-numbers.html). Reviewed 2026-09-23.
+
+## PD-024 — Accept stage 1 and publish immutable acceptance checkpoints
+
+- Date: 2026-09-23
+- Status: Accepted
+- Decision: Accept the stage 1 candidate described by PD-023, including its single-city scope and initial city roster. After each human acceptance, commit and push the acceptance record and publish an annotated acceptance tag before starting the next stage.
+- Context: The user explicitly replied「通過」and requested commit/push before progressing, preferably with convenient rollback tags. This resolves PD-023's pending acceptance and extends PD-022's checkpoint workflow.
+- Consequences: Use immutable `packmon-ios-stage-XX-accepted` tags. Verify remote branch and tag before creating the next stage branch from the accepted tag. Preserve the earlier stage 0 checkpoint with the same convention. Do not merge main automatically or equate source rollback with stored-data recovery.
