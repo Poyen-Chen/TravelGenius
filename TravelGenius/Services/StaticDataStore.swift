@@ -54,14 +54,14 @@ struct PackingRule: Codable {
     }
 
     struct Item: Codable {
-        let nameZh: String
-        let category: String
+        let itemId: String
         let quantity: Int?
         let perDay: Bool?
         /// true = 僅「完整打包」風格納入（輕便風格略過）
         let fullOnly: Bool?
     }
 
+    let id: String
     let layer: String
     let match: Match?
     let reasonZh: String
@@ -207,6 +207,12 @@ final class StaticDataStore {
     private(set) lazy var countries: [Country] = load("countries")
     private(set) lazy var cities: [City] = load("cities")
     private(set) lazy var packingRules: [PackingRule] = load("packing_rules")
+    private(set) lazy var packingCatalog: PackingCatalog = {
+        let catalog: PackingCatalog = load("packing_items")
+        do { try catalog.validate(rules: packingRules) }
+        catch { fatalError("Invalid bundled packing contract: \(error)") }
+        return catalog
+    }()
     private(set) lazy var prohibitedItems: [ProhibitedItem] = load("prohibited_items")
     private(set) lazy var etiquetteCards: [EtiquetteCard] = load("etiquette")
     private(set) lazy var aviationRules: [AviationRule] = load("aviation_rules")

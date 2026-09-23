@@ -10,13 +10,14 @@ import SwiftData
 /// 重新產生時只增補與移除「未打包的自動項目」，永不動到自訂與已打包項目。
 enum PackingListGenerator {
     struct GeneratedItem: Identifiable {
+        let catalogItemID: String
         let name: String
         let category: PackingCategory
         let quantity: Int
         let reason: String
         let sortIndex: Int
 
-        var id: String { name }
+        var id: String { catalogItemID }
     }
 
     /// 自訂項目的分組與排序（固定最後）
@@ -30,7 +31,8 @@ enum PackingListGenerator {
     ) -> [GeneratedItem] {
         let month = Calendar.current.component(.month, from: trip.startDate)
         var results: [GeneratedItem] = []
-        var seenNames = Set<String>()
+        var seenIDs = Set<String>()
+        let catalog = StaticDataStore.shared.packingCatalog
 
         for (ruleIndex, rule) in StaticDataStore.shared.packingRules.enumerated() {
             guard rule.applies(
@@ -42,14 +44,15 @@ enum PackingListGenerator {
             for (itemIndex, item) in rule.items.enumerated() {
                 // 輕便打包：略過「完整才帶」的加分項目
                 if preferences.packingStyle == .light && item.fullOnly == true { continue }
-                // 同名項目只取第一次出現（例如夏季與換季都有摺疊傘）
-                guard !seenNames.contains(item.nameZh) else { continue }
-                seenNames.insert(item.nameZh)
+                // Stable identity, first matching rule wins (same precedence as before).
+                guard seenIDs.insert(item.itemId).inserted,
+                      let definition = catalog.item(id: item.itemId) else { continue }
                 let perDayCap = preferences.packingStyle == .light ? 4 : 7
                 let quantity = item.perDay == true ? min(trip.totalDays, perDayCap) : (item.quantity ?? 1)
                 results.append(GeneratedItem(
-                    name: item.nameZh,
-                    category: PackingCategory(rawValue: item.category) ?? .other,
+                    catalogItemID: definition.id,
+                    name: definition.nameZh,
+                    category: definition.category,
                     quantity: quantity,
                     reason: rule.reasonZh,
                     sortIndex: ruleIndex * 100 + itemIndex
@@ -66,6 +69,7 @@ enum PackingListGenerator {
             let types = destination.plugTypes.joined(separator: "/")
             let originName = origin.nameZh
             results.append(GeneratedItem(
+                catalogItemID: "plug-adapter",
                 name: "插座轉接頭（當地 Type-\(types)）",
                 category: .electronics,
                 quantity: 1,
@@ -85,13 +89,22 @@ enum PackingListGenerator {
         preferences: UserPreferences = .load(),
         weatherTags: Set<String>? = nil
     ) {
+        let catalog = StaticDataStore.shared.packingCatalog
+        trip.excludedPackingIDs.formUnion(trip.excludedPackingNames.compactMap { catalog.legacyID(name: $0) })
         let generated = generate(for: trip, preferences: preferences, weatherTags: weatherTags)
-            .filter { !trip.excludedPackingNames.contains($0.name) }
+            .filter { !trip.excludedPackingIDs.contains($0.catalogItemID) && !trip.excludedPackingNames.contains($0.name) }
         let existing = trip.packingItems ?? []
-        let generatedNames = Set(generated.map(\.name))
+        // Assign identity in place: preserve UUID, packed state, quantity, name and custom records.
+        for item in existing where !item.isCustom && (item.catalogItemID ?? "").isEmpty {
+            item.catalogItemID = catalog.legacyID(name: item.name)
+        }
+        let generatedIDs = Set(generated.map(\.catalogItemID))
+        let existingIDs = Set(existing.compactMap { item in
+            (item.catalogItemID ?? "").isEmpty ? catalog.legacyID(name: item.name) : item.catalogItemID
+        })
         let existingNames = Set(existing.map(\.name))
 
-        for item in generated where !existingNames.contains(item.name) {
+        for item in generated where !existingIDs.contains(item.catalogItemID) && !existingNames.contains(item.name) {
             let packingItem = PackingItem(
                 name: item.name,
                 category: item.category,
@@ -101,10 +114,14 @@ enum PackingListGenerator {
                 sortIndex: item.sortIndex,
                 trip: trip
             )
+            packingItem.catalogItemID = item.catalogItemID
             context.insert(packingItem)
         }
 
-        for item in existing where !item.isCustom && !item.isPacked && !generatedNames.contains(item.name) {
+        for item in existing where !item.isCustom && !item.isPacked {
+            // Unknown legacy items are retained: an incomplete mapping must never erase user data.
+            guard let id = item.catalogItemID, catalog.item(id: id) != nil,
+                  !generatedIDs.contains(id) else { continue }
             context.delete(item)
         }
     }

@@ -1,0 +1,307 @@
+{
+  "version": 1,
+  "items": [
+    {
+      "id": "passport",
+      "nameZh": "護照",
+      "category": "documents",
+      "legacyNames": [
+        "護照"
+      ]
+    },
+    {
+      "id": "clothes-change",
+      "nameZh": "換洗衣物",
+      "category": "clothing",
+      "legacyNames": [
+        "換洗衣物"
+      ]
+    },
+    {
+      "id": "power-bank",
+      "nameZh": "行動電源",
+      "category": "electronics",
+      "legacyNames": [
+        "行動電源"
+      ]
+    },
+    {
+      "id": "charging-kit",
+      "nameZh": "充電線與充電頭",
+      "category": "electronics",
+      "legacyNames": [
+        "充電線與充電頭"
+      ]
+    },
+    {
+      "id": "toiletry-kit",
+      "nameZh": "牙刷盥洗組",
+      "category": "toiletries",
+      "legacyNames": [
+        "牙刷盥洗組"
+      ]
+    },
+    {
+      "id": "regular-medicine",
+      "nameZh": "常用藥",
+      "category": "health",
+      "legacyNames": [
+        "常用藥"
+      ]
+    },
+    {
+      "id": "cash-japan",
+      "nameZh": "現金（多現金支付）",
+      "category": "documents",
+      "legacyNames": [
+        "現金（多現金支付）"
+      ]
+    },
+    {
+      "id": "slip-on-shoes",
+      "nameZh": "方便穿脫的鞋（室內脫鞋）",
+      "category": "clothing",
+      "legacyNames": [
+        "方便穿脫的鞋（室內脫鞋）"
+      ]
+    },
+    {
+      "id": "hand-towel",
+      "nameZh": "小方巾（廁所常無擦手紙）",
+      "category": "toiletries",
+      "legacyNames": [
+        "小方巾（廁所常無擦手紙）"
+      ]
+    },
+    {
+      "id": "tmoney-card",
+      "nameZh": "T-money 交通卡（可機場買）",
+      "category": "documents",
+      "legacyNames": [
+        "T-money 交通卡（可機場買）"
+      ]
+    },
+    {
+      "id": "stomach-medicine",
+      "nameZh": "腸胃藥（辣食多）",
+      "category": "health",
+      "legacyNames": [
+        "腸胃藥（辣食多）"
+      ]
+    },
+    {
+      "id": "sunscreen",
+      "nameZh": "防曬乳",
+      "category": "toiletries",
+      "legacyNames": [
+        "防曬乳"
+      ]
+    },
+    {
+      "id": "sunglasses",
+      "nameZh": "太陽眼鏡",
+      "category": "other",
+      "legacyNames": [
+        "太陽眼鏡"
+      ]
+    },
+    {
+      "id": "water-bottle",
+      "nameZh": "隨身水瓶",
+      "category": "other",
+      "legacyNames": [
+        "隨身水瓶"
+      ]
+    },
+    {
+      "id": "warm-coat",
+      "nameZh": "保暖外套",
+      "category": "clothing",
+      "legacyNames": [
+        "保暖外套"
+      ]
+    },
+    {
+      "id": "scarf-gloves",
+      "nameZh": "圍巾手套",
+      "category": "clothing",
+      "legacyNames": [
+        "圍巾手套"
+      ]
+    },
+    {
+      "id": "hand-warmer",
+      "nameZh": "暖暖包",
+      "category": "other",
+      "legacyNames": [
+        "暖暖包"
+      ]
+    },
+    {
+      "id": "light-jacket",
+      "nameZh": "薄外套",
+      "category": "clothing",
+      "legacyNames": [
+        "薄外套"
+      ]
+    },
+    {
+      "id": "folding-umbrella",
+      "nameZh": "摺疊傘",
+      "category": "other",
+      "legacyNames": [
+        "摺疊傘"
+      ]
+    },
+    {
+      "id": "dry-bag",
+      "nameZh": "防水袋（護3C）",
+      "category": "other",
+      "legacyNames": [
+        "防水袋（護3C）"
+      ]
+    },
+    {
+      "id": "luggage-lock",
+      "nameZh": "行李鎖",
+      "category": "other",
+      "legacyNames": [
+        "行李鎖"
+      ]
+    },
+    {
+      "id": "document-money-pouch",
+      "nameZh": "證件現金分放袋",
+      "category": "documents",
+      "legacyNames": [
+        "證件現金分放袋"
+      ]
+    },
+    {
+      "id": "selfie-tripod",
+      "nameZh": "自拍腳架",
+      "category": "electronics",
+      "legacyNames": [
+        "自拍腳架"
+      ]
+    },
+    {
+      "id": "split-bill-kit",
+      "nameZh": "分帳 App 或小額零錢",
+      "category": "other",
+      "legacyNames": [
+        "分帳 App 或小額零錢"
+      ]
+    },
+    {
+      "id": "children-medicine",
+      "nameZh": "兒童常備藥",
+      "category": "health",
+      "legacyNames": [
+        "兒童常備藥"
+      ]
+    },
+    {
+      "id": "wet-wipes",
+      "nameZh": "濕紙巾",
+      "category": "toiletries",
+      "legacyNames": [
+        "濕紙巾"
+      ]
+    },
+    {
+      "id": "snacks",
+      "nameZh": "小點心",
+      "category": "other",
+      "legacyNames": [
+        "小點心"
+      ]
+    },
+    {
+      "id": "business-cards",
+      "nameZh": "名片",
+      "category": "documents",
+      "legacyNames": [
+        "名片"
+      ]
+    },
+    {
+      "id": "formal-clothes",
+      "nameZh": "正式服裝",
+      "category": "clothing",
+      "legacyNames": [
+        "正式服裝"
+      ]
+    },
+    {
+      "id": "laptop-kit",
+      "nameZh": "筆電與充電器",
+      "category": "electronics",
+      "legacyNames": [
+        "筆電與充電器"
+      ]
+    },
+    {
+      "id": "passport-copies",
+      "nameZh": "護照影本×2（分開放）",
+      "category": "documents",
+      "legacyNames": [
+        "護照影本×2（分開放）"
+      ]
+    },
+    {
+      "id": "insurance-copy",
+      "nameZh": "旅平險保單影本",
+      "category": "documents",
+      "legacyNames": [
+        "旅平險保單影本"
+      ]
+    },
+    {
+      "id": "emergency-card",
+      "nameZh": "緊急聯絡卡（手寫）",
+      "category": "documents",
+      "legacyNames": [
+        "緊急聯絡卡（手寫）"
+      ]
+    },
+    {
+      "id": "prescription-medicine",
+      "nameZh": "處方藥（多帶三天份）",
+      "category": "health",
+      "legacyNames": [
+        "處方藥（多帶三天份）"
+      ]
+    },
+    {
+      "id": "reading-glasses",
+      "nameZh": "老花眼鏡",
+      "category": "health",
+      "legacyNames": [
+        "老花眼鏡"
+      ]
+    },
+    {
+      "id": "student-id",
+      "nameZh": "學生證（部分景點優惠）",
+      "category": "documents",
+      "legacyNames": [
+        "學生證（部分景點優惠）"
+      ]
+    },
+    {
+      "id": "sanitary-products",
+      "nameZh": "衛生用品",
+      "category": "toiletries",
+      "legacyNames": [
+        "衛生用品"
+      ]
+    },
+    {
+      "id": "plug-adapter",
+      "nameZh": "插座轉接頭",
+      "category": "electronics",
+      "legacyNames": []
+    }
+  ]
+}

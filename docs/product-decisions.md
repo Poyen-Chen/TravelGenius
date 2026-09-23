@@ -194,3 +194,11 @@ This log records accepted product choices that affect behavior, navigation, scop
 - Decision: Accept the stage 1 candidate described by PD-023, including its single-city scope and initial city roster. After each human acceptance, commit and push the acceptance record and publish an annotated acceptance tag before starting the next stage.
 - Context: The user explicitly replied「通過」and requested commit/push before progressing, preferably with convenient rollback tags. This resolves PD-023's pending acceptance and extends PD-022's checkpoint workflow.
 - Consequences: Use immutable `packmon-ios-stage-XX-accepted` tags. Verify remote branch and tag before creating the next stage branch from the accepted tag. Preserve the earlier stage 0 checkpoint with the same convention. Do not merge main automatically or equate source rollback with stored-data recovery.
+
+## PD-025 — Stable packing identities with conservative legacy compatibility
+
+- Date: 2026-09-23
+- Status: Stage 2 implementation candidate; pending human acceptance
+- Decision: Add a bundled versioned packing catalog and stable item/rule IDs while retaining current recommendation conditions, quantity policy, wording, and order. Match known old names to IDs in place; store exclusions by stable ID alongside legacy names. Preserve unknown old automatic items rather than deleting records that cannot be safely identified.
+- Context: Stage 1 used display names as identity. Changing wording could create duplicate recommendations or undo exclusions. The approved stage 2 plan calls for stable identities and protection of existing packed/custom/excluded items, not wholesale import of TravelGenius's features.
+- Consequences: Two additive persistence fields require upgrade verification on a copy. Preserve record UUIDs and user quantities; custom and packed records remain protected. Known obsolete unpacked automatic items retain the existing removal behavior. Adapter variants share one identity and existing labels remain snapshots. New merge previews, preference snapshots, tag/need alternatives, cloud sync, and new personalization remain outside this stage. See [contract and reproducible tests](packing-catalog-contract.md). A source tag is not a database rollback.

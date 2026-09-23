@@ -1,6 +1,6 @@
 # Packmon iOS 分階段整合與人工驗收計畫
 
-日期：2026-09-23。狀態：第 0、1 階段已人工驗收；第 2 階段準備中。
+日期：2026-09-23。狀態：第 0、1 階段已人工驗收；第 2 階段候選版待人工驗收。
 
 ## 目標與範圍
 
@@ -63,7 +63,7 @@
 | --- | --- | --- | --- |
 | 0 | 人工驗收通過 | `508d30a7f19738a9d77cc8e5fb19392cb89b610c` | 2026-09-23；使用者測試後回覆「下一階段」，授權進入第 1 階段 |
 | 1 | 人工驗收通過 | `ad8dc780ebaae5121eda66b340795c6e24a424a2` | 2026-09-23；使用者回覆「通過」，要求每階段通過後先 commit、push，並以 tag 保留回退點 |
-| 2 | 未開始 | — | — |
+| 2 | 候選版待人工驗收 | 提交後記錄 | 尚未通過，不進入第 3 階段 |
 | 3 | 待 C6 及詳細範圍釐清 | — | — |
 | 4 | 未開始 | — | — |
 | 5 | 待 C4 行為確認 | — | — |
@@ -104,3 +104,14 @@
 - `packmon-ios-stage-01-accepted`：指向本次第 1 階段驗收紀錄提交，App 功能版本為 `ad8dc780ebaae5121eda66b340795c6e24a424a2`。
 - 2026-09-23 使用者已人工核准第 1 階段（包含 PD-023 的單城市與初始城市範圍）；前述「待人工操作確認」為候選交付時的歷史狀態，不再是目前驗收狀態。不據此虛構各項自動測試證據。
 - Tag 只定位原始碼／隨附資源與文件，不還原 SwiftData 或 UserDefaults。實際回退前仍須保護現有工作與資料。
+
+## 第 2 階段驗收證據與操作
+
+- 分支 `codex/ios-02-catalog`，基於已在遠端核對的 `packmon-ios-stage-01-accepted`；未改 PWA。
+- 範圍／資料契約見 [packing-catalog-contract.md](packing-catalog-contract.md) 及 PD-025。新增目錄 ID 與排除 ID 欄位；未加入新推薦條件或 UI。
+- 7,200 組舊版與新版的真實引擎輸出一致，包含名稱、分類、數量、理由及排序。實際 SwiftData 舊版 fixture → 副本升級 → 存檔 → 新程序重開通過；已打包、自訂、手調數量、排除、未知舊物品及重複執行都有 assertions。測試程式為 `scripts/test_packing_regression.sh`。
+- iPhone 17 / iOS 26.5 Debug build 成功；建置目錄 `/private/tmp/packmon-ios-stage02-build`，log `/private/tmp/packmon-ios-stage02-build.log`。同原裝置、bundle ID；正常安裝並確認首頁可見。
+- 安裝前已停止 App 並保存本機模擬器容器副本 `/private/tmp/packmon-stage02-before-upgrade.cLsuAe/AppData`。此為本機暫存備份，未提交或上傳，可能被系統清理，不是永久備份。未清除／重置使用者資料。
+- 啟動證據 `/private/tmp/packmon-stage02-ready.png`：目前仍為無行程首頁，因此不宣稱此模擬器已驗證含真實舊行程的升級；有內容的升級保護由獨立 fixture 驗證。
+- 人工驗收：建立測試行程 → 勾選護照 → 新增自訂用品 → 刪除一個未打包推薦品 → 修改行程日期觸發合併 → 確認勾選／自訂仍在、刪除品不回來、清單無重複 → 重開 App 再確認。可再修改一次日期測試重複合併；若有既有行程，額外確認舊勾選與數量不變。
+- 尚未人工通過，不建立 `packmon-ios-stage-02-accepted`，不進入第 3 階段。來源回退點為 `packmon-ios-stage-01-accepted`；涉及資料還原時先保護升級後新增資料，不直接用舊版開啟唯一資料庫。

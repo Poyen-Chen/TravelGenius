@@ -77,6 +77,8 @@ final class Trip {
     var hasReviewedTravelRules: Bool = false
     /// 使用者主動取消的自動推薦，避免重新產生清單時又被加入。
     var excludedPackingNamesRaw: String = ""
+    /// Additive migration; retain old names for downgrade/reference compatibility.
+    var excludedPackingIDsRaw: String = ""
     var createdAt: Date = Date()
 
     @Relationship(deleteRule: .cascade, inverse: \Expense.trip)
@@ -164,12 +166,39 @@ final class Trip {
         var names = excludedPackingNames
         names.insert(name)
         excludedPackingNames = names
+        if let id = StaticDataStore.shared.packingCatalog.legacyID(name: name) {
+            var ids = excludedPackingIDs
+            ids.insert(id)
+            excludedPackingIDs = ids
+        }
     }
 
     func includePackingItem(named name: String) {
         var names = excludedPackingNames
         names.remove(name)
         excludedPackingNames = names
+        if let id = StaticDataStore.shared.packingCatalog.legacyID(name: name) {
+            var ids = excludedPackingIDs
+            ids.remove(id)
+            excludedPackingIDs = ids
+            excludedPackingNames = excludedPackingNames.filter {
+                StaticDataStore.shared.packingCatalog.legacyID(name: $0) != id
+            }
+        }
+    }
+
+    var excludedPackingIDs: Set<String> {
+        get { Set(excludedPackingIDsRaw.split(separator: "\n").map(String.init)) }
+        set { excludedPackingIDsRaw = newValue.sorted().joined(separator: "\n") }
+    }
+
+    func excludePackingItem(_ item: PackingItem) {
+        excludePackingItem(named: item.name)
+        if let id = item.catalogItemID {
+            var ids = excludedPackingIDs
+            ids.insert(id)
+            excludedPackingIDs = ids
+        }
     }
 
     /// 旅程總天數（含出發與回程當日）
