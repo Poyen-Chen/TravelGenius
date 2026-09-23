@@ -1,6 +1,6 @@
 # Packmon iOS 分階段整合與人工驗收計畫
 
-日期：2026-09-23。狀態：計畫已建立；尚未開始功能實作或人工驗收。
+日期：2026-09-23。狀態：第 0 階段已人工驗收；第 1 階段準備中。
 
 ## 目標與範圍
 
@@ -61,7 +61,7 @@
 
 | 階段 | 狀態 | 候選／通過的功能 SHA | 人工核准日期與結論 |
 | --- | --- | --- | --- |
-| 0 | 未開始 | — | — |
+| 0 | 人工驗收通過 | `508d30a7f19738a9d77cc8e5fb19392cb89b610c` | 2026-09-23；使用者測試後回覆「下一階段」，授權進入第 1 階段 |
 | 1 | 未開始 | — | — |
 | 2 | 未開始 | — | — |
 | 3 | 待 C6 及詳細範圍釐清 | — | — |
@@ -77,3 +77,12 @@
 - Remote：`https://github.com/iminstevenchen/PackSmart.git`。
 - 決策／計畫提交分支：`codex/claude-structure-c`。本次只提交 `docs/product-decisions.md` 與本文件，不將既有 App／PWA 未提交修改夾帶進去。
 - 推送成功後才建立 `codex/ios-00-baseline`。既有未提交工作不會因切分支自動成為 checkpoint；階段 0 必須先處理並人工驗收，再開始階段 1。
+
+## 第 0 階段驗收證據
+
+- 在 `codex/ios-00-baseline` 保存先前未提交的 iOS App 與相關設計／架構文件；PWA 的 `web/` 保留原狀、未納入提交。
+- Xcode Debug 建置成功；iPhone 17、iOS 26.5，裝置 `C899EADA-C150-451D-8A39-81DD8E5A18F1`。
+- App bundle ID `com.example.TravelGenius`；建置位置 `/private/tmp/packmon-ios-baseline-build`。
+- 未清除 App 資料、未使用 `-seedDemo`；啟動畫面確認既有京都行程存在。
+- 功能基線 `508d30a` 與交付測試時的程式內容一致，本提交僅保存該現況。
+- 此次人工通過不宣稱歷史 `design-qa.md` 的所有 1:1 視覺比對項目都完成。
