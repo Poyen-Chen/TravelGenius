@@ -13,6 +13,9 @@ struct TripListView: View {
     @Query(sort: \Trip.createdAt, order: .reverse) private var trips: [Trip]
     @State private var sheet: SheetDestination?
     @State private var pendingDeletion: Trip?
+    @State private var navigationPath: [Trip] = []
+    @State private var createdTrip: Trip?
+    @State private var startPackingID: UUID?
 
     private var featuredTrip: Trip? {
         appState.activeTrip(in: trips) ?? trips.first(where: { $0.lifecycleStatus != .completed })
@@ -23,7 +26,7 @@ struct TripListView: View {
     }
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $navigationPath) {
             ScrollView {
                 VStack(alignment: .leading, spacing: theme.spacing.large) {
                     header
@@ -41,10 +44,12 @@ struct TripListView: View {
             }
             .background(theme.colors.canvas.ignoresSafeArea())
             .toolbar(.hidden, for: .navigationBar)
-            .navigationDestination(for: Trip.self) { trip in TripDetailView(trip: trip) }
-            .sheet(item: $sheet) { destination in
+            .navigationDestination(for: Trip.self) { trip in
+                TripDetailView(trip: trip, startsInPacking: startPackingID == trip.id)
+            }
+            .sheet(item: $sheet, onDismiss: openCreatedTrip) { destination in
                 switch destination {
-                case .create: TripCreationFlowView()
+                case .create: TripCreationFlowView(createdTrip: $createdTrip)
                 case .etiquette: FeaturePreviewSheet(title: "禮儀圖鑑", message: "不綁行程也能查各地禮儀；完整圖鑑會在下一階段開放。", symbol: "book.pages")
                 case .staples: FeaturePreviewSheet(title: "常備清單", message: "入口先保留。之後可以把常帶物品一鍵加入任何行程。", symbol: "backpack")
                 case .history: FeaturePreviewSheet(title: "歷史回顧", message: "入口先保留。之後會整理每趟行程的打包完成度與遺漏紀錄。", symbol: "clock.arrow.circlepath")
@@ -64,7 +69,17 @@ struct TripListView: View {
                 Text("行程與其中的打包清單會一起刪除，這個動作無法復原。")
             }
             .onAppear { if appState.consumeCreateTripLaunchRequest() { sheet = .create } }
+            .onChange(of: navigationPath) { _, path in
+                if path.isEmpty { startPackingID = nil }
+            }
         }
+    }
+
+    private func openCreatedTrip() {
+        guard let trip = createdTrip else { return }
+        createdTrip = nil
+        startPackingID = trip.id
+        navigationPath.append(trip)
     }
 
     private var header: some View {

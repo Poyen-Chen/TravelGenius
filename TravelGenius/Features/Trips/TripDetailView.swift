@@ -18,6 +18,11 @@ struct TripDetailView: View {
     @State private var page: WorkspacePage = .overview
     @State private var preview: Preview?
 
+    init(trip: Trip, startsInPacking: Bool = false) {
+        self.trip = trip
+        _page = State(initialValue: startsInPacking ? .packing : .overview)
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             workspaceHeader
