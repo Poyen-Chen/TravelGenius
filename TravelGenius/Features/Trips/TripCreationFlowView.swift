@@ -7,26 +7,16 @@ struct TripCreationFlowView: View {
     @Environment(\.packmonTheme) private var theme
     @Environment(AppState.self) private var appState
 
-    @State private var search = ""
-    @State private var selectedCityIDs: Set<String> = ["JP-京都", "JP-大阪"]
+    @State private var countryCode = ""
+    @State private var cityName = ""
     @State private var startDate = Calendar.current.date(byAdding: .day, value: 3, to: .now) ?? .now
     @State private var endDate = Calendar.current.date(byAdding: .day, value: 7, to: .now) ?? .now
     @State private var selectedTags: Set<String> = ["美食", "購物"]
 
-    private let suggestedCityNames = ["京都", "大阪", "首爾"]
     private let tags = ["泡溫泉", "美食", "賞雪", "購物"]
 
-    private var allSuggestedCities: [City] {
-        suggestedCityNames.compactMap { name in StaticDataStore.shared.cities.first { $0.cityZh == name } }
-    }
-
-    private var filteredCities: [City] {
-        guard !search.trimmingCharacters(in: .whitespaces).isEmpty else { return allSuggestedCities }
-        return StaticDataStore.shared.cities.filter { $0.cityZh.localizedCaseInsensitiveContains(search) }
-    }
-
-    private var selectedCities: [City] {
-        StaticDataStore.shared.cities.filter { selectedCityIDs.contains($0.id) }
+    private var selectedCity: City? {
+        StaticDataStore.shared.cities(countryCode: countryCode).first { $0.cityZh == cityName }
     }
 
     var body: some View {
@@ -39,6 +29,7 @@ struct TripCreationFlowView: View {
                     MascotBubbleRow(message: "選好目的地與日期後，我會沿用規則引擎，先幫你生成一份可調整的清單。")
                     Button("建立並生成清單", action: createTrip)
                         .buttonStyle(PackmonPrimaryButtonStyle())
+                        .disabled(selectedCity == nil)
                 }
                 .padding(theme.spacing.medium)
                 .padding(.bottom, 24)
@@ -57,18 +48,25 @@ struct TripCreationFlowView: View {
 
     private var destinationSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            sectionTitle("想去哪裡？", subtitle: "可以選一個或多個城市")
-            HStack(spacing: 10) {
-                Image(systemName: "magnifyingglass").foregroundStyle(theme.colors.secondaryText)
-                TextField("搜尋城市或國家", text: $search)
+            sectionTitle("想去哪裡？", subtitle: "先選國家／地區，再選一個城市")
+            Text("1. 國家／地區").font(.subheadline.weight(.semibold))
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 9) {
+                ForEach(StaticDataStore.shared.destinationCountries) { country in
+                    selectionChip("\(country.flagEmoji) \(country.nameZh)", isSelected: countryCode == country.code) {
+                        if countryCode != country.code {
+                            countryCode = country.code
+                            cityName = ""
+                        }
+                    }
+                }
             }
-            .padding(.horizontal, 14).frame(height: 50)
-            .background(theme.colors.elevatedSurface, in: RoundedRectangle(cornerRadius: theme.radius.medium, style: .continuous))
-            .overlay { RoundedRectangle(cornerRadius: theme.radius.medium).stroke(theme.colors.separator, lineWidth: 0.75) }
-            HStack(spacing: 9) {
-                ForEach(filteredCities.prefix(3)) { city in
-                    selectionChip(city.cityZh, isSelected: selectedCityIDs.contains(city.id)) {
-                        if selectedCityIDs.contains(city.id) { selectedCityIDs.remove(city.id) } else { selectedCityIDs.insert(city.id) }
+            if !countryCode.isEmpty {
+                Text("2. 城市").font(.subheadline.weight(.semibold))
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 9) {
+                    ForEach(StaticDataStore.shared.cities(countryCode: countryCode)) { city in
+                        selectionChip(city.cityZh, isSelected: cityName == city.cityZh) {
+                            cityName = city.cityZh
+                        }
                     }
                 }
             }
@@ -127,11 +125,10 @@ struct TripCreationFlowView: View {
     }
 
     private func createTrip() {
-        guard let primary = selectedCities.first ?? allSuggestedCities.first else { return }
-        let names = selectedCities.map(\.cityZh)
+        guard let primary = selectedCity else { return }
         let country = StaticDataStore.shared.country(code: primary.countryCode)
         let trip = Trip(
-            name: names.isEmpty ? primary.cityZh : names.joined(separator: "・"),
+            name: primary.cityZh,
             countryCode: primary.countryCode,
             startDate: startDate,
             endDate: endDate,

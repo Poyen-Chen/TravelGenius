@@ -198,6 +198,11 @@ final class StaticDataStore {
 
     /// 聚焦版鎖定東亞三國
     static let focusCountryCodes = ["JP", "KR", "TW"]
+    static let destinationCountryCodes = ["JP", "KR", "HK", "US", "VN"]
+
+    var destinationCountries: [Country] {
+        Self.destinationCountryCodes.compactMap { country(code: $0) }
+    }
 
     private(set) lazy var countries: [Country] = load("countries")
     private(set) lazy var cities: [City] = load("cities")

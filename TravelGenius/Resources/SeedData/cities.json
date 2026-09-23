@@ -4,5 +4,11 @@
   { "countryCode": "JP", "cityZh": "大阪", "lat": 34.6937, "lon": 135.5023, "isDefault": false },
   { "countryCode": "JP", "cityZh": "京都", "lat": 35.0116, "lon": 135.7681, "isDefault": false },
   { "countryCode": "KR", "cityZh": "首爾", "lat": 37.5665, "lon": 126.978, "isDefault": true },
-  { "countryCode": "KR", "cityZh": "釜山", "lat": 35.1796, "lon": 129.0756, "isDefault": false }
+  { "countryCode": "KR", "cityZh": "釜山", "lat": 35.1796, "lon": 129.0756, "isDefault": false },
+  { "countryCode": "HK", "cityZh": "香港", "lat": 22.301944, "lon": 114.174167, "isDefault": true },
+  { "countryCode": "US", "cityZh": "紐約", "lat": 40.71427, "lon": -74.00597, "isDefault": true },
+  { "countryCode": "US", "cityZh": "洛杉磯", "lat": 34.05223, "lon": -118.24368, "isDefault": false },
+  { "countryCode": "VN", "cityZh": "河內", "lat": 21.0245, "lon": 105.84117, "isDefault": true },
+  { "countryCode": "VN", "cityZh": "峴港", "lat": 16.06778, "lon": 108.22083, "isDefault": false },
+  { "countryCode": "VN", "cityZh": "胡志明市", "lat": 10.82302, "lon": 106.62965, "isDefault": false }
 ]
