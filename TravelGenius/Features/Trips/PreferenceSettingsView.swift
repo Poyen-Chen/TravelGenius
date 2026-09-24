@@ -2,7 +2,7 @@
 //  PreferenceSettingsView.swift
 //  TravelGenius
 //
-//  五項使用者偏好（含行李偏好）；變更後重新合併目前行程的清單，個人化立即可見。
+//  五項使用者偏好（含行李偏好）；僅供新行程使用，既有行程保留建立時設定。
 //  embedded = true 時作為分頁使用（即時儲存、無取消/儲存鈕）。
 //
 
@@ -12,10 +12,7 @@ import SwiftData
 struct PreferenceSettingsView: View {
     var embedded = false
 
-    @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
-    @Environment(AppState.self) private var appState
-    @Query private var trips: [Trip]
 
     @State private var preferences = UserPreferences.load()
     @AppStorage(AppAppearance.storageKey) private var appearanceRaw = AppAppearance.system.rawValue
@@ -78,7 +75,7 @@ struct PreferenceSettingsView: View {
                 } header: {
                     Text("行李偏好")
                 } footer: {
-                    Text("偏好會直接影響清單內容（例如輕便會略過加分項目、家庭出遊會加入兒童用品）\(embedded ? "，變更立即生效。" : "，儲存後立即重新客製目前行程的清單。")")
+                    Text("這些設定只套用到之後建立的新行程。已建立的行程不因這裡的變更重新計算。舊版行程沒有歷史設定時，會以升級當下的設定補存一次。")
                 }
             }
             .navigationTitle("偏好設定")
@@ -113,10 +110,6 @@ struct PreferenceSettingsView: View {
 
     private func applyPreferences() {
         preferences.save()
-        if let trip = appState.activeTrip(in: trips),
-           !(trip.packingItems ?? []).isEmpty {
-            PackingListGenerator.sync(trip: trip, context: context, preferences: preferences)
-        }
     }
 }
 

@@ -23,6 +23,9 @@ struct TripCreationFlowView: View {
     @State private var saveFailed = false
     @State private var isSaving = false
     @State private var didSave = false
+    @State private var creationPreferences = UserPreferences.load()
+    @State private var loadedStaples = false
+    @State private var stapleLoadError = false
 
     private var selectedCity: City? {
         StaticDataStore.shared.cities(countryCode: countryCode).first { $0.cityZh == cityName }
@@ -55,6 +58,10 @@ struct TripCreationFlowView: View {
                                     VStack(alignment: .leading, spacing: 10) {
                                         Text("出發地：台灣・台北").font(.subheadline)
                                         TextField("行程名稱（留空使用城市名）", text: $name)
+                                        Text("本次設定：\(creationPreferences.party.label)・\(creationPreferences.packingStyle.label)")
+                                            .font(.footnote)
+                                        Text("沿用目前個人設定。建立後不受全域設定變更影響。")
+                                            .font(.caption).foregroundStyle(theme.colors.secondaryText)
                                     }
                                 }
                             } else {
@@ -74,6 +81,18 @@ struct TripCreationFlowView: View {
                 }
             }
             .onChange(of: startDate) { _, value in if endDate < value { endDate = value } }
+            .onAppear {
+                guard !loadedStaples else { return }
+                do {
+                    customItems = try PackingStaples.load().map {
+                        CreationCustomItem(name: $0.name, category: $0.category, quantity: $0.quantity, isStaple: true)
+                    }
+                    loadedStaples = true
+                } catch { stapleLoadError = true }
+            }
+            .alert("無法讀取常備用品", isPresented: $stapleLoadError) {
+                Button("好", role: .cancel) {}
+            } message: { Text("請關閉後重試。原有資料未被覆寫，也不會略過你的常備用品建立行程。") }
             .interactiveDismissDisabled()
             .confirmationDialog("放棄建立這趟行程？", isPresented: $confirmDiscard, titleVisibility: .visible) {
                 Button("放棄建立", role: .destructive) { dismiss() }
@@ -144,12 +163,19 @@ struct TripCreationFlowView: View {
                     .accessibilityLabel("加入清單：\(item.name)，\(item.quantity) 件")
                 }
             }
-            Text("自訂用品").font(.headline)
+            Text("常備與自訂用品").font(.headline)
+            Text("常備用品只複製到這趟行程；在這裡移除不會更改常備清單。")
+                .font(.caption).foregroundStyle(theme.colors.secondaryText)
             ForEach(customItems) { item in
                 HStack {
-                    Text("\(item.name) ×\(item.quantity)")
+                    Text("\(item.isStaple ? "常備・" : "")\(item.name) ×\(item.quantity)")
                     Spacer()
-                    Button { customItems.removeAll { $0.id == item.id } } label: {
+                    Button {
+                        if item.isStaple, let catalogID = PackingStaples.catalogID(for: item.name) {
+                            excludedIDs.insert(catalogID)
+                        }
+                        customItems.removeAll { $0.id == item.id }
+                    } label: {
                         Label("移除", systemImage: "minus.circle")
                     }.accessibilityLabel("移除自訂用品：\(item.name)")
                 }
@@ -168,14 +194,20 @@ struct TripCreationFlowView: View {
                 if step == 1 {
                     let trip = makeTrip()
                     workingTrip = trip
-                    recommendations = PackingListGenerator.generate(for: trip)
+                    recommendations = PackingListGenerator.generate(for: trip).filter { recommendation in
+                        !customItems.contains { item in
+                            item.isStaple && PackingStaples.matches(
+                                .init(name: item.name, category: item.category, quantity: item.quantity),
+                                recommendation: recommendation)
+                        }
+                    }
                     step = 2
                 } else if step == 2 {
                     step = 3
                 } else { createTrip() }
             }
             .buttonStyle(PackmonPrimaryButtonStyle())
-            .disabled(selectedCity == nil || isSaving)
+            .disabled(selectedCity == nil || isSaving || !loadedStaples)
         }
         .disabled(isSaving || didSave)
         .padding(theme.spacing.medium)
@@ -223,6 +255,7 @@ struct TripCreationFlowView: View {
         trip.city = cityName
         trip.originCountryCode = "TW"
         trip.originCity = "台北"
+        trip.capturePackingPreferencesIfNeeded(creationPreferences)
         return trip
     }
 
@@ -245,9 +278,11 @@ struct TripCreationFlowView: View {
             saveContext.insert(saved)
         }
         for item in customItems {
-            saveContext.insert(PackingItem(name: item.name, category: item.category,
-                reasonKey: PackingListGenerator.customReason, quantity: item.quantity, isCustom: true,
-                sortIndex: PackingListGenerator.customSortIndex, trip: trip))
+            let saved = PackingItem(name: item.name, category: item.category,
+                reasonKey: item.isStaple ? "我的常備用品" : PackingListGenerator.customReason, quantity: item.quantity, isCustom: true,
+                sortIndex: PackingListGenerator.customSortIndex, trip: trip)
+            if item.isStaple { saved.catalogItemID = PackingStaples.catalogID(for: item.name) }
+            saveContext.insert(saved)
         }
         do {
             try saveContext.save()
@@ -270,6 +305,7 @@ private struct CreationCustomItem: Identifiable {
     let name: String
     let category: PackingCategory
     let quantity: Int
+    var isStaple = false
 }
 
 private struct CreationCustomItemForm: View {

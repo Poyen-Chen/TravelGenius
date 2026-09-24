@@ -8,7 +8,7 @@
 import Foundation
 import SwiftUI
 
-enum AgeBand: String, CaseIterable, Identifiable {
+enum AgeBand: String, Codable, CaseIterable, Identifiable {
     case teen
     case young
     case adult
@@ -28,7 +28,7 @@ enum AgeBand: String, CaseIterable, Identifiable {
     }
 }
 
-enum GenderPreference: String, CaseIterable, Identifiable {
+enum GenderPreference: String, Codable, CaseIterable, Identifiable {
     case male
     case female
     case undisclosed
@@ -44,7 +44,7 @@ enum GenderPreference: String, CaseIterable, Identifiable {
     }
 }
 
-enum TravelParty: String, CaseIterable, Identifiable {
+enum TravelParty: String, Codable, CaseIterable, Identifiable {
     case solo
     case couple
     case friends
@@ -74,7 +74,7 @@ enum TravelParty: String, CaseIterable, Identifiable {
     }
 }
 
-enum TravelExperience: String, CaseIterable, Identifiable {
+enum TravelExperience: String, Codable, CaseIterable, Identifiable {
     case first
     case some
     case frequent
@@ -117,7 +117,7 @@ enum AppAppearance: String, CaseIterable, Identifiable {
     }
 }
 
-enum PackingStyle: String, CaseIterable, Identifiable {
+enum PackingStyle: String, Codable, CaseIterable, Identifiable {
     case light
     case full
 
@@ -138,7 +138,7 @@ enum PackingStyle: String, CaseIterable, Identifiable {
     }
 }
 
-struct UserPreferences {
+struct UserPreferences: Codable, Equatable {
     var ageBand: AgeBand
     var gender: GenderPreference
     var party: TravelParty

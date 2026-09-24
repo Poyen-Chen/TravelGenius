@@ -26,9 +26,11 @@ enum PackingListGenerator {
 
     static func generate(
         for trip: Trip,
-        preferences: UserPreferences = .load(),
+        preferences: UserPreferences? = nil,
         weatherTags: Set<String>? = nil
     ) -> [GeneratedItem] {
+        guard let preferences = preferences ?? trip.packingPreferences
+            ?? (trip.packingPreferencesRaw.isEmpty ? UserPreferences.load() : nil) else { return [] }
         let month = Calendar.current.component(.month, from: trip.startDate)
         var results: [GeneratedItem] = []
         var seenIDs = Set<String>()
@@ -86,12 +88,15 @@ enum PackingListGenerator {
     static func sync(
         trip: Trip,
         context: ModelContext,
-        preferences: UserPreferences = .load(),
+        preferences: UserPreferences? = nil,
         weatherTags: Set<String>? = nil
     ) {
+        trip.capturePackingPreferencesIfNeeded(preferences ?? .load())
+        // A corrupt snapshot must never become an empty destructive merge.
+        guard let frozenPreferences = trip.packingPreferences else { return }
         let catalog = StaticDataStore.shared.packingCatalog
         trip.excludedPackingIDs.formUnion(trip.excludedPackingNames.compactMap { catalog.legacyID(name: $0) })
-        let generated = generate(for: trip, preferences: preferences, weatherTags: weatherTags)
+        let generated = generate(for: trip, preferences: frozenPreferences, weatherTags: weatherTags)
             .filter { !trip.excludedPackingIDs.contains($0.catalogItemID) && !trip.excludedPackingNames.contains($0.name) }
         let existing = trip.packingItems ?? []
         // Assign identity in place: preserve UUID, packed state, quantity, name and custom records.

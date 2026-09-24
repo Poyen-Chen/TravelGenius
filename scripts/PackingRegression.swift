@@ -3,6 +3,7 @@ import SwiftData
 
 @main
 struct PackingRegression {
+    static func expect(_ value: Bool) { precondition(value) }
     static let prefs = UserPreferences(ageBand: .adult, gender: .undisclosed, party: .solo, experience: .some, packingStyle: .full)
 
     static func trip(country: String = "JP", month: Int = 9, days: Int = 5) -> Trip {
@@ -77,6 +78,9 @@ struct PackingRegression {
             precondition(items.first { $0.name == "換洗衣物" }?.quantity == 99)
             precondition(!items.contains { $0.catalogItemID == "sunscreen" || $0.catalogItemID == "luggage-lock" })
             precondition(fixture.excludedPackingIDs.contains("luggage-lock"))
+            #if STAGE3
+            precondition(fixture.packingPreferences == prefs)
+            #endif
             print("reopened persisted candidate store: PASS")
             return
         }
@@ -132,6 +136,96 @@ struct PackingRegression {
         precondition(!items.contains { $0.catalogItemID == "luggage-lock" })
         passport.name = "護照"
         try context.save()
+        #if STAGE3
+        precondition(fixture.packingPreferences == prefs)
+        let frozen = fixture.packingPreferencesRaw
+        let before = Set(items.map(\.id))
+        var changed = prefs
+        changed.party = .family
+        changed.packingStyle = .light
+        // Explicit input cannot overwrite an established snapshot either.
+        PackingListGenerator.sync(trip: fixture, context: context, preferences: changed)
+        try context.save()
+        precondition(fixture.packingPreferencesRaw == frozen)
+        expect(Set(try context.fetch(FetchDescriptor<PackingItem>()).map(\.id)) == before)
+        let defaultKeys = [UserPreferences.ageKey, UserPreferences.genderKey, UserPreferences.partyKey,
+                           UserPreferences.experienceKey, UserPreferences.packingStyleKey]
+        let previousDefaults = defaultKeys.map { UserDefaults.standard.object(forKey: $0) }
+        defer {
+            for (key, value) in zip(defaultKeys, previousDefaults) {
+                if let value { UserDefaults.standard.set(value, forKey: key) }
+                else { UserDefaults.standard.removeObject(forKey: key) }
+            }
+        }
+        changed.save()
+        PackingListGenerator.sync(trip: fixture, context: context)
+        try context.save()
+        precondition(fixture.packingPreferences == prefs)
+        expect(Set(try context.fetch(FetchDescriptor<PackingItem>()).map(\.id)) == before)
+        let newTrip = trip()
+        newTrip.capturePackingPreferencesIfNeeded(.load())
+        precondition(newTrip.packingPreferences == changed)
+        let newItems = PackingListGenerator.generate(for: newTrip)
+        precondition(newItems.contains { $0.id == "children-medicine" })
+        precondition(newItems.first { $0.id == "clothes-change" }?.quantity == 4)
+        precondition(!PackingListGenerator.generate(for: fixture).contains { $0.id == "children-medicine" })
+
+        let suiteName = "Packmon-Staples-Test-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let staple = PackingStaples.Item(name: "  護照  ", category: .documents, quantity: 3)
+        try PackingStaples.save([staple], defaults: defaults)
+        let copied = try PackingStaples.load(defaults: defaults)
+        precondition(copied == [staple])
+        precondition(PackingStaples.catalogID(for: staple.name) == "passport")
+        precondition(PackingStaples.matches(staple, recommendation: newItems.first { $0.id == "passport" }!))
+        do { try PackingStaples.save([staple, .init(name: "護照", category: .documents, quantity: 1)], defaults: defaults); fatalError("duplicate staple") }
+        catch PackingStaples.ValidationError.duplicate { }
+        expect(try PackingStaples.load(defaults: defaults) == copied)
+        for quantity in [0, 100] {
+            do { try PackingStaples.save([.init(name: "Test", category: .other, quantity: quantity)], defaults: defaults); fatalError("invalid staple quantity") }
+            catch PackingStaples.ValidationError.invalid { }
+        }
+        do { try PackingStaples.save([.init(name: "  ", category: .other, quantity: 1)], defaults: defaults); fatalError("blank staple") }
+        catch PackingStaples.ValidationError.invalid { }
+        try PackingStaples.save([], defaults: defaults)
+        precondition(copied.count == 1) // Draft copy unaffected by library change.
+        let encoded = UserDefaults.standard.data(forKey: PackingStaples.storageKey)
+        defer {
+            if let encoded { UserDefaults.standard.set(encoded, forKey: PackingStaples.storageKey) }
+            else { UserDefaults.standard.removeObject(forKey: PackingStaples.storageKey) }
+        }
+        try PackingStaples.save([staple])
+        PackingListGenerator.sync(trip: fixture, context: context)
+        try context.save()
+        expect(Set(try context.fetch(FetchDescriptor<PackingItem>()).map(\.id)) == before)
+        defaults.set(Data("broken".utf8), forKey: PackingStaples.storageKey)
+        do { _ = try PackingStaples.load(defaults: defaults); fatalError("corrupt library accepted") } catch { }
+        fixture.packingPreferencesRaw = "broken"
+        PackingListGenerator.sync(trip: fixture, context: context)
+        expect(Set(try context.fetch(FetchDescriptor<PackingItem>()).map(\.id)) == before)
+        fixture.packingPreferencesRaw = frozen
+        try context.save()
+        let isolated = try ModelContainer(for: schema, configurations: ModelConfiguration(isStoredInMemoryOnly: true, cloudKitDatabase: .none))
+        let stapleContext = ModelContext(isolated)
+        let stapleTrip = trip()
+        stapleContext.insert(stapleTrip)
+        let stapleCopy = PackingItem(name: "  護照  ", category: .documents, reasonKey: "我的常備用品", quantity: 3, isCustom: true, trip: stapleTrip)
+        stapleCopy.catalogItemID = PackingStaples.catalogID(for: stapleCopy.name)
+        stapleContext.insert(stapleCopy)
+        PackingListGenerator.sync(trip: stapleTrip, context: stapleContext, preferences: prefs)
+        try stapleContext.save()
+        let stapleRows = try stapleContext.fetch(FetchDescriptor<PackingItem>())
+        precondition(stapleRows.filter { $0.catalogItemID == "passport" }.count == 1)
+        precondition(stapleRows.first { $0.catalogItemID == "passport" }?.quantity == 3)
+        stapleTrip.excludePackingItem(stapleCopy)
+        stapleContext.delete(stapleCopy)
+        try stapleContext.save()
+        PackingListGenerator.sync(trip: stapleTrip, context: stapleContext)
+        try stapleContext.save()
+        expect(try stapleContext.fetch(FetchDescriptor<PackingItem>()).allSatisfy { $0.catalogItemID != "passport" })
+        print("snapshot freeze, changed global defaults, new-trip adoption, staples validation/isolation, corrupt snapshot safety: PASS")
+        #endif
         print("legacy migration, stable identity, merge preservation, exclusions, idempotence: PASS")
         #endif
     }

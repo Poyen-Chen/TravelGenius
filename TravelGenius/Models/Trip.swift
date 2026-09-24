@@ -79,6 +79,20 @@ final class Trip {
     var excludedPackingNamesRaw: String = ""
     /// Additive migration; retain old names for downgrade/reference compatibility.
     var excludedPackingIDsRaw: String = ""
+    /// Empty only for pre-stage-3 records; once captured, never follows global settings.
+    var packingPreferencesRaw: String = ""
+
+    var packingPreferences: UserPreferences? {
+        guard let data = packingPreferencesRaw.data(using: .utf8) else { return nil }
+        return try? JSONDecoder().decode(UserPreferences.self, from: data)
+    }
+
+    func capturePackingPreferencesIfNeeded(_ preferences: UserPreferences) {
+        guard packingPreferencesRaw.isEmpty,
+              let data = try? JSONEncoder().encode(preferences),
+              let raw = String(data: data, encoding: .utf8) else { return }
+        packingPreferencesRaw = raw
+    }
     var createdAt: Date = Date()
 
     @Relationship(deleteRule: .cascade, inverse: \Expense.trip)

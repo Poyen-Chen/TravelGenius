@@ -164,19 +164,22 @@ struct KnowledgeLibraryView: View {
 
 struct ProfileHubView: View {
     @Environment(\.packmonTheme) private var theme
+    @State private var showingStaples = false
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     Text("我的").font(.system(size: 30, weight: .black, design: .rounded))
-                    FeaturePreviewCard(title: "常備清單", subtitle: "把固定會帶的東西存下來", symbol: "backpack")
+                    Button { showingStaples = true } label: {
+                        FeaturePreviewCard(title: "常備用品", subtitle: "自動帶入新行程，不改動舊行程", symbol: "backpack")
+                    }.buttonStyle(.plain)
                     FeaturePreviewCard(title: "歷史回顧", subtitle: "回看完成度與遺漏項目", symbol: "clock.arrow.circlepath")
                     NavigationLink { PreferenceSettingsView() } label: {
                         FeaturePreviewCard(title: "偏好與外觀", subtitle: "旅行偏好、外觀與設計系統切換", symbol: "slider.horizontal.3")
                     }.buttonStyle(.plain)
                 }.padding(theme.spacing.medium)
             }.background(theme.colors.canvas.ignoresSafeArea()).toolbar(.hidden, for: .navigationBar)
-        }
+        }.sheet(isPresented: $showingStaples) { PackingStaplesView() }
     }
 }
 

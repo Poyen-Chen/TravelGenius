@@ -165,7 +165,7 @@ struct PackingListView: View {
                         }
                         .contextMenu {
                             Button("刪除", systemImage: "trash", role: .destructive) {
-                                if !item.isCustom { trip.excludePackingItem(item) }
+                                if !item.isCustom || item.catalogItemID != nil { trip.excludePackingItem(item) }
                                 context.delete(item)
                             }
                         }

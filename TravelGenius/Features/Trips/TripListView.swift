@@ -51,7 +51,7 @@ struct TripListView: View {
                 switch destination {
                 case .create: TripCreationFlowView(createdTrip: $createdTrip)
                 case .etiquette: FeaturePreviewSheet(title: "禮儀圖鑑", message: "不綁行程也能查各地禮儀；完整圖鑑會在下一階段開放。", symbol: "book.pages")
-                case .staples: FeaturePreviewSheet(title: "常備清單", message: "入口先保留。之後可以把常帶物品一鍵加入任何行程。", symbol: "backpack")
+                case .staples: PackingStaplesView()
                 case .history: FeaturePreviewSheet(title: "歷史回顧", message: "入口先保留。之後會整理每趟行程的打包完成度與遺漏紀錄。", symbol: "clock.arrow.circlepath")
                 }
             }
@@ -209,7 +209,7 @@ struct TripListView: View {
             Text("不用建立行程也能用").font(.headline.weight(.bold))
             toolRow("能不能帶？", subtitle: "查海關與航空限制", symbol: "magnifyingglass") { appState.open(.checker) }
             toolRow("禮儀圖鑑", subtitle: "先看當地眉角", symbol: "book.pages") { sheet = .etiquette }
-            toolRow("常備清單", subtitle: "下一階段開放", symbol: "backpack") { sheet = .staples }
+            toolRow("常備用品", subtitle: "設定每次旅行都會帶的用品", symbol: "backpack") { sheet = .staples }
         }
     }
 
