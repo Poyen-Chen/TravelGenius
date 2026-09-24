@@ -35,30 +35,55 @@ enum PackingListGenerator {
         var results: [GeneratedItem] = []
         var seenIDs = Set<String>()
         let catalog = StaticDataStore.shared.packingCatalog
+        let modern = preferences.usesExplicitNeeds
+        var matchingPreferences = preferences
+        if modern {
+            matchingPreferences.ageBand = .adult
+            matchingPreferences.gender = .undisclosed
+            matchingPreferences.party = .solo
+        }
 
         for (ruleIndex, rule) in StaticDataStore.shared.packingRules.enumerated() {
             guard rule.applies(
                 countryCode: trip.countryCode,
                 month: month,
-                preferences: preferences,
+                preferences: matchingPreferences,
                 weatherTags: weatherTags
             ) else { continue }
             for (itemIndex, item) in rule.items.enumerated() {
+                if modern && ["regular-medicine", "stomach-medicine", "charging-kit"].contains(item.itemId) { continue }
                 // 輕便打包：略過「完整才帶」的加分項目
-                if preferences.packingStyle == .light && item.fullOnly == true { continue }
+                if (preferences.packingStyle == .light || (modern && preferences.packingStyle == .normal)) && item.fullOnly == true { continue }
                 // Stable identity, first matching rule wins (same precedence as before).
                 guard seenIDs.insert(item.itemId).inserted,
                       let definition = catalog.item(id: item.itemId) else { continue }
-                let perDayCap = preferences.packingStyle == .light ? 4 : 7
+                let perDayCap = preferences.packingStyle == .light ? 4 : (modern ? 99 : 7)
                 let quantity = item.perDay == true ? min(trip.totalDays, perDayCap) : (item.quantity ?? 1)
                 results.append(GeneratedItem(
                     catalogItemID: definition.id,
                     name: definition.nameZh,
                     category: definition.category,
                     quantity: quantity,
-                    reason: rule.reasonZh,
+                    reason: modern && rule.layer == "party" ? "旅行證件與行李收納" : rule.reasonZh,
                     sortIndex: ruleIndex * 100 + itemIndex
                 ))
+            }
+        }
+
+        if modern {
+            func append(_ id: String, reason: String) {
+                guard seenIDs.insert(id).inserted, let definition = catalog.item(id: id) else { return }
+                results.append(.init(catalogItemID: id, name: definition.nameZh, category: definition.category,
+                    quantity: 1, reason: reason, sortIndex: 5_000 + results.count))
+            }
+            for option in PersonalPackingOptions.devices where preferences.devices?.contains(option.id) == true {
+                for id in option.itemIDs { append(id, reason: "我的常用設備：\(option.label)") }
+            }
+            if !(Set(preferences.devices ?? []).intersection(["phone", "tablet", "headphones"])).isEmpty {
+                append("charging-kit", reason: "常用設備共用充電用品・請確認接頭、功率與數量")
+            }
+            for option in PersonalPackingOptions.needs where preferences.needs?.contains(option.id) == true {
+                for id in option.itemIDs { append(id, reason: "我的常備需求：\(option.label)") }
             }
         }
 

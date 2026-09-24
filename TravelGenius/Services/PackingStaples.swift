@@ -7,6 +7,7 @@ enum PackingStaples {
         var name: String
         var category: PackingCategory
         var quantity: Int
+        var unitWeightKg: Double? = nil
     }
     private struct Document: Codable {
         let version: Int
@@ -31,6 +32,9 @@ enum PackingStaples {
         var ids = Set<UUID>()
         var catalogIDs = Set<String>()
         for item in items {
+            if let weight = item.unitWeightKg, !weight.isFinite || !(0...100).contains(weight) {
+                throw ValidationError.invalid
+            }
             guard !normalized(item.name).isEmpty, (1...99).contains(item.quantity), ids.insert(item.id).inserted else {
                 throw ValidationError.invalid
             }
@@ -49,6 +53,11 @@ enum PackingStaples {
         try validate(items)
         let data = try JSONEncoder().encode(Document(version: 1, items: items))
         defaults.set(data, forKey: storageKey)
+    }
+
+    static func matchingItem(_ item: PackingItem, in items: [Item]) -> Item? {
+        items.first { normalized($0.name) == normalized(item.name)
+            || (catalogID(for: $0.name) != nil && catalogID(for: $0.name) == item.catalogItemID) }
     }
     static func matches(_ staple: Item, recommendation: PackingListGenerator.GeneratedItem) -> Bool {
         normalized(staple.name) == normalized(recommendation.name)

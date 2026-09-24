@@ -8,6 +8,30 @@
 import Foundation
 import SwiftUI
 
+enum PersonalPackingOptions {
+    struct Option: Identifiable {
+        let id: String
+        let label: String
+        let itemIDs: [String]
+    }
+    static let devices: [Option] = [
+        .init(id: "phone", label: "手機", itemIDs: ["phone"]),
+        .init(id: "laptop", label: "筆電", itemIDs: ["laptop", "laptop-charger"]),
+        .init(id: "tablet", label: "平板／電子閱讀器", itemIDs: ["tablet"]),
+        .init(id: "camera", label: "相機", itemIDs: ["camera", "camera-charger", "memory-card"]),
+        .init(id: "watch", label: "智慧手錶", itemIDs: ["smartwatch", "watch-charger"]),
+        .init(id: "headphones", label: "耳機", itemIDs: ["headphones"])
+    ]
+    static let needs: [Option] = [
+        .init(id: "glasses", label: "眼鏡", itemIDs: ["glasses"]),
+        .init(id: "contacts", label: "隱形眼鏡", itemIDs: ["contact-lenses"]),
+        .init(id: "skincare", label: "保養用品", itemIDs: ["skincare"]),
+        .init(id: "period", label: "生理用品", itemIDs: ["sanitary-products"]),
+        .init(id: "medicine", label: "自己的常備藥", itemIDs: ["regular-medicine"]),
+        .init(id: "book", label: "紙本讀物", itemIDs: ["book"])
+    ]
+}
+
 enum AgeBand: String, Codable, CaseIterable, Identifiable {
     case teen
     case young
@@ -119,6 +143,7 @@ enum AppAppearance: String, CaseIterable, Identifiable {
 
 enum PackingStyle: String, Codable, CaseIterable, Identifiable {
     case light
+    case normal
     case full
 
     var id: String { rawValue }
@@ -126,6 +151,7 @@ enum PackingStyle: String, Codable, CaseIterable, Identifiable {
     var label: String {
         switch self {
         case .light: "輕便"
+        case .normal: "一般"
         case .full: "完整"
         }
     }
@@ -133,6 +159,7 @@ enum PackingStyle: String, Codable, CaseIterable, Identifiable {
     var detail: String {
         switch self {
         case .light: "只帶必需品，行李越輕越好"
+        case .normal: "基本用品優先，依天數準備換洗"
         case .full: "寧可多帶，不想到了才缺東西"
         }
     }
@@ -144,6 +171,23 @@ struct UserPreferences: Codable, Equatable {
     var party: TravelParty
     var experience: TravelExperience
     var packingStyle: PackingStyle
+    /// nil marks historical snapshots; [] is an explicit choice to bring none.
+    var devices: [String]? = nil
+    var needs: [String]? = nil
+
+    var usesExplicitNeeds: Bool { devices != nil }
+    var summary: String {
+        usesExplicitNeeds ? "\(devices?.count ?? 0) 項設備・\(needs?.count ?? 0) 項需求・\(packingStyle.label)"
+            : "\(party.label)・\(packingStyle.label)"
+    }
+
+    static func forNewTrips() -> UserPreferences {
+        var value = load()
+        value.devices = value.devices ?? ["phone"]
+        value.needs = value.needs ?? []
+        if UserDefaults.standard.string(forKey: packingStyleKey) == nil { value.packingStyle = .normal }
+        return value
+    }
 
     static let ageKey = "pref.ageBand"
     static let genderKey = "pref.gender"
@@ -158,7 +202,9 @@ struct UserPreferences: Codable, Equatable {
             gender: GenderPreference(rawValue: defaults.string(forKey: genderKey) ?? "") ?? .undisclosed,
             party: TravelParty(rawValue: defaults.string(forKey: partyKey) ?? "") ?? .solo,
             experience: TravelExperience(rawValue: defaults.string(forKey: experienceKey) ?? "") ?? .some,
-            packingStyle: PackingStyle(rawValue: defaults.string(forKey: packingStyleKey) ?? "") ?? .full
+            packingStyle: PackingStyle(rawValue: defaults.string(forKey: packingStyleKey) ?? "") ?? .full,
+            devices: defaults.stringArray(forKey: "pref.devices"),
+            needs: defaults.stringArray(forKey: "pref.needs")
         )
     }
 
@@ -169,5 +215,7 @@ struct UserPreferences: Codable, Equatable {
         defaults.set(party.rawValue, forKey: Self.partyKey)
         defaults.set(experience.rawValue, forKey: Self.experienceKey)
         defaults.set(packingStyle.rawValue, forKey: Self.packingStyleKey)
+        defaults.set(devices, forKey: "pref.devices")
+        defaults.set(needs, forKey: "pref.needs")
     }
 }

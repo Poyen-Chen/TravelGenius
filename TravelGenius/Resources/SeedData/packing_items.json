@@ -302,6 +302,102 @@
       "nameZh": "插座轉接頭",
       "category": "electronics",
       "legacyNames": []
+    },
+    {
+      "id": "phone",
+      "nameZh": "手機",
+      "category": "electronics",
+      "legacyNames": []
+    },
+    {
+      "id": "laptop",
+      "nameZh": "筆電",
+      "category": "electronics",
+      "legacyNames": []
+    },
+    {
+      "id": "laptop-charger",
+      "nameZh": "筆電充電器",
+      "category": "electronics",
+      "legacyNames": []
+    },
+    {
+      "id": "tablet",
+      "nameZh": "平板／電子閱讀器",
+      "category": "electronics",
+      "legacyNames": []
+    },
+    {
+      "id": "camera",
+      "nameZh": "隨身相機",
+      "category": "electronics",
+      "legacyNames": [
+        "相機"
+      ]
+    },
+    {
+      "id": "camera-charger",
+      "nameZh": "相機電池與充電器",
+      "category": "electronics",
+      "legacyNames": []
+    },
+    {
+      "id": "memory-card",
+      "nameZh": "記憶卡",
+      "category": "electronics",
+      "legacyNames": []
+    },
+    {
+      "id": "smartwatch",
+      "nameZh": "智慧手錶",
+      "category": "electronics",
+      "legacyNames": []
+    },
+    {
+      "id": "watch-charger",
+      "nameZh": "手錶充電器",
+      "category": "electronics",
+      "legacyNames": []
+    },
+    {
+      "id": "headphones",
+      "nameZh": "耳機與收納盒",
+      "category": "electronics",
+      "legacyNames": [
+        "耳機"
+      ]
+    },
+    {
+      "id": "glasses",
+      "nameZh": "眼鏡與眼鏡盒",
+      "category": "health",
+      "legacyNames": [
+        "眼鏡"
+      ]
+    },
+    {
+      "id": "contact-lenses",
+      "nameZh": "隱形眼鏡與護理用品",
+      "category": "health",
+      "legacyNames": [
+        "隱形眼鏡"
+      ]
+    },
+    {
+      "id": "skincare",
+      "nameZh": "個人保養用品",
+      "category": "toiletries",
+      "legacyNames": [
+        "保養用品"
+      ]
+    },
+    {
+      "id": "book",
+      "nameZh": "旅途讀物",
+      "category": "other",
+      "legacyNames": [
+        "紙本讀物"
+      ]
     }
   ]
 }

@@ -21,7 +21,7 @@ struct PackingRegression {
             for country in ["JP", "KR", "HK", "US", "VN"] {
                 for month in 1...12 {
                     for days in [1, 5, 12] {
-                        for style in PackingStyle.allCases {
+                        for style: PackingStyle in [.light, .full] {
                             for party in TravelParty.allCases {
                                 for weather: Set<String>? in [nil, [], ["hot", "rain"], ["cold", "mild"]] {
                                     var preferences = prefs
@@ -80,6 +80,7 @@ struct PackingRegression {
             precondition(fixture.excludedPackingIDs.contains("luggage-lock"))
             #if STAGE3
             precondition(fixture.packingPreferences == prefs)
+            precondition(items.first { $0.name == "護照" }?.unitWeightKg == 0.125)
             #endif
             print("reopened persisted candidate store: PASS")
             return
@@ -149,7 +150,7 @@ struct PackingRegression {
         precondition(fixture.packingPreferencesRaw == frozen)
         expect(Set(try context.fetch(FetchDescriptor<PackingItem>()).map(\.id)) == before)
         let defaultKeys = [UserPreferences.ageKey, UserPreferences.genderKey, UserPreferences.partyKey,
-                           UserPreferences.experienceKey, UserPreferences.packingStyleKey]
+                           UserPreferences.experienceKey, UserPreferences.packingStyleKey, "pref.devices", "pref.needs"]
         let previousDefaults = defaultKeys.map { UserDefaults.standard.object(forKey: $0) }
         defer {
             for (key, value) in zip(defaultKeys, previousDefaults) {
@@ -224,6 +225,53 @@ struct PackingRegression {
         PackingListGenerator.sync(trip: stapleTrip, context: stapleContext)
         try stapleContext.save()
         expect(try stapleContext.fetch(FetchDescriptor<PackingItem>()).allSatisfy { $0.catalogItemID != "passport" })
+        var explicit = prefs
+        explicit.devices = []
+        explicit.needs = []
+        explicit.ageBand = .senior
+        explicit.gender = .female
+        explicit.party = .family
+        explicit.packingStyle = .normal
+        let emptyNeeds = PackingListGenerator.generate(for: trip(country: "KR", days: 12), preferences: explicit)
+        precondition(emptyNeeds.first { $0.id == "clothes-change" }?.quantity == 12)
+        precondition(!emptyNeeds.contains { ["regular-medicine", "stomach-medicine", "prescription-medicine", "children-medicine", "sanitary-products", "charging-kit"].contains($0.id) })
+        for option in PersonalPackingOptions.devices {
+            explicit.devices = [option.id]
+            let output = PackingListGenerator.generate(for: trip(), preferences: explicit)
+            for id in option.itemIDs { precondition(output.contains { $0.id == id }) }
+        }
+        explicit.devices = PersonalPackingOptions.devices.map(\.id)
+        for mask in 0..<64 {
+            explicit.needs = PersonalPackingOptions.needs.enumerated().filter { mask & (1 << $0.offset) != 0 }.map { $0.element.id }
+            for style in PackingStyle.allCases {
+                explicit.packingStyle = style
+                let output = PackingListGenerator.generate(for: trip(days: 12), preferences: explicit)
+                precondition(Set(output.map(\.id)).count == output.count)
+                precondition(output.filter { $0.id == "charging-kit" }.count == 1)
+                precondition(output.first { $0.id == "clothes-change" }?.quantity == (style == .light ? 4 : 12))
+                for option in PersonalPackingOptions.needs {
+                    for id in option.itemIDs { precondition(output.contains { $0.id == id } == explicit.needs!.contains(option.id)) }
+                }
+            }
+        }
+        let explicitTrip = trip()
+        explicitTrip.capturePackingPreferencesIfNeeded(explicit)
+        expect(try JSONDecoder().decode(UserPreferences.self, from: JSONEncoder().encode(explicit)) == explicit)
+        let explicitFrozen = explicitTrip.packingPreferencesRaw
+        explicit.devices = []; explicit.needs = []
+        explicitTrip.capturePackingPreferencesIfNeeded(explicit)
+        precondition(explicitTrip.packingPreferencesRaw == explicitFrozen)
+        let weighted = PackingStaples.Item(name: "耳機", category: .electronics, quantity: 2, unitWeightKg: 0.125)
+        passport.unitWeightKg = 0.125
+        try context.save()
+        try PackingStaples.save([weighted], defaults: defaults)
+        expect(try PackingStaples.load(defaults: defaults) == [weighted])
+        precondition(PackingStaples.catalogID(for: "耳機") == "headphones")
+        for weight in [-1.0, 101.0, Double.infinity] {
+            do { try PackingStaples.save([.init(name: "Test", category: .other, quantity: 1, unitWeightKg: weight)], defaults: defaults); fatalError("invalid weight accepted") }
+            catch PackingStaples.ValidationError.invalid { }
+        }
+        print("explicit devices/needs, 192 needs/style combinations, shared chargers, frozen settings, weight validation: PASS")
         print("snapshot freeze, changed global defaults, new-trip adoption, staples validation/isolation, corrupt snapshot safety: PASS")
         #endif
         print("legacy migration, stable identity, merge preservation, exclusions, idempotence: PASS")

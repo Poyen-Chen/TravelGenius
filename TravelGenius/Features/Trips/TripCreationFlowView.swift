@@ -23,7 +23,7 @@ struct TripCreationFlowView: View {
     @State private var saveFailed = false
     @State private var isSaving = false
     @State private var didSave = false
-    @State private var creationPreferences = UserPreferences.load()
+    @State private var creationPreferences = UserPreferences.forNewTrips()
     @State private var loadedStaples = false
     @State private var stapleLoadError = false
 
@@ -58,7 +58,7 @@ struct TripCreationFlowView: View {
                                     VStack(alignment: .leading, spacing: 10) {
                                         Text("出發地：台灣・台北").font(.subheadline)
                                         TextField("行程名稱（留空使用城市名）", text: $name)
-                                        Text("本次設定：\(creationPreferences.party.label)・\(creationPreferences.packingStyle.label)")
+                                        Text("本次設定：\(creationPreferences.summary)")
                                             .font(.footnote)
                                         Text("沿用目前個人設定。建立後不受全域設定變更影響。")
                                             .font(.caption).foregroundStyle(theme.colors.secondaryText)
@@ -85,7 +85,7 @@ struct TripCreationFlowView: View {
                 guard !loadedStaples else { return }
                 do {
                     customItems = try PackingStaples.load().map {
-                        CreationCustomItem(name: $0.name, category: $0.category, quantity: $0.quantity, isStaple: true)
+                        CreationCustomItem(name: $0.name, category: $0.category, quantity: $0.quantity, isStaple: true, unitWeightKg: $0.unitWeightKg)
                     }
                     loadedStaples = true
                 } catch { stapleLoadError = true }
@@ -282,6 +282,7 @@ struct TripCreationFlowView: View {
                 reasonKey: item.isStaple ? "我的常備用品" : PackingListGenerator.customReason, quantity: item.quantity, isCustom: true,
                 sortIndex: PackingListGenerator.customSortIndex, trip: trip)
             if item.isStaple { saved.catalogItemID = PackingStaples.catalogID(for: item.name) }
+            saved.unitWeightKg = item.unitWeightKg
             saveContext.insert(saved)
         }
         do {
@@ -306,6 +307,7 @@ private struct CreationCustomItem: Identifiable {
     let category: PackingCategory
     let quantity: Int
     var isStaple = false
+    var unitWeightKg: Double? = nil
 }
 
 private struct CreationCustomItemForm: View {

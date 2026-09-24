@@ -49,6 +49,7 @@ final class PackingItem {
     /// 「因為是…」分組（例如：因為是日本、基本必備、自訂）
     var reasonKey: String = ""
     var quantity: Int = 1
+    var unitWeightKg: Double?
     var isPacked: Bool = false
     /// 使用者自行新增（重新產生清單時永不移除）
     var isCustom: Bool = false

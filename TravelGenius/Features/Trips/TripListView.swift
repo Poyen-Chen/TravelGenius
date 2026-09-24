@@ -55,18 +55,10 @@ struct TripListView: View {
                 case .history: FeaturePreviewSheet(title: "歷史回顧", message: "入口先保留。之後會整理每趟行程的打包完成度與遺漏紀錄。", symbol: "clock.arrow.circlepath")
                 }
             }
-            .confirmationDialog(
-                "要刪除「\(pendingDeletion?.name ?? "這個行程")」嗎？",
-                isPresented: Binding(
-                    get: { pendingDeletion != nil },
-                    set: { if !$0 { pendingDeletion = nil } }
-                ),
-                titleVisibility: .visible
-            ) {
-                Button("刪除行程", role: .destructive, action: deletePendingTrip)
-                Button("取消", role: .cancel) { pendingDeletion = nil }
-            } message: {
-                Text("行程與其中的打包清單會一起刪除，這個動作無法復原。")
+            .sheet(item: $pendingDeletion) { trip in
+                PackmonRemovalSheet(title: "刪除這趟行程？", name: trip.name,
+                    message: "行程與其中的打包清單會一起刪除，這個動作無法復原。",
+                    actionTitle: "刪除行程", remove: deletePendingTrip)
             }
             .onAppear { if appState.consumeCreateTripLaunchRequest() { sheet = .create } }
             .onChange(of: navigationPath) { _, path in

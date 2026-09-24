@@ -22,6 +22,11 @@ struct PackingListView: View {
     @State private var packedSnapshot: Set<UUID>?
     @State private var packToggle = false
     @State private var weather: WeatherSummary?
+    @State private var pendingRemoval: PackingItem?
+    @State private var staples: [PackingStaples.Item] = []
+    @State private var stapleEditor: PackingStaples.Item?
+    @State private var stapleRemoval: PackingStaples.Item?
+    @State private var stapleError: String?
 
     private var items: [PackingItem] {
         (trip.packingItems ?? []).sorted { $0.sortIndex < $1.sortIndex }
@@ -64,6 +69,32 @@ struct PackingListView: View {
             }
         }
         .sheet(isPresented: $showingAddItem) { AddPackingItemView(trip: trip) }
+        .sheet(item: $stapleEditor) { item in PackingStapleEditor(draft: item, items: $staples) }
+        .sheet(item: $stapleRemoval) { item in
+            PackmonRemovalSheet(title: "移除常備用品？", name: item.name,
+                message: "之後的新行程不再自動帶入；這趟與其他行程中的物品會保留。",
+                actionTitle: "移除常備用品") {
+                do {
+                    let updated = try PackingStaples.load().filter { $0.id != item.id }
+                    try PackingStaples.save(updated); staples = updated
+                } catch { stapleError = error.localizedDescription }
+            }
+        }
+        .alert("無法更新常備用品", isPresented: Binding(get: { stapleError != nil }, set: { if !$0 { stapleError = nil } })) {
+            Button("好", role: .cancel) { stapleError = nil }
+        } message: { Text(stapleError ?? "") }
+        .onAppear {
+            do { staples = try PackingStaples.load() }
+            catch { stapleError = error.localizedDescription }
+        }
+        .sheet(item: $pendingRemoval) { item in
+            PackmonRemovalSheet(title: "從這趟行程移除？", name: item.name,
+                message: "只移除這趟行程的物品，不會更改你的常備用品或其他行程。",
+                actionTitle: "移除物品") {
+                if !item.isCustom || item.catalogItemID != nil { trip.excludePackingItem(item) }
+                context.delete(item)
+            }
+        }
         .fullScreenCover(isPresented: $showingReturnMode, onDismiss: restoreIfUntouched) {
             ReturnModeView(trip: trip)
         }
@@ -159,14 +190,30 @@ struct PackingListView: View {
                         .font(.subheadline.weight(.bold))
                         .foregroundStyle(theme.colors.secondaryText)
                     ForEach(section.items) { item in
-                        PackingItemRow(item: item) {
-                            item.isPacked.toggle()
-                            packToggle.toggle()
+                        HStack(spacing: 8) {
+                            PackingItemRow(item: item) {
+                                item.isPacked.toggle()
+                                packToggle.toggle()
+                            }
+                            Button {
+                                do {
+                                    staples = try PackingStaples.load()
+                                    if let existing = PackingStaples.matchingItem(item, in: staples) {
+                                        stapleRemoval = existing
+                                    } else {
+                                        stapleEditor = .init(name: item.name, category: item.category,
+                                            quantity: item.quantity, unitWeightKg: item.unitWeightKg)
+                                    }
+                                } catch { stapleError = error.localizedDescription }
+                            } label: {
+                                Image(systemName: PackingStaples.matchingItem(item, in: staples) == nil ? "star" : "star.fill")
+                                    .foregroundStyle(theme.colors.accent).frame(width: 44, height: 44)
+                            }.buttonStyle(.plain)
+                             .accessibilityLabel("\(PackingStaples.matchingItem(item, in: staples) == nil ? "加入常備" : "移除常備")：\(item.name)")
                         }
                         .contextMenu {
                             Button("刪除", systemImage: "trash", role: .destructive) {
-                                if !item.isCustom || item.catalogItemID != nil { trip.excludePackingItem(item) }
-                                context.delete(item)
+                                pendingRemoval = item
                             }
                         }
                     }
@@ -258,6 +305,9 @@ struct PackingItemRow: View {
                     Text("×\(item.quantity)")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
+                }
+                if let weight = item.unitWeightKg {
+                    Text("\(weight.formatted()) kg／件").font(.caption).foregroundStyle(.secondary)
                 }
                 Spacer()
                 Image(systemName: item.category.symbolName)

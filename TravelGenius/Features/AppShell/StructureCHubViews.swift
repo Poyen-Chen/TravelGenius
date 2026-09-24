@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 
 struct StandaloneBringCheckerView: View {
     @Environment(\.packmonTheme) private var theme
@@ -163,23 +164,62 @@ struct KnowledgeLibraryView: View {
 }
 
 struct ProfileHubView: View {
+    private enum Destination: String, Identifiable {
+        case staples, preferences, appearance
+        var id: String { rawValue }
+    }
     @Environment(\.packmonTheme) private var theme
-    @State private var showingStaples = false
+    @Query private var trips: [Trip]
+    @State private var destination: Destination?
+    @State private var preferences = UserPreferences.forNewTrips()
+    @State private var stapleCount: Int?
+    @AppStorage(AppAppearance.storageKey) private var appearanceRaw = AppAppearance.system.rawValue
+    @AppStorage(PackmonThemeID.storageKey) private var themeRaw = PackmonThemeID.structureC.rawValue
+
+    private func refreshSummary() {
+        preferences = .forNewTrips()
+        stapleCount = (try? PackingStaples.load())?.count
+    }
+
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     Text("我的").font(.system(size: 30, weight: .black, design: .rounded))
-                    Button { showingStaples = true } label: {
-                        FeaturePreviewCard(title: "常備用品", subtitle: "自動帶入新行程，不改動舊行程", symbol: "backpack")
-                    }.buttonStyle(.plain)
-                    FeaturePreviewCard(title: "歷史回顧", subtitle: "回看完成度與遺漏項目", symbol: "clock.arrow.circlepath")
-                    NavigationLink { PreferenceSettingsView() } label: {
-                        FeaturePreviewCard(title: "偏好與外觀", subtitle: "旅行偏好、外觀與設計系統切換", symbol: "slider.horizontal.3")
-                    }.buttonStyle(.plain)
-                }.padding(theme.spacing.medium)
+                    Text("讓清單，更懂你的旅行習慣。")
+                        .font(.subheadline).foregroundStyle(theme.colors.secondaryText)
+                    Group {
+                        HStack(spacing: 14) {
+                            MascotView(size: 64)
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text("和 Packmon 一起出發").font(.headline)
+                                Text("\(trips.count) 趟行程・\(stapleCount.map { "\($0) 項常備用品" } ?? "常備用品待確認")")
+                                    .font(.footnote).foregroundStyle(theme.colors.secondaryText)
+                            }
+                        }
+                    }
+                    settingsRow(.staples, "常備清單", "每次新行程，都幫你一起帶上", "backpack")
+                    settingsRow(.preferences, "個人打包需求", "常用設備、用品與打包習慣", "slider.horizontal.3")
+                    settingsRow(.appearance, "外觀設定", "\((PackmonThemeID(rawValue: themeRaw) ?? .structureC).label)・\((AppAppearance(rawValue: appearanceRaw) ?? .system).label)", "paintpalette")
+                    Label("行程與設定保存在這台裝置", systemImage: "iphone")
+                        .font(.footnote).foregroundStyle(theme.colors.secondaryText)
+                }.padding(theme.spacing.medium).padding(.bottom, 32)
             }.background(theme.colors.canvas.ignoresSafeArea()).toolbar(.hidden, for: .navigationBar)
-        }.sheet(isPresented: $showingStaples) { PackingStaplesView() }
+        }
+        .onAppear(perform: refreshSummary)
+        .sheet(item: $destination, onDismiss: refreshSummary) { destination in
+            switch destination {
+            case .staples: PackingStaplesView()
+            case .preferences: PreferenceSettingsView()
+            case .appearance: AppearanceSettingsView()
+            }
+        }
+    }
+
+    private func settingsRow(_ target: Destination, _ title: String, _ subtitle: String, _ symbol: String) -> some View {
+        Button { destination = target } label: {
+            FeaturePreviewCard(title: title, subtitle: subtitle, symbol: symbol)
+        }.buttonStyle(.plain)
     }
 }
 

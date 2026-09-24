@@ -57,7 +57,7 @@ struct TripDetailView: View {
             Text(statusText).font(.caption.weight(.bold)).foregroundStyle(theme.colors.accent)
             Text(trip.name).font(.system(size: 28, weight: .black, design: .rounded)).foregroundStyle(theme.colors.text)
             if let preferences = trip.packingPreferences {
-                Text("此行程設定：\(preferences.party.label)・\(preferences.packingStyle.label)")
+                Text("此行程設定：\(preferences.summary)")
                     .font(.caption).foregroundStyle(theme.colors.secondaryText)
             }
         }
