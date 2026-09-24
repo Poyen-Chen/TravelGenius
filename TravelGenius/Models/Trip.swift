@@ -81,6 +81,21 @@ final class Trip {
     var excludedPackingIDsRaw: String = ""
     /// Empty only for pre-stage-3 records; once captured, never follows global settings.
     var packingPreferencesRaw: String = ""
+    /// Versioned creation reference; empty for old trips, never fabricated during migration.
+    var packingWeatherRaw: String = ""
+
+    var packingWeather: PackingWeather? {
+        get {
+            guard let data = packingWeatherRaw.data(using: .utf8),
+                  let value = try? JSONDecoder().decode(PackingWeather.self, from: data), value.valid else { return nil }
+            return value
+        }
+        set {
+            guard let newValue, newValue.valid,
+                  let data = try? JSONEncoder().encode(newValue), let raw = String(data: data, encoding: .utf8) else { return }
+            packingWeatherRaw = raw
+        }
+    }
 
     var packingPreferences: UserPreferences? {
         guard let data = packingPreferencesRaw.data(using: .utf8) else { return nil }

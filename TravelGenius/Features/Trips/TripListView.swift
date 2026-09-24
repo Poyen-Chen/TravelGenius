@@ -110,7 +110,7 @@ struct TripListView: View {
                 Text(trip.name)
                     .font(.system(size: 27, weight: .black, design: .rounded))
                     .foregroundStyle(theme.colors.text)
-                Text("\(shortDate(trip.startDate))–\(shortDate(trip.endDate))・\(trip.totalDays)天・冬季多陰天")
+                Text("\(shortDate(trip.startDate))–\(shortDate(trip.endDate))・\(trip.totalDays)天")
                     .font(.subheadline)
                     .foregroundStyle(theme.colors.secondaryText)
                 ProgressView(value: items.isEmpty ? 0 : Double(packed), total: Double(max(items.count, 1)))
@@ -124,7 +124,7 @@ struct TripListView: View {
                 .foregroundStyle(theme.colors.secondaryText)
                 HStack(spacing: 10) {
                     MascotView(expression: remaining > 0 ? .normal : .happy, size: 56)
-                    Text(items.isEmpty ? "行程準備好了，點進去產生你的打包清單。" : remaining == 0 ? "全部打包完成，可以安心出發了！" : "還有\(remaining)件，禦寒衣物差最多，點進去繼續")
+                    Text(items.isEmpty ? "行程準備好了，點進去產生你的打包清單。" : remaining == 0 ? "全部打包完成，可以安心出發了！" : "還有\(remaining)件待確認，點進去繼續打包")
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(theme.colors.text)
                         .multilineTextAlignment(.leading)

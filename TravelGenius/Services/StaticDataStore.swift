@@ -206,6 +206,7 @@ final class StaticDataStore {
 
     private(set) lazy var countries: [Country] = load("countries")
     private(set) lazy var cities: [City] = load("cities")
+    private(set) lazy var seasonalProfiles: [SeasonalProfile] = load("seasonal_weather")
     private(set) lazy var packingRules: [PackingRule] = load("packing_rules")
     private(set) lazy var packingCatalog: PackingCatalog = {
         let catalog: PackingCatalog = load("packing_items")

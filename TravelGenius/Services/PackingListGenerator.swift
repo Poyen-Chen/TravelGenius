@@ -31,6 +31,9 @@ enum PackingListGenerator {
     ) -> [GeneratedItem] {
         guard let preferences = preferences ?? trip.packingPreferences
             ?? (trip.packingPreferencesRaw.isEmpty ? UserPreferences.load() : nil) else { return [] }
+        let snapshot = trip.packingWeather
+        guard trip.packingWeatherRaw.isEmpty || snapshot != nil else { return [] }
+        let effectiveWeatherTags = weatherTags ?? snapshot?.tags
         let month = Calendar.current.component(.month, from: trip.startDate)
         var results: [GeneratedItem] = []
         var seenIDs = Set<String>()
@@ -48,7 +51,7 @@ enum PackingListGenerator {
                 countryCode: trip.countryCode,
                 month: month,
                 preferences: matchingPreferences,
-                weatherTags: weatherTags
+                weatherTags: effectiveWeatherTags
             ) else { continue }
             for (itemIndex, item) in rule.items.enumerated() {
                 if modern && ["regular-medicine", "stomach-medicine", "charging-kit"].contains(item.itemId) { continue }
@@ -64,7 +67,9 @@ enum PackingListGenerator {
                     name: definition.nameZh,
                     category: definition.category,
                     quantity: quantity,
-                    reason: modern && rule.layer == "party" ? "旅行證件與行李收納" : rule.reasonZh,
+                    reason: rule.layer == "weather" && snapshot != nil
+                        ? "\(snapshot!.reason(for: rule.match?.weatherTags ?? []))・\(weatherReason(rule.match?.weatherTags ?? []))"
+                        : modern && rule.layer == "party" ? "旅行證件與行李收納" : rule.reasonZh,
                     sortIndex: ruleIndex * 100 + itemIndex
                 ))
             }
@@ -108,6 +113,13 @@ enum PackingListGenerator {
         return results
     }
 
+    private static func weatherReason(_ tags: [String]) -> String {
+        if tags.contains("rain") { return "雨具參考" }
+        if tags.contains("hot") { return "防曬與炎熱天氣準備" }
+        if tags.contains("cold") { return "保暖準備" }
+        return "可增減的外層衣物"
+    }
+
     /// 將產生結果合併進行程的清單：新項目加入、已不適用且未打包的自動項目移除
     @MainActor
     static func sync(
@@ -119,6 +131,7 @@ enum PackingListGenerator {
         trip.capturePackingPreferencesIfNeeded(preferences ?? .load())
         // A corrupt snapshot must never become an empty destructive merge.
         guard let frozenPreferences = trip.packingPreferences else { return }
+        guard trip.packingWeatherRaw.isEmpty || trip.packingWeather != nil else { return }
         let catalog = StaticDataStore.shared.packingCatalog
         trip.excludedPackingIDs.formUnion(trip.excludedPackingNames.compactMap { catalog.legacyID(name: $0) })
         let generated = generate(for: trip, preferences: frozenPreferences, weatherTags: weatherTags)

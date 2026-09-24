@@ -82,6 +82,10 @@ struct PackingRegression {
             precondition(fixture.packingPreferences == prefs)
             precondition(items.first { $0.name == "護照" }?.unitWeightKg == 0.125)
             #endif
+            #if STAGE4
+            precondition(fixture.packingWeather?.request.cityID == "JP-東京")
+            precondition(fixture.packingWeather?.failure == .outsideRange)
+            #endif
             print("reopened persisted candidate store: PASS")
             return
         }
@@ -275,6 +279,26 @@ struct PackingRegression {
         print("snapshot freeze, changed global defaults, new-trip adoption, staples validation/isolation, corrupt snapshot safety: PASS")
         #endif
         print("legacy migration, stable identity, merge preservation, exclusions, idempotence: PASS")
+        #if STAGE4
+        precondition(fixture.packingWeatherRaw.isEmpty, "migration must not fabricate historical weather")
+        let weatherQuery = WeatherRequest(cityID: "JP-東京", cityName: "東京", latitude: 35.67, longitude: 139.65,
+            timeZoneID: "Asia/Tokyo", start: "2026-09-10", end: "2026-09-14")
+        let savedWeather = PackingWeather.resolve(request: weatherQuery, days: [], now: Date(timeIntervalSince1970: 0),
+            profile: StaticDataStore.shared.seasonalProfiles.first { $0.cityID == "JP-東京" }, failure: .outsideRange)
+        fixture.packingWeather = savedWeather
+        try context.save()
+        precondition(fixture.packingWeather == savedWeather)
+        let generated = PackingListGenerator.generate(for: fixture)
+        precondition(generated.contains { $0.id == "folding-umbrella" && $0.reason.contains("季節參考") && !$0.reason.contains("預報有雨") })
+        let raw = fixture.packingWeatherRaw
+        let beforeCorrupt = Set(try context.fetch(FetchDescriptor<PackingItem>()).map(\.id))
+        fixture.packingWeatherRaw = "broken"
+        PackingListGenerator.sync(trip: fixture, context: context)
+        expect(Set(try context.fetch(FetchDescriptor<PackingItem>()).map(\.id)) == beforeCorrupt)
+        fixture.packingWeatherRaw = raw
+        try context.save()
+        print("weather additive migration, snapshot persistence, sourced reasons, corrupt snapshot merge protection: PASS")
+        #endif
         #endif
     }
 }

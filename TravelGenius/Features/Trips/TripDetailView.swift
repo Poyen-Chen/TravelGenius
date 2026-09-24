@@ -101,14 +101,11 @@ struct TripDetailView: View {
                     overviewMetric(title: "旅程天數", value: "\(trip.totalDays) 天", symbol: "calendar")
                 }
 
-                PackmonCard {
-                    HStack(spacing: 12) {
-                        Image(systemName: "cloud.fill").font(.title2).foregroundStyle(theme.colors.secondaryAccent)
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text("天氣概況").font(.subheadline.weight(.bold))
-                            Text("冬季多陰天・建議洋蔥式穿搭").font(.caption).foregroundStyle(theme.colors.secondaryText)
-                        }
-                    }
+                if let weather = trip.packingWeather {
+                    PackingWeatherCard(weather: weather, saved: true)
+                } else {
+                    Text("尚無可讀取的建立時天氣紀錄；不影響原有打包清單。")
+                        .font(.caption).foregroundStyle(theme.colors.secondaryText)
                 }
 
                 Button { page = .packing } label: {

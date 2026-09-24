@@ -21,7 +21,7 @@ struct PackingListView: View {
     /// 進入回程模式前的已打包項目快照（誤觸時自動還原用）
     @State private var packedSnapshot: Set<UUID>?
     @State private var packToggle = false
-    @State private var weather: WeatherSummary?
+    private var weather: PackingWeather? { trip.packingWeather }
     @State private var pendingRemoval: PackingItem?
     @State private var staples: [PackingStaples.Item] = []
     @State private var stapleEditor: PackingStaples.Item?
@@ -53,7 +53,7 @@ struct PackingListView: View {
                 Menu {
                     Button("新增物品", systemImage: "plus") { showingAddItem = true }
                     Button("重新產生清單", systemImage: "arrow.clockwise") {
-                        PackingListGenerator.sync(trip: trip, context: context, weatherTags: weather?.tags)
+                        PackingListGenerator.sync(trip: trip, context: context)
                     }
                     Button("回程模式", systemImage: "arrow.uturn.left.circle") {
                         confirmReturnMode = true
@@ -112,28 +112,6 @@ struct PackingListView: View {
             }
         }
         .sensoryFeedback(.impact, trigger: packToggle)
-        .task(id: trip.id) {
-            await refreshWeather()
-        }
-    }
-
-    /// 抓目的地天氣，成功後以天氣標籤重新合併清單（離線自動退回月份規則），並讓小史萊姆播報
-    private func refreshWeather() async {
-        guard let summary = await WeatherService.fetch(for: trip) else { return }
-        weather = summary
-        PackingListGenerator.sync(trip: trip, context: context, weatherTags: summary.tags)
-        WidgetSync.update(trip: trip)
-        let contextual = MascotMessenger.message(
-            for: trip,
-            unpackedCount: (trip.packingItems ?? []).filter { !$0.isPacked }.count,
-            weather: summary
-        )
-        if summary.rainDays > 0 {
-            mascot.speak("查了\(summary.cityZh)天氣：\(summary.headline)。傘我加進清單了，記得帶", expression: .alert)
-        } else {
-            mascot.message = contextual.text
-            mascot.expression = contextual.expression
-        }
     }
 
     /// 回程模式關閉時，若完全沒有勾任何項目（視為誤觸），還原出發時的打包狀態
@@ -154,7 +132,7 @@ struct PackingListView: View {
             Text("產生專屬打包清單").font(.title3.weight(.black))
             Text("每個項目都會告訴你為什麼建議帶。")
                 .font(.footnote).foregroundStyle(theme.colors.secondaryText)
-            Button("產生清單") { PackingListGenerator.sync(trip: trip, context: context, weatherTags: weather?.tags) }
+            Button("產生清單") { PackingListGenerator.sync(trip: trip, context: context) }
                 .buttonStyle(PackmonPrimaryButtonStyle()).padding(.horizontal, 32)
             Spacer()
         }
@@ -165,19 +143,12 @@ struct PackingListView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
             if let weather {
-                PackmonRowCard {
-                    HStack(spacing: 8) {
-                        Image(systemName: weather.rainDays > 0 ? "cloud.rain" : "sun.max")
-                            .foregroundStyle(.tint)
-                        Text("\(weather.cityZh) 旅行期間預報：\(weather.headline)")
-                            .font(.footnote)
-                        Spacer()
-                        Text("Open-Meteo")
-                            .font(.caption2)
-                            .foregroundStyle(.tertiary)
-                    }
-                    .accessibilityElement(children: .combine)
-                }
+                PackingWeatherCard(weather: weather, saved: true)
+            } else {
+                Text(trip.packingWeatherRaw.isEmpty
+                     ? "這趟舊行程沒有建立時的天氣紀錄；開啟頁面不會自動更動清單。"
+                     : "天氣紀錄無法讀取；原有清單保留，暫不重新產生。")
+                    .font(.caption).foregroundStyle(theme.colors.secondaryText)
             }
 
             PackmonCard {

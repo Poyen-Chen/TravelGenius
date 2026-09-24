@@ -36,7 +36,7 @@ flowchart LR
     Views --> Services[Domain services]
     Services --> Rules[JSON seed rules]
     Services --> Data
-    Services --> External[Open-Meteo / official source links]
+    Services --> External[Open-Meteo active / WeatherKit inactive / official source links]
     Data --> Widget[WidgetSync]
 ```
 
@@ -46,7 +46,7 @@ flowchart LR
 - `TripCreationFlowView` 建立並寫入 `Trip`，接著呼叫 `PackingListGenerator.sync`。
 - `PackingListGenerator` 讀取使用者偏好、日期／天氣標籤與 JSON 規則，合併成 SwiftData 清單。
 - `CanIBringService` 同時比對目的地海關、回程海關與航空安檢資料；獨立查詢與行程違禁品共用同一份資料來源。
-- `WeatherService` 成功時補上天氣標籤，失敗時維持月份規則，不讓清單流程卡住。
+- 第 4 階段候選：`WeatherService` 負責供應商及有效快取（PD-035：Open-Meteo 啟用、WeatherKit 保留未啟用）；`WeatherPlanning` 負責日期／完整性／城市季節規則；`WeatherDraft` 管理取消、逾時及晚到結果。建立流程固定 `Trip.packingWeatherRaw`；打包頁只呈現此快照，不因開啟而查詢並合併。舊行程無快照時不回填歷史天氣。詳見 [天氣規格](weather-integration-spec.md)；候選不等於人工驗收。
 - `WidgetSync` 在行程、清單狀態改變或 App 離開前景時同步摘要。
 
 ## 設計系統
@@ -61,4 +61,3 @@ flowchart LR
 已接通：行程列表、新行程、總覽、打包、違禁品、獨立查詢。
 
 只保留入口：機場模式、回程模式、我的、常備清單、歷史回顧、行程知識。
-

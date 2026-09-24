@@ -26,6 +26,17 @@ struct TripCreationFlowView: View {
     @State private var creationPreferences = UserPreferences.forNewTrips()
     @State private var loadedStaples = false
     @State private var stapleLoadError = false
+    @State private var weatherDraft = WeatherDraft()
+    @State private var previewWeather: PackingWeather?
+
+    private var weatherRequest: WeatherRequest? {
+        selectedCity.flatMap { WeatherService.request(city: $0, start: startDate, end: endDate) }
+    }
+    private var readyWeather: PackingWeather? {
+        guard let query = weatherRequest, weatherDraft.request == query,
+              let result = weatherDraft.result, result.request == query, result.valid else { return nil }
+        return result
+    }
 
     private var selectedCity: City? {
         StaticDataStore.shared.cities(countryCode: countryCode).first { $0.cityZh == cityName }
@@ -54,6 +65,7 @@ struct TripCreationFlowView: View {
                             if step == 1 {
                                 destinationSection
                                 dateSection
+                                weatherSection
                                 PackmonCard {
                                     VStack(alignment: .leading, spacing: 10) {
                                         Text("出發地：台灣・台北").font(.subheadline)
@@ -65,6 +77,7 @@ struct TripCreationFlowView: View {
                                     }
                                 }
                             } else {
+                                if let previewWeather { PackingWeatherCard(weather: previewWeather) }
                                 recommendationSection
                             }
                         }.padding(theme.spacing.medium)
@@ -81,6 +94,12 @@ struct TripCreationFlowView: View {
                 }
             }
             .onChange(of: startDate) { _, value in if endDate < value { endDate = value } }
+            .task(id: weatherRequest) {
+                guard step == 1 else { return }
+                weatherDraft.begin(weatherRequest, fetch: WeatherService.fetch,
+                    fallback: { WeatherService.fallback($0, failure: $1) })
+            }
+            .onDisappear { weatherDraft.cancel() }
             .onAppear {
                 guard !loadedStaples else { return }
                 do {
@@ -192,7 +211,11 @@ struct TripCreationFlowView: View {
             }
             Button(step == 1 ? "下一步：確認清單" : step == 2 ? "下一步：旅行提醒" : "完成建立，開始打包") {
                 if step == 1 {
+                    guard let weather = readyWeather else { return }
+                    weatherDraft.cancel()
+                    previewWeather = weather
                     let trip = makeTrip()
+                    trip.packingWeather = weather
                     workingTrip = trip
                     recommendations = PackingListGenerator.generate(for: trip).filter { recommendation in
                         !customItems.contains { item in
@@ -207,11 +230,34 @@ struct TripCreationFlowView: View {
                 } else { createTrip() }
             }
             .buttonStyle(PackmonPrimaryButtonStyle())
-            .disabled(selectedCity == nil || isSaving || !loadedStaples)
+            .disabled(selectedCity == nil || isSaving || !loadedStaples || (step == 1 && readyWeather == nil))
         }
         .disabled(isSaving || didSave)
         .padding(theme.spacing.medium)
         .background(theme.colors.canvas)
+    }
+
+    @ViewBuilder
+    private var weatherSection: some View {
+        if let result = readyWeather {
+            PackingWeatherCard(weather: result)
+            Text("若返回修改城市或日期，推薦將依新條件更新；已排除項目與自訂用品會保留。")
+                .font(.caption).foregroundStyle(theme.colors.secondaryText)
+        } else if let query = weatherRequest, !query.dates.isEmpty {
+            PackmonCard {
+                VStack(alignment: .leading, spacing: 10) {
+                    ProgressView("正在查詢目的地天氣…")
+                    Text("最多等待 10 秒；也可以先用季節參考建立清單。")
+                        .font(.caption).foregroundStyle(theme.colors.secondaryText)
+                    Button("使用季節參考繼續") {
+                        weatherDraft.useFallback(WeatherService.fallback(query, failure: .skipped))
+                    }.frame(minHeight: 44)
+                }
+            }
+        } else if selectedCity != nil {
+            Text("日期範圍或城市時區無法辨識，請調整日期後再試。")
+                .font(.caption).foregroundStyle(theme.colors.secondaryText)
+        }
     }
 
     private func sectionTitle(_ title: String, subtitle: String) -> some View {
@@ -260,13 +306,15 @@ struct TripCreationFlowView: View {
     }
 
     private func createTrip() {
-        guard selectedCity != nil, !isSaving, !didSave else { return }
+        guard selectedCity != nil, !isSaving, !didSave,
+              let previewWeather, previewWeather.request == weatherRequest else { return }
         isSaving = true
         defer { isSaving = false }
         // Isolated save context: failure rollback must not discard other screens' edits.
         let saveContext = ModelContext(context.container)
         saveContext.autosaveEnabled = false
         let trip = makeTrip()
+        trip.packingWeather = previewWeather
         trip.hasReviewedTravelRules = true
         trip.excludedPackingIDs = excludedIDs
         trip.excludedPackingNames = Set(recommendations.filter { excludedIDs.contains($0.id) }.map(\.name))
