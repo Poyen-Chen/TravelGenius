@@ -356,3 +356,11 @@ This log records accepted product choices that affect behavior, navigation, scop
 - Decision: Accept Stage 6 as a functional validation of visual packing cards (App `0470a88`, PWA `d321e6a` / Site 10). Defer consistent/final artwork generation until the item catalog is confirmed. This supersedes PD-043's pending human acceptance and any expectation that full artwork coverage is required before Stage 7.
 - Context: User explicitly requested「這邊先當作驗證，繼續下一階段」after discussing mixed realistic/line imagery. This is not approval of mixed artwork as the final visual standard.
 - Consequences: Keep current assets and labeled fallbacks on both platforms; generate no further assets now. Preserve test limitations and provenance caveats. Commit/push acceptance and immutable Stage 6 tag before branching Stage 7, which is integration checks and scoped defect fixes only, not production release approval or a new feature phase.
+
+## PD-045 — Stage 7 acceptance with deferred release checks
+
+- Date: 2026-09-25
+- Status: Accepted
+- Decision: Close Stage 7 following the user's explicit「可以先保持這樣，完成」. Preserve the current implementation; do not change navigation in this acceptance commit. Retain direct-to-packing on App creation. The observed PWA creation-to-overview discrepancy remains documented and deferred, not falsely reported as fixed or as cross-platform parity approval.
+- Context: The user accepted completion after the hands-on test report (`5919168`) and asked what comes next. Functional source remains App `0470a88`, PWA `d321e6a` / Site 10.
+- Consequences: Publish an immutable Stage 7 acceptance tag after committing/pushing this record. Original phases 0–7 are complete; this does not authorize merging main, TestFlight/App Store release or commercial launch. Carry forward untested real-device, full-network-outage, accessibility and nonempty suggestion UI cases. Final artwork remains deferred under PD-044. Any further phase is a new proposal requiring scope agreement.
