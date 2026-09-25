@@ -62,4 +62,31 @@ Iteration history:
 
 No remaining P0/P1/P2 findings in this component scope. P3/follow-up: long rule explanations wrap more than the illustrative mock; real-device VoiceOver and larger Dynamic Type remain manual checks. User acceptance is pending and is not implied by engineering QA.
 
+Stage 5 component result: passed
+
+## Stage 6 — selected two-column cards, 2026-09-25
+
+- Source visual truth: `docs/evidence/stage06/selected-design.png`, second displayed Stage 6 image.
+- Implementation: `docs/evidence/stage06/ios-final.png`, `web-header-final.png`, `web-cards-final.png`, `web-final.png` (lower cards/custom fallback), `web-desktop.png` (wide layout before final tool-collapse polish).
+- Viewport/density: source 853 × 1844 px representing 390 × 844 CSS design. Web mobile captures 390 × 844 CSS px at 1×. Native screenshot is the Simulator window (397 × 854 px, including chrome); inspection used its app content region on iPhone 17 (402 × 874 pt). No full-screen pixel-identity claim or comparison of device chrome. Desktop inspected at 1100 × 850.
+- State: image mode, five reviewed item concepts plus one real custom fallback. Native uses the real charging-kit name/image, web uses a cable. Web screenshot after interaction shows clothes 6 and packed; source shows 5/unpacked. These are deliberate test-state differences, not additional design decisions. Isolated native harness omits root navigation only; regular App retains it.
+
+### Comparison history and focused findings
+
+1. [P2, fixed] Original progress/weight summaries displaced the image grid. Image mode now has compact progress; saved weather and web filter/bag/weight tools remain available through disclosure. Final header and card captures confirm hierarchy.
+2. [P2, fixed] Corner controls overlapped wide shirt imagery after image enlargement. Reserved 36pt/px above image content; final native and web captures show separate controls and objects.
+3. [P2, fixed] Native and web image selection/progress used inconsistent white/green treatments. Image toggle is now themed orange in both; final captures show consistent active state.
+
+### Required surfaces
+
+- Typography: existing native system/PingFang stack; semibold item names, secondary quantity, 16–17px/pt body hierarchy. Long names wrap instead of disappearing. Grid spacing 12, radius 18, touch controls 44; quantity remains a real control.
+- Colors: theme tokens preserve cream/near-white surfaces, orange active state, sage packed state; no new palette or screenshot-as-UI shortcut.
+- Image quality: six standalone bundled PNGs, three generated once and three reused supplied assets. Subjects are appropriate and not stretched; selected five concepts all represented. Generic fallback uses existing system/library category icons and explicit label, never guessed product art. Tiny alpha-edge specks on the new cable are a P3 polish limitation, not a missing image.
+- Content: names/quantities/checks retained. Prototype-only caption and fake sixth inventory entry were not shipped. Real custom items retain all controls. PWA retains pre-existing additional tools/3D; App does not gain those experiments.
+- Responsive/interaction: checked mobile and desktop; PWA toggle + quantity 5→6 + text mode + reload persisted; native quantity save and text/image packed-state consistency verified using isolated fixture. PWA console errors empty. Full Dynamic Type/VoiceOver, real offline reopening and storage-full failure injection remain manual gaps, not claimed passed tests.
+
+Full-source and implementation images were opened in the same comparison input. Focused card regions were checked for crop, identity, text and control separation. Scope is the new card system and responsive integration, not a replacement of the entire existing App/PWA shell. Platform-specific header/tool density is retained deliberately; no actionable P0/P1/P2 card-system findings remain.
+
+Follow-up: expand image coverage after this first candidate review; commercial provenance confirmation for reused images; real-device accessibility and offline checks. Human Stage 6 acceptance is pending.
+
 final result: passed

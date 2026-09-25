@@ -33,6 +33,9 @@ struct PackingListView: View {
     @State private var selectedSuggestions: Set<String> = []
     @State private var suggestionError: String?
     @State private var suggestionMessage: String?
+    @AppStorage("packmon.packing.images") private var showImages = false
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @State private var quantityEditor: PackingItem?
 
     private var suggestionRequest: WeatherRequest? {
         StaticDataStore.shared.cities.first { $0.countryCode == trip.countryCode && $0.cityZh == trip.city }
@@ -78,6 +81,7 @@ struct PackingListView: View {
             }
         }
         .sheet(isPresented: $showingAddItem) { AddPackingItemView(trip: trip) }
+        .sheet(item: $quantityEditor) { PackingQuantityEditor(item: $0) }
         .sheet(item: $stapleEditor) { item in PackingStapleEditor(draft: item, items: $staples) }
         .sheet(item: $stapleRemoval) { item in
             PackmonRemovalSheet(title: "移除常備用品？", name: item.name,
@@ -170,6 +174,17 @@ struct PackingListView: View {
                 }
             }
             if !reviewingSuggestions {
+            if showImages {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("\(items.filter(\.isPacked).count) / \(items.count) 項已打包").font(.subheadline.bold())
+                    ProgressView(value: Double(items.filter(\.isPacked).count), total: Double(max(1, items.count)))
+                        .tint(theme.colors.accent).accessibilityLabel("打包進度")
+                }
+                if let weather {
+                    DisclosureGroup("建立時天氣") { PackingWeatherCard(weather: weather, saved: true) }
+                        .font(.subheadline).tint(theme.colors.accent)
+                }
+            } else {
             if let weather {
                 PackingWeatherCard(weather: weather, saved: true)
             } else {
@@ -183,7 +198,39 @@ struct PackingListView: View {
                 PackingProgressHeader(items: items)
             }
             }
+            }
 
+            if !reviewingSuggestions {
+                HStack(spacing: 12) {
+                    HStack(spacing: 0) {
+                        ForEach([false, true], id: \.self) { images in
+                            Button { showImages = images } label: {
+                                Text(images ? "圖片" : "文字").font(.subheadline.weight(.semibold))
+                                    .frame(maxWidth: .infinity, minHeight: 44)
+                                    .foregroundStyle(showImages == images ? Color.white : theme.colors.secondaryText)
+                                    .background(showImages == images ? theme.colors.accent : .clear, in: Capsule())
+                            }.buttonStyle(.plain)
+                                .accessibilityAddTraits(showImages == images ? .isSelected : [])
+                        }
+                    }.background(theme.colors.surface, in: Capsule())
+                        .accessibilityElement(children: .contain).accessibilityLabel("打包呈現方式")
+                    Button("新增物品", systemImage: "plus") { showingAddItem = true }
+                        .font(.subheadline).fixedSize().tint(theme.colors.accent)
+                }
+            }
+            if showImages && !reviewingSuggestions {
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12),
+                                        count: dynamicTypeSize.isAccessibilitySize ? 1 : 2), spacing: 12) {
+                    ForEach(items) { item in
+                        PackingItemCard(item: item,
+                            isStaple: PackingStaples.matchingItem(item, in: staples) != nil,
+                            onToggle: { item.isPacked.toggle(); packToggle.toggle() },
+                            onQuantity: { quantityEditor = item },
+                            onStaple: { editStaple(item) },
+                            onRemove: { pendingRemoval = item })
+                    }
+                }
+            } else {
             ForEach(sections, id: \.reason) { section in
                 VStack(alignment: .leading, spacing: 8) {
                     Text(section.reason)
@@ -212,12 +259,14 @@ struct PackingListView: View {
                              .accessibilityLabel("\(PackingStaples.matchingItem(item, in: staples) == nil ? "加入常備" : "移除常備")：\(item.name)")
                         }
                         .contextMenu {
+                            Button("修改數量", systemImage: "number") { quantityEditor = item }
                             Button("刪除", systemImage: "trash", role: .destructive) {
                                 pendingRemoval = item
                             }
                         }
                     }
                 }
+            }
             }
             }
             .padding(.horizontal, theme.spacing.medium)
@@ -291,6 +340,15 @@ struct PackingListView: View {
         }
         .padding(theme.spacing.medium)
         .background(theme.colors.accent.opacity(0.07), in: RoundedRectangle(cornerRadius: theme.radius.large))
+    }
+
+    private func editStaple(_ item: PackingItem) {
+        do {
+            staples = try PackingStaples.load()
+            if let existing = PackingStaples.matchingItem(item, in: staples) { stapleRemoval = existing }
+            else { stapleEditor = .init(name: item.name, category: item.category,
+                                      quantity: item.quantity, unitWeightKg: item.unitWeightKg) }
+        } catch { stapleError = error.localizedDescription }
     }
 
     private func beginSuggestions() {

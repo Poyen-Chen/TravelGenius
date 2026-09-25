@@ -340,3 +340,11 @@ This log records accepted product choices that affect behavior, navigation, scop
 - Decision: Accept the delivered PD-041 implementation (App `2eae265`, PWA `1876394` / Site 9). Save and push the acceptance record and immutable `packmon-ios-stage-05-accepted` tag before starting Stage 6 from it.
 - Context: User explicitly replied「通過，下一個階段」. This updates PD-041's pending acceptance status without rewriting its historical record.
 - Consequences: Stage 6 retains the existing gate: review a small set of reusable item visuals and layout before full asset production and integration. No automatic approval of image style, layout, default display mode or Stage 6 completion; no 3D or per-use image generation. Existing data remains unchanged.
+
+## PD-043 — Two-column item-image cards
+
+- Date: 2026-09-25
+- Status: Design accepted (second displayed Stage 6 preview); implementation pending human acceptance
+- Decision: Implement the selected two-column image-forward cards in App and PWA with item names, quantities, separate packing checkboxes and item actions. Preserve existing text/default preferences; selecting images is remembered locally. Large accessibility text may use one column; wide web layouts may use three.
+- Context: User selected「2」after reviewing thumbnail rows versus two-column cards. Selected image: `exec-5ab1c363-1d15-451c-ab4c-b1586c158a20.png`. This resolves PD-019's layout/style review gate; it does not accept the completed stage.
+- Consequences: Bundle reusable representative images, not runtime generation. First candidate covers five reviewed item concepts (charging cable versus charger kit use distinct assets); remaining/custom/unknown items have labeled category fallback and retain full controls. No fuzzy substring matching, schema migration or data duplication. Image mode uses compact progress; existing weather and web bag/weight controls remain accessible. App card quantity editing uses a cancelable 1–99 draft shared with the text list's context menu. Suggestion review stays text-only; PWA's existing 3D experiment remains PWA-only. See visual-list-spec.md for provenance, differences and acceptance limits.
