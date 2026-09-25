@@ -286,3 +286,42 @@ This log records accepted product choices that affect behavior, navigation, scop
 - Decision: Supersede PD-033/034's immediate WeatherKit activation. Use Open-Meteo for the current non-commercial test App because the user does not have paid Apple Developer membership. Retain the WeatherKit adapter for a future intentional switch; do not silently fail over between providers or mix cached data.
 - Context: During stage 4 testing the user explicitly asked「先保留weatherkit串接的方式，但先回去使用open meteo」.
 - Consequences: Provider is part of the request, persisted snapshot and cache identity. Open-Meteo uses a maximum 16-day horizon, WeatherKit 10; actual valid returned dates remain authoritative. Open-Meteo JSON null/missing values are not zeros and array alignment is validated. Attribution follows the active source. Keep all preview/freeze/fallback/cancellation protections. Default entitlements do not require WeatherKit while inactive; future activation requires developer service provisioning plus the entitlement and real tests. Earlier WeatherKit-only test snapshots decode as WeatherKit and are not rewritten. Open-Meteo's free endpoint is not a commercial-use authorization; before commercial release switch/provision WeatherKit or arrange an appropriate commercial service plan. This change does not purchase anything or deploy PWA.
+
+## PD-036 — Packing-first compact weather presentation
+
+- Date: 2026-09-24
+- Status: Direction accepted (user selected option 2); implementation pending human review
+- Decision: Replace the verbose shared weather card with a packing reminder, forecast temperature range and rain-probability day count, explicit coverage status and a weather-details action. Use the existing Packmon theme. Keep provider attribution visible; move exact dates, retrieval time, probability definition, fallback reasons and legal/source detail into a scrollable themed sheet.
+- Context: The user found the stage 4 card too text-heavy, reviewed three concepts, and selected the packing-reminder-first direction. This supersedes PD-034's verbose presentation, not its snapshot or recommendation policy.
+- Consequences: Reminders derive from existing cold/hot/rain tags, including seasonal tags where relevant; they never claim an item was added. Show all applicable reminder categories. No-data and seasonal-only states show no fabricated temperature or rain count. Partial coverage remains visible and metrics describe forecast days only. Saved cards identify creation-time evidence. Apply through the shared iOS component to creation, preview, overview and packing; do not change providers, thresholds, storage or checklist contents. PWA remains unchanged in this iOS stage; its separate weather implementation is not migrated. No stage acceptance tag until human approval.
+
+## PD-037 — Daily-list weather details
+
+- Date: 2026-09-24
+- Status: Direction accepted (second details concept); candidate pending human review
+- Decision: Keep PD-036's compact main card. Present details as a large scrollable sheet with city/date range, saved-reference and coverage status, compact trip summary, and a date/temperature/rain-probability list. Highlight days at the existing ≥50% threshold with a soft accent background and filled droplet. Place the packing reminder below the list and technical/source explanation in a collapsed disclosure.
+- Context: The user requested alternatives for the details itself, then selected the second displayed concept, the daily list. This supersedes PD-036's dense text details and medium-height default, not its main card or weather policy.
+- Consequences: Use stored daily values, never mock numbers or inferred weather conditions. Weekdays use the destination calendar. Accessibility text sizes use stacked rows. Missing dates remain explicitly identified; seasonal-only states never fabricate daily data. Retrieval time, snapshot status and source remain visible. No refresh, persistence changes, checklist mutations or PWA migration. Human acceptance is still required before stage 4 is tagged.
+
+## PD-038 — Selective PWA weather presentation parity and ongoing parity check
+
+- Date: 2026-09-25
+- Status: Requested; candidate pending human review
+- Decision: Extend PD-036/037's packing-first weather card and daily forecast list to PWA. Persist newly fetched per-city daily values alongside existing summaries. Legacy summaries explicitly lack daily data. Use the existing modal for saved trips and inline disclosure within creation/preview to preserve form state. Always assess App/PWA suitability for future changes and report synchronization or intentional differences in deliveries; record this in AGENTS.md.
+- Context: User requested synchronization and asked that future changes consider PWA too. Supersedes the PWA exclusion in PD-036/037 for this presentation scope only.
+- Consequences: Preserve PWA Open-Meteo, multi-city behavior, 40% rain threshold, 28°C hot threshold, and explicit weather-refresh recommendation merge. Label that action「更新預報與推薦」and warn it adds applicable items. Viewing details never refreshes or modifies items. Multi-city dates are not represented as actual stay dates. No invented old daily values, migration of iOS recommendation rules, cross-platform data sync or public deployment. Version offline assets for the new UI.
+
+## PD-039 — App-source weather information and design parity
+
+- Date: 2026-09-25
+- Status: Implementation requested; local candidate pending visual acceptance
+- Decision: Use the actual iOS weather card/details as the source for PWA information order, date range/weekdays, coverage, icons, typography, colors, rounded daily rows and metadata. Adapt only the container to desktop or mobile. Align new PWA forecast lookups to iOS ≥50% rain and ≥30°C hot thresholds, superseding PD-038's retention of different new-query thresholds.
+- Context: The user rejected functional-only parity and explicitly requires both information and basic design consistency. Local comparison precedes publishing this correction.
+- Consequences: Persist reference kind, retrieval timestamp and thresholds for new queries. Existing snapshots and packing items are not rewritten; old 40% summaries remain explicitly labeled, not silently reinterpreted. Preserve accurate PWA-specific multi-city and explicit refresh/merge semantics. No data synchronization or fabricated forecasts. Creation forms retain inline details to avoid losing edits. Update the PWA knowledge explanation accordingly.
+## PD-040 — Grouped PWA destinations aligned with App
+
+- Date: 2026-09-25
+- Status: Requested; local implementation pending human acceptance
+- Decision: PWA new-trip destinations use country/region then city, with Japan, Korea, Hong Kong, United States and Vietnam and the same 11 city coordinates as iOS. Use two-column themed selection chips, not a flattened city/country search or country-only placeholders.
+- Context: User explicitly requested updating PWA destination selection after requesting App/PWA information and basic design parity.
+- Consequences: Retain existing PWA multi-city selection; switching the visible country preserves selected cities and form dates/options. Preserve legacy destinations and departure-country options. Add Hong Kong metadata from iOS so persisted trips validate; missing seasonal knowledge is explicitly labeled rather than fabricated. No cross-platform data migration or automatic public deployment. Supersedes broader PWA destination selection for new trips only.

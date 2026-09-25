@@ -129,6 +129,18 @@ struct PackingWeather: Codable, Equatable, Sendable {
         days.reduce(into: Set<String>()) { $0.formUnion($1.tags) }.union(seasonalTags)
     }
     var forecastTags: Set<String> { days.reduce(into: Set<String>()) { $0.formUnion($1.tags) } }
+    /// A reminder, never a claim that an item was added or that rain is certain.
+    var packingReminder: String {
+        var items: [String] = []
+        if tags.contains("cold") { items.append("保暖衣物") }
+        if tags.contains("hot") { items.append("防曬用品") }
+        if tags.contains("rain") { items.append("雨具") }
+        return items.isEmpty ? "出發前再確認天氣" : items.joined(separator: "、") + "記得確認"
+    }
+    var coverageLabel: String {
+        if days.isEmpty { return seasonal == nil ? "暫無天氣資料" : "季節參考・非預報" }
+        return missingDates.isEmpty ? "完整 \(days.count) 天預報" : "僅 \(days.count)/\(request.dates.count) 天有預報"
+    }
     var seasonalTags: Set<String> {
         guard let seasonal else { return [] }
         let months = Set(missingDates.compactMap { request.date($0).map { request.calendar.component(.month, from: $0) } })
