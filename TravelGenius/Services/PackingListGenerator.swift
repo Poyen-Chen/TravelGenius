@@ -27,11 +27,12 @@ enum PackingListGenerator {
     static func generate(
         for trip: Trip,
         preferences: UserPreferences? = nil,
-        weatherTags: Set<String>? = nil
+        weatherTags: Set<String>? = nil,
+        weatherReference: PackingWeather? = nil
     ) -> [GeneratedItem] {
         guard let preferences = preferences ?? trip.packingPreferences
             ?? (trip.packingPreferencesRaw.isEmpty ? UserPreferences.load() : nil) else { return [] }
-        let snapshot = trip.packingWeather
+        let snapshot = weatherReference ?? trip.packingWeather
         guard trip.packingWeatherRaw.isEmpty || snapshot != nil else { return [] }
         let effectiveWeatherTags = weatherTags ?? snapshot?.tags
         let month = Calendar.current.component(.month, from: trip.startDate)
@@ -111,6 +112,45 @@ enum PackingListGenerator {
         }
 
         return results
+    }
+
+    /// Read-only proposal. Never rewrites identity, exclusions, quantity or packed state.
+    static func missingItems(for trip: Trip, weather: PackingWeather? = nil) -> [GeneratedItem] {
+        let catalog = StaticDataStore.shared.packingCatalog
+        let existing = trip.packingItems ?? []
+        let ids = Set(existing.compactMap { $0.catalogItemID ?? catalog.legacyID(name: $0.name) })
+        let names = Set(existing.map(\.name))
+        let excluded = trip.excludedPackingIDs.union(trip.excludedPackingNames.compactMap { catalog.legacyID(name: $0) })
+        return generate(for: trip, weatherReference: weather).filter {
+            !ids.contains($0.id) && !names.contains($0.name)
+                && !excluded.contains($0.id) && !trip.excludedPackingNames.contains($0.name)
+        }
+    }
+
+    /// Recheck against current items/exclusions at confirmation, then insert only chosen candidates.
+    /// A failed save removes only this operation's inserts, never rolls back unrelated user edits.
+    @MainActor
+    @discardableResult
+    static func addMissing(trip: Trip, selectedIDs: Set<String>, weather: PackingWeather?, context: ModelContext) throws -> Int {
+        let additions = missingItems(for: trip, weather: weather).filter { selectedIDs.contains($0.id) }
+        let autosave = context.autosaveEnabled
+        context.autosaveEnabled = false
+        defer { context.autosaveEnabled = autosave }
+        var inserted: [PackingItem] = []
+        do {
+            for candidate in additions {
+                let item = PackingItem(name: candidate.name, category: candidate.category,
+                    reasonKey: candidate.reason, quantity: candidate.quantity, isCustom: false,
+                    sortIndex: candidate.sortIndex, trip: trip)
+                item.catalogItemID = candidate.id
+                context.insert(item); inserted.append(item)
+            }
+            try context.save()
+            return inserted.count
+        } catch {
+            for item in inserted { context.delete(item) }
+            throw error
+        }
     }
 
     private static func weatherReason(_ tags: [String]) -> String {

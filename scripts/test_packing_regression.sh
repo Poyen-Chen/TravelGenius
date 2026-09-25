@@ -21,7 +21,7 @@ if [[ -f "$test_root/baseline/TravelGenius/Services/PackingCatalog.swift" ]]; th
     baseline_extras+=("$test_root/baseline/TravelGenius/Services/PackingCatalog.swift")
 fi
 compile "$test_root/baseline/TravelGenius" "$test_root/baseline/run" -D LEGACY "${baseline_extras[@]}"
-compile TravelGenius "$test_root/candidate/run" -D STAGE3 -D STAGE4 TravelGenius/Services/PackingCatalog.swift TravelGenius/Services/PackingStaples.swift TravelGenius/Services/WeatherPlanning.swift
+compile TravelGenius "$test_root/candidate/run" -D STAGE3 -D STAGE4 -D STAGE5 TravelGenius/Services/PackingCatalog.swift TravelGenius/Services/PackingStaples.swift TravelGenius/Services/WeatherPlanning.swift
 "$test_root/baseline/run" matrix > "$test_root/baseline-results.txt"
 "$test_root/candidate/run" matrix > "$test_root/candidate-results.txt"
 diff -u "$test_root/baseline-results.txt" "$test_root/candidate-results.txt"

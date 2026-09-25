@@ -298,6 +298,37 @@ struct PackingRegression {
         fixture.packingWeatherRaw = raw
         try context.save()
         print("weather additive migration, snapshot persistence, sourced reasons, corrupt snapshot merge protection: PASS")
+        #if STAGE5
+        let updateTrip = trip()
+        updateTrip.capturePackingPreferencesIfNeeded(prefs)
+        context.insert(updateTrip)
+        let preserved = PackingItem(name: "護照", category: .documents, reasonKey: "保留原因", quantity: 7,
+            isCustom: true, sortIndex: 1, trip: updateTrip)
+        preserved.isPacked = true
+        context.insert(preserved)
+        updateTrip.excludedPackingIDs.insert("folding-umbrella")
+        try context.save()
+        let beforeIDs = (updateTrip.packingItems ?? []).map(\.id)
+        let excludedBefore = updateTrip.excludedPackingNamesRaw
+        let proposal = PackingListGenerator.missingItems(for: updateTrip, weather: savedWeather)
+        precondition(!proposal.contains { $0.name == "護照" || $0.id == "folding-umbrella" })
+        precondition(beforeIDs == (updateTrip.packingItems ?? []).map(\.id))
+        precondition(excludedBefore == updateTrip.excludedPackingNamesRaw)
+        precondition(proposal.count > 1)
+        let selected = Set([proposal[0].id, proposal[1].id])
+        updateTrip.excludedPackingIDs.insert(proposal[1].id)
+        let added = try PackingListGenerator.addMissing(trip: updateTrip, selectedIDs: selected, weather: savedWeather, context: context)
+        precondition(added == 1)
+        precondition(preserved.quantity == 7 && preserved.isPacked && preserved.isCustom && preserved.reasonKey == "保留原因")
+        precondition(updateTrip.packingWeatherRaw.isEmpty)
+        let repeated = try PackingListGenerator.addMissing(trip: updateTrip, selectedIDs: selected, weather: savedWeather, context: context)
+        precondition(repeated == 0)
+        let empty = try PackingListGenerator.addMissing(trip: updateTrip, selectedIDs: [], weather: savedWeather, context: context)
+        precondition(empty == 0)
+        context.delete(updateTrip)
+        try context.save()
+        print("stage5 read-only proposals, selection-only additions, live exclusions, custom/packed/quantity protection, idempotence: PASS")
+        #endif
         #endif
         #endif
     }

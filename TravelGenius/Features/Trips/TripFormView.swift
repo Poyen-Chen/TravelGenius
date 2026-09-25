@@ -134,10 +134,6 @@ struct TripFormView: View {
         let trimmedName = name.trimmingCharacters(in: .whitespaces)
         let name = trimmedName.isEmpty ? autoName : trimmedName
         if let trip {
-            let packingContextChanged = trip.countryCode != countryCode
-                || trip.city != city
-                || trip.startDate != startDate
-                || trip.endDate != endDate
             trip.name = name
             trip.countryCode = countryCode
             if let country = StaticDataStore.shared.country(code: countryCode) {
@@ -148,10 +144,8 @@ struct TripFormView: View {
             trip.originCity = originCity
             trip.startDate = startDate
             trip.endDate = endDate
-            // 目的地／日期變更會影響清單內容與海關規則，需重新合併生成
-            if packingContextChanged && !(trip.packingItems ?? []).isEmpty {
-                PackingListGenerator.sync(trip: trip, context: context)
-            }
+            // Saved metadata must never implicitly replace the user's packing list.
+            // Missing recommendations are reviewed explicitly on the packing page.
         } else {
             let country = StaticDataStore.shared.country(code: countryCode)
             let newTrip = Trip(

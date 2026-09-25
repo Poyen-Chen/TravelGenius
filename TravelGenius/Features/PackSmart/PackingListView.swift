@@ -27,6 +27,17 @@ struct PackingListView: View {
     @State private var stapleEditor: PackingStaples.Item?
     @State private var stapleRemoval: PackingStaples.Item?
     @State private var stapleError: String?
+    @State private var reviewingSuggestions = false
+    @State private var suggestionWeather = WeatherDraft()
+    @State private var candidates: [PackingListGenerator.GeneratedItem] = []
+    @State private var selectedSuggestions: Set<String> = []
+    @State private var suggestionError: String?
+    @State private var suggestionMessage: String?
+
+    private var suggestionRequest: WeatherRequest? {
+        StaticDataStore.shared.cities.first { $0.countryCode == trip.countryCode && $0.cityZh == trip.city }
+            .flatMap { WeatherService.request(city: $0, start: trip.startDate, end: trip.endDate) }
+    }
 
     private var items: [PackingItem] {
         (trip.packingItems ?? []).sorted { $0.sortIndex < $1.sortIndex }
@@ -42,7 +53,7 @@ struct PackingListView: View {
 
     var body: some View {
         Group {
-            if items.isEmpty {
+            if items.isEmpty && !reviewingSuggestions {
                 emptyGenerateView
             } else {
                 packingList
@@ -52,9 +63,7 @@ struct PackingListView: View {
             ToolbarItemGroup(placement: .primaryAction) {
                 Menu {
                     Button("新增物品", systemImage: "plus") { showingAddItem = true }
-                    Button("重新產生清單", systemImage: "arrow.clockwise") {
-                        PackingListGenerator.sync(trip: trip, context: context)
-                    }
+                    Button("更新打包建議", systemImage: "arrow.clockwise", action: beginSuggestions)
                     Button("回程模式", systemImage: "arrow.uturn.left.circle") {
                         confirmReturnMode = true
                     }
@@ -112,6 +121,12 @@ struct PackingListView: View {
             }
         }
         .sensoryFeedback(.impact, trigger: packToggle)
+        .onChange(of: suggestionWeather.result) { _, value in
+            guard reviewingSuggestions, value != nil else { return }
+            prepareSuggestions()
+        }
+        .onDisappear { cancelSuggestions() }
+        .onChange(of: suggestionRequest) { _, _ in cancelSuggestions() }
     }
 
     /// 回程模式關閉時，若完全沒有勾任何項目（視為誤觸），還原出發時的打包狀態
@@ -132,7 +147,7 @@ struct PackingListView: View {
             Text("產生專屬打包清單").font(.title3.weight(.black))
             Text("每個項目都會告訴你為什麼建議帶。")
                 .font(.footnote).foregroundStyle(theme.colors.secondaryText)
-            Button("產生清單") { PackingListGenerator.sync(trip: trip, context: context) }
+            Button("查看打包建議", action: beginSuggestions)
                 .buttonStyle(PackmonPrimaryButtonStyle()).padding(.horizontal, 32)
             Spacer()
         }
@@ -140,8 +155,21 @@ struct PackingListView: View {
     }
 
     private var packingList: some View {
+        ScrollViewReader { proxy in
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
+            if reviewingSuggestions {
+                suggestionPanel.id("suggestions")
+                Text("原有清單").font(.headline)
+            } else {
+                Button("更新打包建議", systemImage: "arrow.clockwise", action: beginSuggestions)
+                    .buttonStyle(.bordered).tint(theme.colors.accent)
+                if let suggestionMessage {
+                    Text(suggestionMessage).font(.subheadline).foregroundStyle(theme.colors.secondaryText)
+                        .accessibilityAddTraits(.updatesFrequently)
+                }
+            }
+            if !reviewingSuggestions {
             if let weather {
                 PackingWeatherCard(weather: weather, saved: true)
             } else {
@@ -153,6 +181,7 @@ struct PackingListView: View {
 
             PackmonCard {
                 PackingProgressHeader(items: items)
+            }
             }
 
             ForEach(sections, id: \.reason) { section in
@@ -195,6 +224,106 @@ struct PackingListView: View {
             .padding(.bottom, 30)
         }
         .background(theme.colors.canvas)
+        .onChange(of: reviewingSuggestions) { _, open in
+            if open { withAnimation { proxy.scrollTo("suggestions", anchor: .top) } }
+        }
+        }
+    }
+
+    private var suggestionPanel: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Text("建議補入").font(.title3.bold())
+                Spacer()
+                Button("取消", action: cancelSuggestions).foregroundStyle(theme.colors.accent)
+            }
+            Text("只加入勾選項目，原有清單不變。")
+                .font(.subheadline).foregroundStyle(theme.colors.secondaryText)
+            if suggestionWeather.loading {
+                ProgressView("正在確認天氣與建議…")
+                Button("先用季節參考") {
+                    if let query = suggestionRequest {
+                        suggestionWeather.useFallback(WeatherService.fallback(query, failure: .skipped))
+                    }
+                }.foregroundStyle(theme.colors.accent)
+            } else if let suggestionError {
+                Text(suggestionError).font(.subheadline).foregroundStyle(theme.colors.secondaryText)
+                Button("重試", action: beginSuggestions).buttonStyle(.bordered)
+            } else {
+                Text(suggestionWeather.result.map { "本次參考：\($0.coverageLabel)" }
+                     ?? "本次依保存的行程資料建議，未取得新的天氣預報。")
+                    .font(.caption).foregroundStyle(theme.colors.secondaryText)
+                if let reference = suggestionWeather.result {
+                    DisclosureGroup("本次天氣依據") {
+                        PackingWeatherCard(weather: reference)
+                    }.font(.subheadline).tint(theme.colors.accent)
+                }
+                if candidates.isEmpty {
+                    Label("目前沒有需要補入的物品", systemImage: "checkmark.circle")
+                    Text("既有物品與先前排除的選擇都已保留。")
+                        .font(.subheadline).foregroundStyle(theme.colors.secondaryText)
+                }
+                ForEach(candidates) { item in
+                    Button {
+                        if selectedSuggestions.contains(item.id) { selectedSuggestions.remove(item.id) }
+                        else { selectedSuggestions.insert(item.id) }
+                    } label: {
+                        HStack(alignment: .top, spacing: 12) {
+                            Image(systemName: selectedSuggestions.contains(item.id) ? "checkmark.square.fill" : "square")
+                                .font(.title2).foregroundStyle(theme.colors.accent)
+                            VStack(alignment: .leading, spacing: 5) {
+                                Text(item.name).font(.body.weight(.semibold)).foregroundStyle(theme.colors.text)
+                                Text(item.reason).font(.subheadline).foregroundStyle(theme.colors.secondaryText)
+                            }
+                            Spacer(minLength: 4)
+                            Text("×\(item.quantity)").foregroundStyle(theme.colors.secondaryText)
+                        }.frame(minHeight: 44, alignment: .leading)
+                    }.buttonStyle(.plain)
+                        .accessibilityLabel("\(item.name)，\(item.quantity) 件，\(selectedSuggestions.contains(item.id) ? "已選擇" : "未選擇")")
+                    Divider().overlay(theme.colors.separator)
+                }
+                if !candidates.isEmpty {
+                    Button("加入 \(selectedSuggestions.count) 項物品", action: applySuggestions)
+                        .buttonStyle(PackmonPrimaryButtonStyle())
+                        .disabled(selectedSuggestions.isEmpty)
+                }
+            }
+        }
+        .padding(theme.spacing.medium)
+        .background(theme.colors.accent.opacity(0.07), in: RoundedRectangle(cornerRadius: theme.radius.large))
+    }
+
+    private func beginSuggestions() {
+        cancelSuggestions()
+        reviewingSuggestions = true; suggestionMessage = nil; suggestionError = nil
+        guard trip.packingPreferencesRaw.isEmpty || trip.packingPreferences != nil,
+              trip.packingWeatherRaw.isEmpty || trip.packingWeather != nil else {
+            suggestionError = "行程推薦紀錄無法讀取，原有清單未變更。"; return
+        }
+        if let query = suggestionRequest {
+            suggestionWeather = WeatherDraft()
+            suggestionWeather.begin(query, debounce: .zero, fetch: WeatherService.fetch,
+                fallback: { WeatherService.fallback($0, failure: $1) })
+        } else { prepareSuggestions() }
+    }
+
+    private func prepareSuggestions() {
+        candidates = PackingListGenerator.missingItems(for: trip, weather: suggestionWeather.result)
+        selectedSuggestions = Set(candidates.map(\.id))
+    }
+
+    private func cancelSuggestions() {
+        suggestionWeather.cancel(); suggestionWeather = WeatherDraft()
+        reviewingSuggestions = false; candidates = []; selectedSuggestions = []
+    }
+
+    private func applySuggestions() {
+        do {
+            let count = try PackingListGenerator.addMissing(trip: trip, selectedIDs: selectedSuggestions,
+                weather: suggestionWeather.result, context: context)
+            cancelSuggestions()
+            suggestionMessage = count == 0 ? "沒有新增物品，原有清單保持不變。" : "已加入 \(count) 項物品，原有清單已保留。"
+        } catch { suggestionError = "儲存失敗，尚未加入物品。請重試。" }
     }
 }
 
