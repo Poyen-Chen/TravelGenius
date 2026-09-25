@@ -332,3 +332,11 @@ This log records accepted product choices that affect behavior, navigation, scop
 - Decision: Replace direct regeneration with an inline recommendation review above the original packing list. Fetch weather explicitly, display only missing/non-excluded candidates with checkboxes, and append only confirmed selections. Preserve all existing records and original creation-weather evidence. New weather is transient evidence for this review, not a silent replacement of the saved reference.
 - Context: Stage 5 C4 required confirmation. The user selected the third displayed mock after authorizing implementation. Supersedes the existing saved-list direct sync behavior and PD-038's refresh/merge semantics; does not change creation or weather-provider policy.
 - Consequences: Cancel and navigation discard proposals; late results cannot mutate adopted lists. Confirm rechecks duplicates/exclusions. Unchecked proposals are skipped only this time. Empty proposals and failed saves are explicit. Sync the inline flow to PWA while retaining its multi-city/name-based engine and optional arrangements. Do not add App activities, date-edit UI, visual assets, 3D, or cross-platform synchronization. Specification: recommendation-update-spec.md.
+
+## PD-042 — Stage 5 human acceptance and Stage 6 review gate
+
+- Date: 2026-09-25
+- Status: Accepted
+- Decision: Accept the delivered PD-041 implementation (App `2eae265`, PWA `1876394` / Site 9). Save and push the acceptance record and immutable `packmon-ios-stage-05-accepted` tag before starting Stage 6 from it.
+- Context: User explicitly replied「通過，下一個階段」. This updates PD-041's pending acceptance status without rewriting its historical record.
+- Consequences: Stage 6 retains the existing gate: review a small set of reusable item visuals and layout before full asset production and integration. No automatic approval of image style, layout, default display mode or Stage 6 completion; no 3D or per-use image generation. Existing data remains unchanged.
