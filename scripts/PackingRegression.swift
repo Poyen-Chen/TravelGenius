@@ -168,10 +168,14 @@ struct PackingRegression {
         precondition(fixture.packingPreferences == prefs)
         expect(Set(try context.fetch(FetchDescriptor<PackingItem>()).map(\.id)) == before)
         let newTrip = trip()
-        newTrip.capturePackingPreferencesIfNeeded(.load())
-        precondition(newTrip.packingPreferences == changed)
+        let cleanNewPreferences = UserPreferences.forNewTrips()
+        newTrip.capturePackingPreferencesIfNeeded(cleanNewPreferences)
+        precondition(newTrip.packingPreferences == cleanNewPreferences)
+        precondition(cleanNewPreferences.ageBand == .adult && cleanNewPreferences.gender == .undisclosed)
+        precondition(cleanNewPreferences.party == .solo && cleanNewPreferences.experience == .some)
+        precondition(cleanNewPreferences.devices == [] && cleanNewPreferences.needs == [])
         let newItems = PackingListGenerator.generate(for: newTrip)
-        precondition(newItems.contains { $0.id == "children-medicine" })
+        precondition(!newItems.contains { ["children-medicine", "passport-copies", "sanitary-products"].contains($0.id) })
         precondition(newItems.first { $0.id == "clothes-change" }?.quantity == 4)
         precondition(!PackingListGenerator.generate(for: fixture).contains { $0.id == "children-medicine" })
 
@@ -265,6 +269,25 @@ struct PackingRegression {
         explicit.devices = []; explicit.needs = []
         explicitTrip.capturePackingPreferencesIfNeeded(explicit)
         precondition(explicitTrip.packingPreferencesRaw == explicitFrozen)
+        explicit.experience = .first
+        let tripContext = TripPackingContext(
+            activities: [.water, .outdoors, .snow],
+            stays: [.hostel],
+            laundry: .yes,
+            snowPlan: .own
+        )
+        let contextualTrip = trip(days: 12)
+        contextualTrip.capturePackingPreferencesIfNeeded(explicit)
+        contextualTrip.capturePackingContextIfNeeded(tripContext)
+        precondition(contextualTrip.packingContext == tripContext)
+        let contextualItems = PackingListGenerator.generate(for: contextualTrip)
+        precondition(contextualItems.first { $0.id == "clothes-change" }?.quantity == 12,
+            "laundry context must preserve trip-length clothing quantity")
+        for id in ["swimsuit", "quick-dry-towel", "outdoor-shoes", "first-aid-kit", "snow-equipment",
+                   "laundry-supplies", "laundry-bag", "travel-towel", "locker-lock", "earplugs", "slippers"] {
+            precondition(contextualItems.contains { $0.id == id }, "missing contextual item \(id)")
+        }
+        precondition(!contextualItems.contains { ["passport-copies", "insurance-copy", "emergency-card"].contains($0.id) })
         let weighted = PackingStaples.Item(name: "耳機", category: .electronics, quantity: 2, unitWeightKg: 0.125)
         passport.unitWeightKg = 0.125
         try context.save()
@@ -327,6 +350,46 @@ struct PackingRegression {
         precondition(empty == 0)
         context.delete(updateTrip)
         try context.save()
+
+        var reviewPreferences = prefs
+        reviewPreferences.devices = []
+        reviewPreferences.needs = []
+        reviewPreferences.packingStyle = .normal
+        let reductionTrip = trip(days: 8)
+        reductionTrip.capturePackingPreferencesIfNeeded(reviewPreferences)
+        reductionTrip.capturePackingContextIfNeeded(.empty)
+        context.insert(reductionTrip)
+        let clothes = PackingItem(name: "換洗衣物", category: .clothing, reasonKey: "基本必備",
+            quantity: 12, sortIndex: 1, trip: reductionTrip)
+        clothes.catalogItemID = "clothes-change"
+        let obsolete = PackingItem(name: "正式鞋款", category: .clothing, reasonKey: "舊條件",
+            quantity: 1, sortIndex: 2, trip: reductionTrip)
+        obsolete.catalogItemID = "formal-shoes"
+        obsolete.isPacked = true
+        let protectedCustom = PackingItem(name: "我的正式鞋", category: .clothing, reasonKey: "自訂",
+            quantity: 1, isCustom: true, sortIndex: 3, trip: reductionTrip)
+        context.insert(clothes); context.insert(obsolete); context.insert(protectedCustom)
+        try context.save()
+        let laundryContext = TripPackingContext(activities: [], stays: [], laundry: .yes, snowPlan: .unknown)
+        let review = PackingListGenerator.review(for: reductionTrip, packingContext: laundryContext)
+        precondition(review.reductions.first { $0.itemID == clothes.id }?.suggestedQuantity == 8,
+            "laundry must not impose a clothing quantity cap")
+        let laundryGenerated = PackingListGenerator.generate(for: reductionTrip, packingContext: laundryContext)
+        precondition(laundryGenerated.first { $0.id == "clothes-change" }?.quantity == 8)
+        precondition(laundryGenerated.contains { $0.id == "laundry-supplies" })
+        precondition(review.removals.contains { $0.itemID == obsolete.id && $0.isPacked })
+        precondition(!review.removals.contains { $0.itemID == protectedCustom.id })
+        let applied = try PackingListGenerator.applyReview(trip: reductionTrip,
+            selectedAdditionIDs: Set(review.additions.map(\.id)),
+            selectedReductionIDs: Set([clothes.id]), selectedRemovalIDs: Set([obsolete.id]),
+            packingContext: laundryContext, weather: nil, context: context)
+        precondition(applied.reductions == 1 && applied.removals == 1)
+        precondition(clothes.quantity == 8)
+        precondition((reductionTrip.packingItems ?? []).contains { $0.id == protectedCustom.id })
+        precondition(!(reductionTrip.packingItems ?? []).contains { $0.id == obsolete.id })
+        context.delete(reductionTrip)
+        try context.save()
+        print("two-way review, contextual rules, explicit legacy migration inputs, protected custom items: PASS")
         print("stage5 read-only proposals, selection-only additions, live exclusions, custom/packed/quantity protection, idempotence: PASS")
         #endif
         #endif

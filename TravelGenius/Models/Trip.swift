@@ -57,7 +57,7 @@ final class Trip {
     var city: String = ""
     /// 出發地（回程入境的海關規定、航線安檢規則依此判定）
     var originCountryCode: String = "TW"
-    var originCity: String = "台北"
+    var originCity: String = ""
     var startDate: Date = Date()
     var endDate: Date = Date()
     var homeCurrencyCode: String = "TWD"
@@ -83,6 +83,8 @@ final class Trip {
     var packingPreferencesRaw: String = ""
     /// Versioned creation reference; empty for old trips, never fabricated during migration.
     var packingWeatherRaw: String = ""
+    /// Versioned per-trip recommendation inputs. Empty means a historical trip with no context record.
+    var packingContextRaw: String = ""
 
     var packingWeather: PackingWeather? {
         get {
@@ -107,6 +109,27 @@ final class Trip {
               let data = try? JSONEncoder().encode(preferences),
               let raw = String(data: data, encoding: .utf8) else { return }
         packingPreferencesRaw = raw
+    }
+
+    func replacePackingPreferences(_ preferences: UserPreferences) {
+        guard let data = try? JSONEncoder().encode(preferences),
+              let raw = String(data: data, encoding: .utf8) else { return }
+        packingPreferencesRaw = raw
+    }
+
+    var packingContext: TripPackingContext? {
+        guard !packingContextRaw.isEmpty,
+              let data = packingContextRaw.data(using: .utf8),
+              let value = try? JSONDecoder().decode(TripPackingContext.self, from: data),
+              value.valid else { return nil }
+        return value
+    }
+
+    func capturePackingContextIfNeeded(_ value: TripPackingContext) {
+        guard packingContextRaw.isEmpty, value.valid,
+              let data = try? JSONEncoder().encode(value),
+              let raw = String(data: data, encoding: .utf8) else { return }
+        packingContextRaw = raw
     }
     var createdAt: Date = Date()
 

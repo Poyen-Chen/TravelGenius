@@ -398,6 +398,138 @@
       "legacyNames": [
         "紙本讀物"
       ]
+    },
+    {
+      "id": "swimsuit",
+      "nameZh": "泳衣",
+      "category": "clothing",
+      "legacyNames": []
+    },
+    {
+      "id": "quick-dry-towel",
+      "nameZh": "快乾毛巾",
+      "category": "toiletries",
+      "legacyNames": []
+    },
+    {
+      "id": "outdoor-shoes",
+      "nameZh": "戶外鞋",
+      "category": "clothing",
+      "legacyNames": []
+    },
+    {
+      "id": "sun-hat",
+      "nameZh": "帽子",
+      "category": "clothing",
+      "legacyNames": []
+    },
+    {
+      "id": "daypack",
+      "nameZh": "戶外背包",
+      "category": "other",
+      "legacyNames": []
+    },
+    {
+      "id": "rain-jacket",
+      "nameZh": "防風防雨外套",
+      "category": "clothing",
+      "legacyNames": []
+    },
+    {
+      "id": "flashlight",
+      "nameZh": "小型手電筒",
+      "category": "electronics",
+      "legacyNames": []
+    },
+    {
+      "id": "first-aid-kit",
+      "nameZh": "簡易急救用品（敷料與貼布）",
+      "category": "health",
+      "legacyNames": []
+    },
+    {
+      "id": "warm-hat",
+      "nameZh": "保暖帽",
+      "category": "clothing",
+      "legacyNames": []
+    },
+    {
+      "id": "waterproof-gloves",
+      "nameZh": "防水手套",
+      "category": "clothing",
+      "legacyNames": []
+    },
+    {
+      "id": "snow-equipment",
+      "nameZh": "滑雪裝備（依自己的運動項目）",
+      "category": "other",
+      "legacyNames": []
+    },
+    {
+      "id": "spa-towel",
+      "nameZh": "泡湯用小毛巾",
+      "category": "toiletries",
+      "legacyNames": []
+    },
+    {
+      "id": "wet-item-bag",
+      "nameZh": "濕物收納袋",
+      "category": "other",
+      "legacyNames": []
+    },
+    {
+      "id": "workout-clothes",
+      "nameZh": "運動衣褲",
+      "category": "clothing",
+      "legacyNames": []
+    },
+    {
+      "id": "athletic-shoes",
+      "nameZh": "運動鞋",
+      "category": "clothing",
+      "legacyNames": []
+    },
+    {
+      "id": "formal-shoes",
+      "nameZh": "正式鞋款",
+      "category": "clothing",
+      "legacyNames": []
+    },
+    {
+      "id": "laundry-supplies",
+      "nameZh": "洗衣用品",
+      "category": "toiletries",
+      "legacyNames": []
+    },
+    {
+      "id": "laundry-bag",
+      "nameZh": "待洗衣物袋",
+      "category": "other",
+      "legacyNames": []
+    },
+    {
+      "id": "travel-towel",
+      "nameZh": "毛巾",
+      "category": "toiletries",
+      "legacyNames": []
+    },
+    {
+      "id": "locker-lock",
+      "nameZh": "置物櫃鎖",
+      "category": "other",
+      "legacyNames": []
+    },
+    {
+      "id": "earplugs",
+      "nameZh": "耳塞",
+      "category": "other",
+      "legacyNames": []
+    },
+    {
+      "id": "slippers",
+      "nameZh": "拖鞋",
+      "category": "clothing",
+      "legacyNames": []
     }
   ]
 }
