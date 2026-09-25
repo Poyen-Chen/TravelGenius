@@ -348,3 +348,11 @@ This log records accepted product choices that affect behavior, navigation, scop
 - Decision: Implement the selected two-column image-forward cards in App and PWA with item names, quantities, separate packing checkboxes and item actions. Preserve existing text/default preferences; selecting images is remembered locally. Large accessibility text may use one column; wide web layouts may use three.
 - Context: User selected「2」after reviewing thumbnail rows versus two-column cards. Selected image: `exec-5ab1c363-1d15-451c-ab4c-b1586c158a20.png`. This resolves PD-019's layout/style review gate; it does not accept the completed stage.
 - Consequences: Bundle reusable representative images, not runtime generation. First candidate covers five reviewed item concepts (charging cable versus charger kit use distinct assets); remaining/custom/unknown items have labeled category fallback and retain full controls. No fuzzy substring matching, schema migration or data duplication. Image mode uses compact progress; existing weather and web bag/weight controls remain accessible. App card quantity editing uses a cancelable 1–99 draft shared with the text list's context menu. Suggestion review stays text-only; PWA's existing 3D experiment remains PWA-only. See visual-list-spec.md for provenance, differences and acceptance limits.
+
+## PD-044 — Stage 6 functional acceptance; defer final artwork
+
+- Date: 2026-09-25
+- Status: Accepted
+- Decision: Accept Stage 6 as a functional validation of visual packing cards (App `0470a88`, PWA `d321e6a` / Site 10). Defer consistent/final artwork generation until the item catalog is confirmed. This supersedes PD-043's pending human acceptance and any expectation that full artwork coverage is required before Stage 7.
+- Context: User explicitly requested「這邊先當作驗證，繼續下一階段」after discussing mixed realistic/line imagery. This is not approval of mixed artwork as the final visual standard.
+- Consequences: Keep current assets and labeled fallbacks on both platforms; generate no further assets now. Preserve test limitations and provenance caveats. Commit/push acceptance and immutable Stage 6 tag before branching Stage 7, which is integration checks and scoped defect fixes only, not production release approval or a new feature phase.
