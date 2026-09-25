@@ -8,7 +8,7 @@
 - 本文件：已驗收行為、資料契約、實作入口及限制。
 - [分階段計畫](ios-integration-plan.md)：候選提交、測試證據、人工驗收與回退點；歷史交付段落保留當時狀態。
 - [物品目錄契約](packing-catalog-contract.md)：階段 2 的穩定 ID 與規則契約。
-- [階段 4 天氣規格](weather-integration-spec.md)：目前候選、參數與驗收條件；PD-035 暫用 Open-Meteo，WeatherKit 未啟用，尚未人工通過。
+- [階段 4 天氣規格](weather-integration-spec.md)：2026-09-25 已人工通過；目前使用 Open-Meteo，WeatherKit 未啟用；精簡卡片與每日詳情依 PD-036～039。見 [驗收紀錄](stage-04-acceptance.md)。
 
 ## 階段 0：App 基線
 
