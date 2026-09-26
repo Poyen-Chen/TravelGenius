@@ -41,59 +41,6 @@ struct City: Codable, Identifiable, Hashable {
     var id: String { "\(countryCode)-\(cityZh)" }
 }
 
-struct PackingRule: Codable {
-    struct Match: Codable {
-        let countries: [String]?
-        let months: [Int]?
-        /// 線上天氣模式下取代 months 的標籤（rain / hot / cold / mild）
-        let weatherTags: [String]?
-        let parties: [String]?
-        let experiences: [String]?
-        let ageBands: [String]?
-        let genders: [String]?
-    }
-
-    struct Item: Codable {
-        let itemId: String
-        let quantity: Int?
-        let perDay: Bool?
-        /// true = 僅「完整打包」風格納入（輕便風格略過）
-        let fullOnly: Bool?
-    }
-
-    let id: String
-    let layer: String
-    let match: Match?
-    let reasonZh: String
-    let items: [Item]
-
-    func applies(
-        countryCode: String,
-        month: Int,
-        preferences: UserPreferences,
-        weatherTags: Set<String>?
-    ) -> Bool {
-        guard let match else { return true }
-        if let countries = match.countries, !countries.contains(countryCode) { return false }
-        if let parties = match.parties, !parties.contains(preferences.party.rawValue) { return false }
-        if let experiences = match.experiences, !experiences.contains(preferences.experience.rawValue) { return false }
-        if let ageBands = match.ageBands, !ageBands.contains(preferences.ageBand.rawValue) { return false }
-        if let genders = match.genders, !genders.contains(preferences.gender.rawValue) { return false }
-
-        // 天氣層：有即時預報時以 weatherTags 判定，否則退回月份規則
-        if layer == "weather" {
-            if let weatherTags {
-                guard let ruleTags = match.weatherTags else { return false }
-                return !weatherTags.isDisjoint(with: ruleTags)
-            }
-            if let months = match.months { return months.contains(month) }
-            return false
-        }
-        if let months = match.months, !months.contains(month) { return false }
-        return true
-    }
-}
-
 enum ProhibitedSeverity: String, Codable, CaseIterable {
     case banned
     case permit
@@ -207,10 +154,9 @@ final class StaticDataStore {
     private(set) lazy var countries: [Country] = load("countries")
     private(set) lazy var cities: [City] = load("cities")
     private(set) lazy var seasonalProfiles: [SeasonalProfile] = load("seasonal_weather")
-    private(set) lazy var packingRules: [PackingRule] = load("packing_rules")
     private(set) lazy var packingCatalog: PackingCatalog = {
         let catalog: PackingCatalog = load("packing_items")
-        do { try catalog.validate(rules: packingRules) }
+        do { try catalog.validate(referencedItemIDs: PackingListGenerator.referencedItemIDs) }
         catch { fatalError("Invalid bundled packing contract: \(error)") }
         return catalog
     }()

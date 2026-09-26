@@ -14,11 +14,7 @@ enum DemoSeeder {
         let count = (try? context.fetchCount(FetchDescriptor<Trip>())) ?? 0
         guard count == 0 else { return }
 
-        // 示範偏好：家庭出遊、第一次出國 — 清單個人化分組看得見
-        var preferences = UserPreferences.load()
-        preferences.party = .family
-        preferences.experience = .first
-        preferences.save()
+        let preferences = UserPreferences.load()
 
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: .now)
@@ -39,9 +35,17 @@ enum DemoSeeder {
         trip.city = "東京"
         trip.originCountryCode = "TW"
         trip.originCity = "台北"
+        trip.capturePackingPreferencesIfNeeded(preferences)
+        trip.capturePackingContextIfNeeded(.empty)
         context.insert(trip)
 
-        PackingListGenerator.sync(trip: trip, context: context, preferences: preferences)
+        let recommendations = PackingListGenerator.generate(for: trip)
+        _ = try? PackingListGenerator.addMissing(
+            trip: trip,
+            selectedIDs: Set(recommendations.map(\.id)),
+            weather: nil,
+            context: context
+        )
         for item in (trip.packingItems ?? []).prefix(5) {
             item.isPacked = true
         }

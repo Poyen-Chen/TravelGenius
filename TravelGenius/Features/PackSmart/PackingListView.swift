@@ -35,8 +35,6 @@ struct PackingListView: View {
     @State private var removals: [PackingListGenerator.RemovalSuggestion] = []
     @State private var selectedReductions: Set<UUID> = []
     @State private var selectedRemovals: Set<UUID> = []
-    @State private var pendingReviewPreferences: UserPreferences?
-    @State private var choosingLegacyRecommendationMode = false
     @State private var suggestionError: String?
     @State private var suggestionMessage: String?
     @AppStorage("packmon.packing.images") private var showImages = false
@@ -129,23 +127,6 @@ struct PackingListView: View {
                 }
                 showingReturnMode = true
             }
-        }
-        .confirmationDialog(
-            "這趟行程使用舊版推薦設定",
-            isPresented: $choosingLegacyRecommendationMode,
-            titleVisibility: .visible
-        ) {
-            Button("改用新版設定") {
-                pendingReviewPreferences = .forNewTrips()
-                startSuggestionFetch()
-            }
-            Button("沿用這趟的舊設定") {
-                pendingReviewPreferences = nil
-                startSuggestionFetch()
-            }
-            Button("取消", role: .cancel) {}
-        } message: {
-            Text("新版使用明確選擇的設備與需求，不再依年齡、性別、旅伴或旅行經驗推測。只有完成本次確認後，才會保存新版設定。")
         }
         .sensoryFeedback(.impact, trigger: packToggle)
         .onChange(of: suggestionWeather.result) { _, value in
@@ -332,9 +313,7 @@ struct PackingListView: View {
                 }
                 if candidates.isEmpty && reductions.isEmpty && removals.isEmpty {
                     Label("目前沒有需要調整的物品", systemImage: "checkmark.circle")
-                    Text(pendingReviewPreferences == nil
-                         ? "既有物品與先前排除的選擇都已保留。"
-                         : "可以只確認改用新版設定，不會更動目前清單。")
+                    Text("既有物品與先前排除的選擇都已保留。")
                         .font(.subheadline).foregroundStyle(theme.colors.secondaryText)
                 }
                 if !candidates.isEmpty { Text("建議新增").font(.headline) }
@@ -396,13 +375,11 @@ struct PackingListView: View {
                     }.buttonStyle(.plain)
                     Divider().overlay(theme.colors.separator)
                 }
-                if !candidates.isEmpty || !reductions.isEmpty || !removals.isEmpty || pendingReviewPreferences != nil {
-                    Button(pendingReviewPreferences == nil
-                           ? "套用已選調整"
-                           : "套用已選調整並改用新版設定", action: applySuggestions)
+                if !candidates.isEmpty || !reductions.isEmpty || !removals.isEmpty {
+                    Button("套用已選調整", action: applySuggestions)
                         .buttonStyle(PackmonPrimaryButtonStyle())
                         .disabled(selectedSuggestions.isEmpty && selectedReductions.isEmpty
-                                  && selectedRemovals.isEmpty && pendingReviewPreferences == nil)
+                                  && selectedRemovals.isEmpty)
                 }
             }
         }
@@ -423,10 +400,6 @@ struct PackingListView: View {
         cancelSuggestions()
         suggestionMessage = nil
         suggestionError = nil
-        if trip.packingContextRaw.isEmpty || trip.packingPreferences?.isLegacySnapshot == true {
-            choosingLegacyRecommendationMode = true
-            return
-        }
         startSuggestionFetch()
     }
 
@@ -445,7 +418,7 @@ struct PackingListView: View {
     }
 
     private func prepareSuggestions() {
-        let review = PackingListGenerator.review(for: trip, preferences: pendingReviewPreferences,
+        let review = PackingListGenerator.review(for: trip,
             packingContext: trip.packingContext, weather: suggestionWeather.result)
         candidates = review.additions
         reductions = review.reductions
@@ -464,7 +437,6 @@ struct PackingListView: View {
         selectedSuggestions = []
         selectedReductions = []
         selectedRemovals = []
-        pendingReviewPreferences = nil
     }
 
     private func applySuggestions() {
@@ -473,16 +445,13 @@ struct PackingListView: View {
                 selectedAdditionIDs: selectedSuggestions,
                 selectedReductionIDs: selectedReductions,
                 selectedRemovalIDs: selectedRemovals,
-                preferences: pendingReviewPreferences,
                 packingContext: trip.packingContext,
                 weather: suggestionWeather.result,
-                replacePreferencesOnSuccess: pendingReviewPreferences,
-                captureContextOnSuccess: pendingReviewPreferences == nil ? nil : .empty,
                 context: context)
             cancelSuggestions()
             let total = result.additions + result.reductions + result.removals
             suggestionMessage = total == 0
-                ? "已確認推薦設定，原有清單保持不變。"
+                ? "已確認推薦，原有清單保持不變。"
                 : "已新增 \(result.additions) 項、減量 \(result.reductions) 項、移除 \(result.removals) 項。"
         } catch { suggestionError = "儲存失敗，尚未套用調整。請重試。" }
     }
