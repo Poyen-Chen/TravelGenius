@@ -1,6 +1,6 @@
 # Packmon 最終物品圖：盤點與 Style Gate
 
-日期：2026-09-27。狀態：等待人工選樣；尚未開始全目錄製作、App/PWA 整合或最終候選驗收。
+日期：2026-09-27。狀態：使用者已選 B（紙感／gouache）；61 項 App／PWA 候選已完成，等待最終人工驗收。
 
 ## 決策與程式基線
 
@@ -35,13 +35,13 @@
 
 ## 目前素材與覆蓋率
 
-- active 精確覆蓋：4/61（6.6%）：`passport`, `charging-kit`, `sunscreen`, `folding-umbrella`。
-- 相容性舊 ID 精確覆蓋：`clothes-change` → `clothes`；不列入 61 分母。
-- 未被 App stable-ID map 使用的代表圖：`cable`；它不能模糊代替 `charging-kit`。
-- active fallback：57/61（93.4%）目前只會顯示有文字標記的分類示意；fallback 不算精確圖片。
+- active 精確覆蓋：61/61（100%）；每個 stable ID 都有獨立 PNG 與 exact-ID mapping。
+- 舊的 `cable`、`charger`、`clothes`、`umbrella` 混合畫風資產已移除；`passport`、`sunscreen` 也已用 B 方向重製，沒有沿用 Stage 6 正式圖。
+- 相容性舊 ID（例如 `clothes-change`、`passport-copies`）不列入 61 分母，也不會錯配新的 active 圖片。
+- 自訂、未知與相容性-only ID 繼續使用有文字標記的分類 fallback；fallback 不算精確圖片。
 - 自訂、未知、空 ID 或圖片載入失敗：一律維持名稱、數量與控制，顯示分類 fallback，不以名稱子字串猜圖。
 
-現有六張圖都為透明 PNG，但尺寸分成 1254×1254、256×238、217×256、230×256，寫實程度、材質、留白、視角與陰影不一致。Stage 6 的來源紀錄只證明產生／沿用方式，不等於商用權利保證。
+選樣前的 Stage 6 六張圖雖為透明 PNG，尺寸卻分成 1254×1254、256×238、217×256、230×256，寫實程度、材質、留白、視角與陰影不一致；本候選已全數取代。Stage 6 的來源紀錄只證明產生／沿用方式，不等於商用權利保證。
 
 ## 組合品與誤配風險
 
@@ -85,7 +85,9 @@
 - 相較現有 Stage 6 產品圖更像完整圖示系統，若選定將重製現有六張，避免混搭。
 - 檔案：`docs/evidence/final-artwork/style-gate/direction-c-outlined-2-5d.png`
 
-## 產生與權利紀錄
+## 選樣結果、產生與權利紀錄
+
+使用者選定 B，並再次明確要求 App 與 PWA 同步。正式 61 張均以 B specimen 作風格參考，逐項使用 Codex built-in ImageGen 產生，再等比例輸出為 1024×1024 RGBA PNG；App 與 PWA 使用完全相同 bytes。完整共同 prompt、逐項 subject、hash 與路徑見 `docs/evidence/final-artwork/prompts.md`、`docs/evidence/final-artwork/manifest.tsv`。
 
 | 檔案 | 日期 | 方法 | SHA-256 | 商用狀態 |
 | --- | --- | --- | --- | --- |
@@ -97,7 +99,7 @@
 
 ## App／PWA 與階段門
 
-- iOS：目前只完成盤點與 style-gate 樣本，尚未寫入正式 asset map，既有功能與資料未改。
-- PWA：Stage 7 worktree 沒有受版本控制的 `web/`；共享 checkout 的 `web/` 是未追蹤資料，故本階段不修改。選樣後需在正確、受版本控制的 Site source 上同步相同 PNG bytes 與 exact-ID map。
-- 等待使用者明確選 A、B、C（或指定局部調整）後才開始 61 項逐項製作、App/PWA 整合、build/regression、contact sheet 與 candidate commit。
+- iOS：61 個 imageset、exact-ID map、fallback regression 與兩張 contact sheet 已完成；本 artwork 分支不夾帶仍待驗收的 PD-052 catalog/recommendation candidate。
+- PWA：在獨立、受版本控制的 Site worktree `codex/final-artwork` 完成 61 張相同 bytes、exact-ID map 與 service-worker precache；尚未公開部署。
+- 候選的完整交付／測試／人工驗收範圍見 `final-artwork-delivery.md`。
 - 未經明確「通過」不得建立 accepted tag、合併 main、TestFlight／App Store 發版或公開部署 PWA。
