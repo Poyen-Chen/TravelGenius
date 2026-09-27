@@ -1,5 +1,68 @@
 {
-  "version": 1,
+  "version": 2,
+  "activeItemIDs": [
+    "passport",
+    "payment-card",
+    "tops",
+    "bottoms",
+    "underwear",
+    "socks",
+    "walking-shoes",
+    "toothbrush",
+    "toothpaste",
+    "sleepwear",
+    "phone",
+    "laptop",
+    "tablet",
+    "camera",
+    "smartwatch",
+    "headphones",
+    "charging-kit",
+    "laptop-charger",
+    "camera-charger",
+    "memory-card",
+    "watch-charger",
+    "power-bank",
+    "plug-adapter",
+    "skincare",
+    "sanitary-products",
+    "travel-document-backup",
+    "local-cash",
+    "driving-documents",
+    "light-jacket",
+    "sweater-fleece",
+    "warm-coat",
+    "scarf",
+    "warm-hat",
+    "waterproof-gloves",
+    "folding-umbrella",
+    "rain-jacket",
+    "water-bottle",
+    "sunscreen",
+    "sun-hat",
+    "sunglasses",
+    "hand-warmer",
+    "swimsuit",
+    "wet-item-bag",
+    "outdoor-shoes",
+    "daypack",
+    "waterproof-nonslip-shoes",
+    "thermal-base-layer",
+    "ski-socks",
+    "ski-goggles",
+    "ski-jacket",
+    "ski-pants",
+    "workout-clothes",
+    "business-clothes",
+    "business-cards",
+    "formal-clothes",
+    "formal-shoes",
+    "locker-lock",
+    "slippers",
+    "quick-dry-towel",
+    "laundry-supplies",
+    "laundry-bag"
+  ],
   "items": [
     {
       "id": "passport",
@@ -27,7 +90,7 @@
     },
     {
       "id": "charging-kit",
-      "nameZh": "充電線與充電頭",
+      "nameZh": "共用充電器與充電線",
       "category": "electronics",
       "legacyNames": [
         "充電線與充電頭"
@@ -291,7 +354,7 @@
     },
     {
       "id": "sanitary-products",
-      "nameZh": "衛生用品",
+      "nameZh": "生理用品",
       "category": "toiletries",
       "legacyNames": [
         "衛生用品"
@@ -329,10 +392,10 @@
     },
     {
       "id": "camera",
-      "nameZh": "隨身相機",
+      "nameZh": "相機",
       "category": "electronics",
       "legacyNames": [
-        "相機"
+        "隨身相機"
       ]
     },
     {
@@ -413,21 +476,27 @@
     },
     {
       "id": "outdoor-shoes",
-      "nameZh": "戶外鞋",
+      "nameZh": "健行鞋",
       "category": "clothing",
-      "legacyNames": []
+      "legacyNames": [
+        "戶外鞋"
+      ]
     },
     {
       "id": "sun-hat",
-      "nameZh": "帽子",
+      "nameZh": "遮陽帽",
       "category": "clothing",
-      "legacyNames": []
+      "legacyNames": [
+        "帽子"
+      ]
     },
     {
       "id": "daypack",
-      "nameZh": "戶外背包",
+      "nameZh": "小型日用背包",
       "category": "other",
-      "legacyNames": []
+      "legacyNames": [
+        "戶外背包"
+      ]
     },
     {
       "id": "rain-jacket",
@@ -455,9 +524,11 @@
     },
     {
       "id": "waterproof-gloves",
-      "nameZh": "防水手套",
+      "nameZh": "保暖手套",
       "category": "clothing",
-      "legacyNames": []
+      "legacyNames": [
+        "防水手套"
+      ]
     },
     {
       "id": "snow-equipment",
@@ -491,15 +562,19 @@
     },
     {
       "id": "formal-shoes",
-      "nameZh": "正式鞋款",
+      "nameZh": "正式鞋",
       "category": "clothing",
-      "legacyNames": []
+      "legacyNames": [
+        "正式鞋款"
+      ]
     },
     {
       "id": "laundry-supplies",
-      "nameZh": "洗衣用品",
+      "nameZh": "旅行用洗衣劑",
       "category": "toiletries",
-      "legacyNames": []
+      "legacyNames": [
+        "洗衣用品"
+      ]
     },
     {
       "id": "laundry-bag",
@@ -515,9 +590,11 @@
     },
     {
       "id": "locker-lock",
-      "nameZh": "置物櫃鎖",
+      "nameZh": "小型密碼鎖",
       "category": "other",
-      "legacyNames": []
+      "legacyNames": [
+        "置物櫃鎖"
+      ]
     },
     {
       "id": "earplugs",
@@ -527,7 +604,141 @@
     },
     {
       "id": "slippers",
-      "nameZh": "拖鞋",
+      "nameZh": "淋浴拖鞋",
+      "category": "clothing",
+      "legacyNames": [
+        "拖鞋"
+      ]
+    },
+    {
+      "id": "payment-card",
+      "nameZh": "信用卡／金融卡",
+      "category": "documents",
+      "legacyNames": [
+        "付款卡"
+      ]
+    },
+    {
+      "id": "tops",
+      "nameZh": "上衣",
+      "category": "clothing",
+      "legacyNames": []
+    },
+    {
+      "id": "bottoms",
+      "nameZh": "下身衣物",
+      "category": "clothing",
+      "legacyNames": []
+    },
+    {
+      "id": "underwear",
+      "nameZh": "內衣褲",
+      "category": "clothing",
+      "legacyNames": []
+    },
+    {
+      "id": "socks",
+      "nameZh": "襪子",
+      "category": "clothing",
+      "legacyNames": []
+    },
+    {
+      "id": "walking-shoes",
+      "nameZh": "舒適步行鞋",
+      "category": "clothing",
+      "legacyNames": []
+    },
+    {
+      "id": "toothbrush",
+      "nameZh": "牙刷",
+      "category": "toiletries",
+      "legacyNames": []
+    },
+    {
+      "id": "toothpaste",
+      "nameZh": "牙膏",
+      "category": "toiletries",
+      "legacyNames": []
+    },
+    {
+      "id": "sleepwear",
+      "nameZh": "睡衣",
+      "category": "clothing",
+      "legacyNames": []
+    },
+    {
+      "id": "travel-document-backup",
+      "nameZh": "旅行文件備份",
+      "category": "documents",
+      "legacyNames": []
+    },
+    {
+      "id": "local-cash",
+      "nameZh": "當地現金",
+      "category": "documents",
+      "legacyNames": []
+    },
+    {
+      "id": "driving-documents",
+      "nameZh": "駕照與國際駕照",
+      "category": "documents",
+      "legacyNames": []
+    },
+    {
+      "id": "sweater-fleece",
+      "nameZh": "毛衣／刷毛上衣",
+      "category": "clothing",
+      "legacyNames": [
+        "保暖中層"
+      ]
+    },
+    {
+      "id": "scarf",
+      "nameZh": "圍巾",
+      "category": "clothing",
+      "legacyNames": []
+    },
+    {
+      "id": "waterproof-nonslip-shoes",
+      "nameZh": "防水防滑鞋",
+      "category": "clothing",
+      "legacyNames": []
+    },
+    {
+      "id": "thermal-base-layer",
+      "nameZh": "排汗保暖內層",
+      "category": "clothing",
+      "legacyNames": [
+        "保暖內層"
+      ]
+    },
+    {
+      "id": "ski-socks",
+      "nameZh": "滑雪襪",
+      "category": "clothing",
+      "legacyNames": []
+    },
+    {
+      "id": "ski-goggles",
+      "nameZh": "雪鏡",
+      "category": "other",
+      "legacyNames": []
+    },
+    {
+      "id": "ski-jacket",
+      "nameZh": "滑雪外套",
+      "category": "clothing",
+      "legacyNames": []
+    },
+    {
+      "id": "ski-pants",
+      "nameZh": "滑雪褲",
+      "category": "clothing",
+      "legacyNames": []
+    },
+    {
+      "id": "business-clothes",
+      "nameZh": "商務服裝",
       "category": "clothing",
       "legacyNames": []
     }

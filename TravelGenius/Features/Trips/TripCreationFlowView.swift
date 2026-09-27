@@ -180,22 +180,17 @@ struct TripCreationFlowView: View {
 
                             Text("活動（可複選）").font(.subheadline.weight(.semibold))
                             LazyVGrid(columns: [GridItem(.adaptive(minimum: 135), spacing: 8)], spacing: 8) {
-                                ForEach(PackingActivity.allCases) { activity in
+                                ForEach(PackingActivity.recommendationOptions) { activity in
                                     selectionChip(activity.label, isSelected: packingContext.activities.contains(activity)) {
                                         toggle(activity, in: &packingContext.activities)
-                                        if !packingContext.activities.contains(.snow) { packingContext.snowPlan = .unknown }
+                                        packingContext.snowPlan = packingContext.activities.contains(.snow) ? .view : .unknown
                                     }
                                 }
                             }
-                            if packingContext.activities.contains(.snow) {
-                                Picker("雪地安排", selection: $packingContext.snowPlan) {
-                                    ForEach(PackingSnowPlan.allCases) { Text($0.label).tag($0) }
-                                }
-                            }
 
-                            Text("住宿（可複選）").font(.subheadline.weight(.semibold))
+                            Text("住宿").font(.subheadline.weight(.semibold))
                             LazyVGrid(columns: [GridItem(.adaptive(minimum: 135), spacing: 8)], spacing: 8) {
-                                ForEach(PackingStay.allCases) { stay in
+                                ForEach(PackingStay.recommendationOptions) { stay in
                                     selectionChip(stay.label, isSelected: packingContext.stays.contains(stay)) {
                                         toggle(stay, in: &packingContext.stays)
                                     }
@@ -205,7 +200,7 @@ struct TripCreationFlowView: View {
                             Picker("途中洗衣", selection: $packingContext.laundry) {
                                 ForEach(PackingLaundryPlan.allCases) { Text($0.label).tag($0) }
                             }
-                            Text("住宿用品只會以『請確認是否提供』方式建議；不會因住宿類型自動刪除用品。")
+                            Text("只有青旅／共用住宿會增加用品；其他住宿不預設缺少任何物品。")
                                 .font(.caption).foregroundStyle(theme.colors.secondaryText)
                         }.padding(.top, 12)
                     } label: {

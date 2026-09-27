@@ -4,20 +4,30 @@ enum PackingActivity: String, Codable, CaseIterable, Identifiable {
     case water
     case outdoors
     case snow
+    case skiing
     case spa
     case exercise
+    case business
     case formal
+    case driving
+
+    static let recommendationOptions: [PackingActivity] = [
+        .water, .outdoors, .snow, .skiing, .exercise, .business, .formal, .driving
+    ]
 
     var id: String { rawValue }
 
     var label: String {
         switch self {
         case .water: "玩水／游泳"
-        case .outdoors: "健行／戶外"
-        case .snow: "賞雪／滑雪"
+        case .outdoors: "健行／登山"
+        case .snow: "賞雪"
+        case .skiing: "滑雪／單板"
         case .spa: "泡湯／溫泉"
         case .exercise: "運動／健身"
-        case .formal: "工作／正式場合"
+        case .business: "工作／商務"
+        case .formal: "正式場合"
+        case .driving: "自駕"
         }
     }
 }
@@ -27,6 +37,8 @@ enum PackingStay: String, Codable, CaseIterable, Identifiable {
     case rental
     case hostel
     case friends
+
+    static let recommendationOptions: [PackingStay] = [.hostel]
 
     var id: String { rawValue }
 
@@ -76,7 +88,8 @@ enum PackingSnowPlan: String, Codable, CaseIterable, Identifiable {
 
 /// Per-trip recommendation inputs. These describe the trip, not the user's global identity.
 struct TripPackingContext: Codable, Equatable {
-    static let currentVersion = 1
+    static let currentVersion = 2
+    static let supportedVersions: Set<Int> = [1, 2]
 
     var version = currentVersion
     var activities: [PackingActivity] = []
@@ -87,7 +100,7 @@ struct TripPackingContext: Codable, Equatable {
     static let empty = TripPackingContext()
 
     var valid: Bool {
-        version == Self.currentVersion
+        Self.supportedVersions.contains(version)
             && Set(activities).count == activities.count
             && Set(stays).count == stays.count
             && (activities.contains(.snow) || snowPlan == .unknown)
