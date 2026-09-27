@@ -32,6 +32,18 @@ enum PackingListGenerator {
         var id: UUID { itemID }
     }
 
+    struct QuantityIncrease: Identifiable {
+        let itemID: UUID
+        let catalogItemID: String
+        let name: String
+        let currentQuantity: Int
+        let suggestedQuantity: Int
+        let reason: String
+        let isPacked: Bool
+
+        var id: UUID { itemID }
+    }
+
     struct RemovalSuggestion: Identifiable {
         let itemID: UUID
         let catalogItemID: String
@@ -44,14 +56,16 @@ enum PackingListGenerator {
 
     struct Review {
         let additions: [GeneratedItem]
+        let increases: [QuantityIncrease]
         let reductions: [QuantityReduction]
         let removals: [RemovalSuggestion]
 
-        var isEmpty: Bool { additions.isEmpty && reductions.isEmpty && removals.isEmpty }
+        var isEmpty: Bool { additions.isEmpty && increases.isEmpty && reductions.isEmpty && removals.isEmpty }
     }
 
     struct AppliedReview {
         let additions: Int
+        let increases: Int
         let reductions: Int
         let removals: Int
     }
@@ -98,26 +112,42 @@ enum PackingListGenerator {
 
         if modern {
             let days = max(1, min(trip.totalDays, 99))
-            let baseDailyQuantity = min(days, preferences.packingStyle == .light ? 4 : 99)
-            let laundryDailyCap: Int
+            let topQuantityWithoutLaundry: Int
+            let bottomQuantityWithoutLaundry: Int
+            let laundryTopCap: Int
             let laundryBottomCap: Int
+            let laundryUnderwearAndSocksCap: Int
             switch preferences.packingStyle {
-            case .light: (laundryDailyCap, laundryBottomCap) = (3, 2)
-            case .normal: (laundryDailyCap, laundryBottomCap) = (4, 2)
-            case .full: (laundryDailyCap, laundryBottomCap) = (5, 3)
+            case .light:
+                topQuantityWithoutLaundry = (days + 1) / 2
+                bottomQuantityWithoutLaundry = (days + 3) / 4
+                (laundryTopCap, laundryBottomCap, laundryUnderwearAndSocksCap) = (2, 2, 3)
+            case .normal:
+                topQuantityWithoutLaundry = (days * 2 + 2) / 3
+                bottomQuantityWithoutLaundry = (days + 2) / 3
+                (laundryTopCap, laundryBottomCap, laundryUnderwearAndSocksCap) = (3, 2, 4)
+            case .full:
+                topQuantityWithoutLaundry = days
+                bottomQuantityWithoutLaundry = (days + 1) / 2
+                (laundryTopCap, laundryBottomCap, laundryUnderwearAndSocksCap) = (4, 3, 5)
             }
-            let dailyQuantity = packingContext.laundry == .yes ? min(days, laundryDailyCap) : baseDailyQuantity
-            let bottomQuantity = packingContext.laundry == .yes ? min(days, laundryBottomCap) : baseDailyQuantity
-            let clothingReason = packingContext.laundry == .yes
-                ? "基本衣物・途中會洗衣，已依打包風格減量"
-                : "基本衣物・依旅行天數與打包風格準備"
+            let hasLaundry = packingContext.laundry == .yes
+            let topQuantity = hasLaundry ? min(topQuantityWithoutLaundry, laundryTopCap) : topQuantityWithoutLaundry
+            let bottomQuantity = hasLaundry ? min(bottomQuantityWithoutLaundry, laundryBottomCap) : bottomQuantityWithoutLaundry
+            let underwearAndSocksQuantity = hasLaundry ? min(days, laundryUnderwearAndSocksCap) : days
+
+            func clothingReason(for item: String) -> String {
+                hasLaundry
+                    ? "基本衣物・途中會洗衣，已依\(item)更換頻率與打包風格減量"
+                    : "基本衣物・依\(item)更換頻率、旅行天數與打包風格估算"
+            }
 
             append("passport", reason: "國際旅行基本必備", sortIndex: 0)
             append("payment-card", reason: "基本付款工具", sortIndex: 1)
-            append("tops", quantity: dailyQuantity, reason: clothingReason, sortIndex: 2)
-            append("bottoms", quantity: bottomQuantity, reason: clothingReason, sortIndex: 3)
-            append("underwear", quantity: dailyQuantity, reason: clothingReason, sortIndex: 4)
-            append("socks", quantity: dailyQuantity, reason: clothingReason, sortIndex: 5)
+            append("tops", quantity: topQuantity, reason: clothingReason(for: "上衣"), sortIndex: 2)
+            append("bottoms", quantity: bottomQuantity, reason: clothingReason(for: "下身衣物"), sortIndex: 3)
+            append("underwear", quantity: underwearAndSocksQuantity, reason: clothingReason(for: "內衣褲"), sortIndex: 4)
+            append("socks", quantity: underwearAndSocksQuantity, reason: clothingReason(for: "襪子"), sortIndex: 5)
             append("walking-shoes", reason: "一般旅行步行需求", sortIndex: 6)
             append("toothbrush", reason: "基本盥洗用品", sortIndex: 7)
             append("toothpaste", reason: "基本盥洗用品", sortIndex: 8)
@@ -195,17 +225,24 @@ enum PackingListGenerator {
             }
         }
 
-        // 插座轉接頭：比對出發地與目的地的插座規格，不相容才建議帶
-        // （台灣→日本同為 Type-A/B 就不會出現）
+        // 新版行程只有在目的地完整涵蓋出發地插頭型式時才視為相容；
+        // 歷史快照保留原本「完全無交集才加入」的輸出，避免改寫既有建議。
         let store = StaticDataStore.shared
         if let destination = store.country(code: trip.countryCode),
-           let origin = store.country(code: trip.originCountryCode),
-           Set(destination.plugTypes).isDisjoint(with: origin.plugTypes) {
-            let types = destination.plugTypes.joined(separator: "/")
-            let originName = origin.nameZh
-            if seenIDs.insert("plug-adapter").inserted {
+           let origin = store.country(code: trip.originCountryCode) {
+            let destinationPlugTypes = Set(destination.plugTypes)
+            let originPlugTypes = Set(origin.plugTypes)
+            let needsAdapter = modern
+                ? !originPlugTypes.isSubset(of: destinationPlugTypes)
+                : destinationPlugTypes.isDisjoint(with: originPlugTypes)
+            if needsAdapter, seenIDs.insert("plug-adapter").inserted {
+                let types = destination.plugTypes.joined(separator: "/")
+                let originName = origin.nameZh
+                let reason = modern
+                    ? "目的地不保證支援\(originName)常見的所有插頭型式"
+                    : "因為插座規格與\(originName)不同"
                 results.append(.init(catalogItemID: "plug-adapter", name: "插座轉接頭（當地 Type-\(types)）",
-                    category: .electronics, quantity: 1, reason: "因為插座規格與\(originName)不同", sortIndex: 90))
+                    category: .electronics, quantity: 1, reason: reason, sortIndex: 90))
             }
         }
 
@@ -271,9 +308,13 @@ enum PackingListGenerator {
         packingContext: TripPackingContext? = nil,
         weather: PackingWeather? = nil
     ) -> Review {
+        let generated = generate(for: trip, preferences: preferences, packingContext: packingContext, weatherReference: weather)
+        return review(for: trip, generated: generated)
+    }
+
+    static func review(for trip: Trip, generated: [GeneratedItem]) -> Review {
         let catalog = StaticDataStore.shared.packingCatalog
         let existing = trip.packingItems ?? []
-        let generated = generate(for: trip, preferences: preferences, packingContext: packingContext, weatherReference: weather)
         let targets = Dictionary(uniqueKeysWithValues: generated.map { ($0.id, $0) })
         let existingIDs = Set(existing.compactMap { $0.catalogItemID ?? catalog.legacyID(name: $0.name) })
         let existingNames = Set(existing.map(\.name))
@@ -283,12 +324,17 @@ enum PackingListGenerator {
             !existingIDs.contains($0.id) && !existingNames.contains($0.name)
                 && !excluded.contains($0.id) && !trip.excludedPackingNames.contains($0.name)
         }
+        var increases: [QuantityIncrease] = []
         var reductions: [QuantityReduction] = []
         var removals: [RemovalSuggestion] = []
         for item in existing where !item.isCustom {
             guard let id = item.catalogItemID ?? catalog.legacyID(name: item.name), catalog.item(id: id) != nil else { continue }
             if let target = targets[id] {
-                if item.quantity > target.quantity {
+                if item.quantity < target.quantity {
+                    increases.append(.init(itemID: item.id, catalogItemID: id, name: item.name,
+                        currentQuantity: item.quantity, suggestedQuantity: target.quantity,
+                        reason: target.reason, isPacked: item.isPacked))
+                } else if item.quantity > target.quantity {
                     reductions.append(.init(itemID: item.id, catalogItemID: id, name: item.name,
                         currentQuantity: item.quantity, suggestedQuantity: target.quantity,
                         reason: target.reason, isPacked: item.isPacked))
@@ -299,7 +345,7 @@ enum PackingListGenerator {
                     isPacked: item.isPacked))
             }
         }
-        return Review(additions: additions, reductions: reductions, removals: removals)
+        return Review(additions: additions, increases: increases, reductions: reductions, removals: removals)
     }
 
     static func missingItems(for trip: Trip, weather: PackingWeather? = nil) -> [GeneratedItem] {
@@ -311,6 +357,7 @@ enum PackingListGenerator {
     static func applyReview(
         trip: Trip,
         selectedAdditionIDs: Set<String>,
+        selectedIncreaseIDs: Set<UUID> = [],
         selectedReductionIDs: Set<UUID>,
         selectedRemovalIDs: Set<UUID>,
         preferences: UserPreferences? = nil,
@@ -322,6 +369,7 @@ enum PackingListGenerator {
     ) throws -> AppliedReview {
         let current = review(for: trip, preferences: preferences, packingContext: packingContext, weather: weather)
         let additions = current.additions.filter { selectedAdditionIDs.contains($0.id) }
+        let increases = current.increases.filter { selectedIncreaseIDs.contains($0.id) }
         let reductions = current.reductions.filter { selectedReductionIDs.contains($0.id) }
         let removals = current.removals.filter { selectedRemovalIDs.contains($0.id) }
         let autosave = context.autosaveEnabled
@@ -332,6 +380,7 @@ enum PackingListGenerator {
         var deleted: [PackingItem] = []
         let originalPreferences = trip.packingPreferencesRaw
         let originalContext = trip.packingContextRaw
+        let originalReviewPending = trip.packingReviewPending
         do {
             for candidate in additions {
                 let item = PackingItem(name: candidate.name, category: candidate.category,
@@ -342,6 +391,11 @@ enum PackingListGenerator {
                 inserted.append(item)
             }
             let itemsByID = Dictionary(uniqueKeysWithValues: (trip.packingItems ?? []).map { ($0.id, $0) })
+            for increase in increases {
+                guard let item = itemsByID[increase.itemID] else { continue }
+                originalQuantities.append((item, item.quantity))
+                item.quantity = increase.suggestedQuantity
+            }
             for reduction in reductions {
                 guard let item = itemsByID[reduction.itemID] else { continue }
                 originalQuantities.append((item, item.quantity))
@@ -354,14 +408,20 @@ enum PackingListGenerator {
             }
             if let replacePreferencesOnSuccess { trip.replacePackingPreferences(replacePreferencesOnSuccess) }
             if let captureContextOnSuccess { trip.capturePackingContextIfNeeded(captureContextOnSuccess) }
+            trip.packingReviewPending = current.additions.contains { !selectedAdditionIDs.contains($0.id) }
+                || current.increases.contains { !selectedIncreaseIDs.contains($0.id) }
+                || current.reductions.contains { !selectedReductionIDs.contains($0.id) }
+                || current.removals.contains { !selectedRemovalIDs.contains($0.id) }
             try context.save()
-            return .init(additions: inserted.count, reductions: originalQuantities.count, removals: deleted.count)
+            return .init(additions: inserted.count, increases: increases.count,
+                reductions: reductions.count, removals: deleted.count)
         } catch {
             for item in inserted { context.delete(item) }
             for (item, quantity) in originalQuantities { item.quantity = quantity }
             for item in deleted { context.insert(item) }
             trip.packingPreferencesRaw = originalPreferences
             trip.packingContextRaw = originalContext
+            trip.packingReviewPending = originalReviewPending
             throw error
         }
     }

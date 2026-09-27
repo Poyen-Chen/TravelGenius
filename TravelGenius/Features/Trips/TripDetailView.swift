@@ -10,13 +10,16 @@ struct TripDetailView: View {
         var id: String { rawValue }
     }
 
-    private enum Preview: String, Identifiable { case airport, returnMode, knowledge; var id: String { rawValue } }
+    private enum SheetDestination: String, Identifiable {
+        case edit, airport, returnMode, knowledge
+        var id: String { rawValue }
+    }
 
     @Environment(\.packmonTheme) private var theme
     @Environment(AppState.self) private var appState
     let trip: Trip
     @State private var page: WorkspacePage = .overview
-    @State private var preview: Preview?
+    @State private var sheet: SheetDestination?
 
     init(trip: Trip, startsInPacking: Bool = false) {
         self.trip = trip
@@ -42,8 +45,14 @@ struct TripDetailView: View {
         .background(theme.colors.canvas.ignoresSafeArea())
         .navigationTitle("我的行程")
         .navigationBarTitleDisplayMode(.inline)
-        .sheet(item: $preview) { value in
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button("編輯") { sheet = .edit }
+            }
+        }
+        .sheet(item: $sheet) { value in
             switch value {
+            case .edit: TripEditView(trip: trip)
             case .airport: FeaturePreviewSheet(title: "機場模式", message: "入口先保留。之後會把當天最重要的證件、安檢與登機事項集中在這裡。", symbol: "airplane.departure")
             case .returnMode: FeaturePreviewSheet(title: "回程模式", message: "入口先保留。之後可用同一份清單反向檢查，避免把物品留在住宿處。", symbol: "arrow.uturn.left.circle")
             case .knowledge: FeaturePreviewSheet(title: "旅行知識", message: "完整城市知識會在下一階段加入。", symbol: "book.pages")
@@ -113,8 +122,8 @@ struct TripDetailView: View {
                 }.buttonStyle(PackmonPrimaryButtonStyle())
 
                 Text("旅程工具").font(.headline.weight(.bold)).padding(.top, 4)
-                Button { preview = .airport } label: { FeaturePreviewCard(title: "機場模式", subtitle: "出發當天快速查看重點", symbol: "airplane.departure") }.buttonStyle(.plain)
-                Button { preview = .returnMode } label: { FeaturePreviewCard(title: "回程模式", subtitle: "反向檢查，不遺留物品", symbol: "arrow.uturn.left.circle") }.buttonStyle(.plain)
+                Button { sheet = .airport } label: { FeaturePreviewCard(title: "機場模式", subtitle: "出發當天快速查看重點", symbol: "airplane.departure") }.buttonStyle(.plain)
+                Button { sheet = .returnMode } label: { FeaturePreviewCard(title: "回程模式", subtitle: "反向檢查，不遺留物品", symbol: "arrow.uturn.left.circle") }.buttonStyle(.plain)
             }
             .padding(.horizontal, theme.spacing.medium).padding(.bottom, 32)
         }
@@ -133,7 +142,7 @@ struct TripDetailView: View {
     private var statusText: String {
         let days = Calendar.current.dateComponents([.day], from: Calendar.current.startOfDay(for: .now), to: Calendar.current.startOfDay(for: trip.startDate)).day ?? 0
         if days > 0 { return "還有\(days)天・\(trip.startDate.formatted(.dateTime.month().day()))出發" }
-        return trip.contains(.now) ? "旅途中・回程 (trip.endDate.formatted(.dateTime.month().day()))" : "行程已完成"
+        return trip.contains(.now) ? "旅途中・回程 \(trip.endDate.formatted(.dateTime.month().day()))" : "行程已完成"
     }
 }
 
