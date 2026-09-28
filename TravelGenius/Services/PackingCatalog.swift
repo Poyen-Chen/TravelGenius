@@ -7,6 +7,8 @@ struct PackingCatalog: Decodable {
         let nameZh: String
         let category: PackingCategory
         let legacyNames: [String]
+        /// Bundled artwork owned by this canonical item definition.
+        let artworkKey: String?
     }
 
     let version: Int
@@ -31,8 +33,17 @@ struct PackingCatalog: Decodable {
         return nil
     }
 
+    /// Resolve a trip record to its canonical definition. Stable identity always wins;
+    /// exact legacy-name lookup is read-only compatibility for pre-ID records.
+    func definition(catalogID: String?, name: String, isCustom: Bool) -> Item? {
+        if let catalogID, !catalogID.isEmpty { return item(id: catalogID) }
+        guard !isCustom, let legacyID = legacyID(name: name) else { return nil }
+        return item(id: legacyID)
+    }
+
     enum ContractError: Error {
-        case invalidVersion, duplicateIdentity, invalidReference, invalidQuantity, invalidActiveCatalog
+        case invalidVersion, duplicateIdentity, invalidReference, invalidQuantity,
+             invalidActiveCatalog, invalidArtwork
     }
 
     func validate(rules: [PackingRule]) throws {
@@ -53,6 +64,15 @@ struct PackingCatalog: Decodable {
               Set(activeItemIDs).count == activeItemIDs.count,
               Set(activeItemIDs).isSubset(of: ids) else {
             throw ContractError.invalidActiveCatalog
+        }
+        let activeIDs = Set(activeItemIDs)
+        let artworkKeys = items.filter { activeIDs.contains($0.id) }.compactMap(\.artworkKey)
+        let allowedArtworkCharacters = CharacterSet(charactersIn: "abcdefghijklmnopqrstuvwxyz0123456789-")
+        guard artworkKeys.count == activeIDs.count,
+              Set(artworkKeys).count == artworkKeys.count,
+              artworkKeys.allSatisfy({ !$0.isEmpty && $0.rangeOfCharacter(from: allowedArtworkCharacters.inverted) == nil }),
+              items.filter({ !activeIDs.contains($0.id) }).allSatisfy({ $0.artworkKey == nil }) else {
+            throw ContractError.invalidArtwork
         }
         guard ids.contains("plug-adapter") else { throw ContractError.invalidReference }
         var ruleIDs = Set<String>()

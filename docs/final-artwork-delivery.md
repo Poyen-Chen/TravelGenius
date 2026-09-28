@@ -7,13 +7,13 @@
 - 覆蓋：61/61 active stable IDs（文件 6、衣物 26、電子 13、盥洗 7、其他 9）。
 - 規格：每張 1024×1024、PNG、sRGB、RGBA 真透明背景；左上柔光、暖紙感、低飽和深藍／暖灰、少量暖橘、至少 13% 安全留白。
 - 一致性：App 與 PWA 每個 ID 的 PNG bytes 完全相同；61 個 SHA-256 彼此不重複。
-- 身份：只按 stable ID 精確映射；無 fuzzy name matching。自訂、未知、相容性-only 與載入失敗仍顯示帶名稱的分類 fallback。
+- 身份：每個 canonical active item definition 明確擁有 `artworkKey`；行程項目按 stable ID 解析定義，無第二份 61-ID 圖片 registry、無 fuzzy name matching。自訂、未知、相容性-only 與載入失敗仍顯示帶名稱的分類 fallback。
 - 重製：61 張全部重製。移除舊 `cable`、`charger`、`clothes`、`umbrella`；原有 `passport`、`sunscreen` 亦被取代。無正式圖沿用。
 
 ## 雙端狀態
 
-- App：`codex/packmon-final-artwork`；整合 PD-052 的 V1 catalog candidate 與 61 個 asset catalog 圖、61-ID mapping、舊資料 exact-name 相容與 artwork regression。新清單中的 61 個 active stable IDs 全數有對應圖片。
-- PWA：V1 catalog 的 61 IDs 全數映射並 precache；正式 Site 13 已公開部署，後續快取修正使用 `packmon-v26-final-artwork-hotfix`。
+- App：`codex/packmon-final-artwork`；整合 PD-052 的 V1 catalog candidate 與 61 個 asset catalog 圖。`packing_items.json` 的每個 active item 自帶 `artworkKey`，舊資料保留 read-only exact-name 相容；新清單中的 61 個 active stable IDs 全數有對應圖片。
+- PWA：V1 item definitions 的 61 個 `artworkKey` 全數解析並 precache；正式 Site 13 目前使用 `packmon-v26-final-artwork-hotfix`，definition-owned refactor candidate 使用 `packmon-v27-item-owned-artwork`，尚未重新部署。
 - 共同 fallback：舊行程若尚未保存 stable ID，App 會透過目前 catalog 的 exact-name／明列 legacy name 還原 ID；PWA 使用相同 catalog identity。未知、自訂與近義名稱不做 fuzzy matching，仍顯示分類 fallback。
 
 ## 證據與驗收

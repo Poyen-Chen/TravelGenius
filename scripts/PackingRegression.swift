@@ -94,6 +94,12 @@ struct PackingRegression {
         precondition(catalog.activeItemIDs?.count == 61)
         precondition(Set(catalog.activeItemIDs ?? []).count == 61)
         precondition(catalog.legacyID(name: "插座轉接頭（當地 Type-G）") == "plug-adapter")
+        for id in catalog.activeItemIDs ?? [] {
+            precondition(catalog.definition(catalogID: id, name: "ignored", isCustom: false)?.artworkKey != nil)
+        }
+        precondition(catalog.definition(catalogID: nil, name: "上衣", isCustom: false)?.artworkKey == "tops")
+        precondition(catalog.definition(catalogID: nil, name: "上衣", isCustom: true) == nil)
+        precondition(catalog.definition(catalogID: "unknown", name: "上衣", isCustom: false) == nil)
         // Reject malformed bundled contracts before applying any merge.
         let invalid = PackingCatalog(version: catalog.version, activeItemIDs: catalog.activeItemIDs,
             items: catalog.items + [catalog.items[0]])
@@ -103,6 +109,13 @@ struct PackingRegression {
             items: catalog.items.filter { $0.id != "passport" })
         do { try missing.validate(rules: StaticDataStore.shared.packingRules); fatalError("missing reference accepted") }
         catch PackingCatalog.ContractError.invalidActiveCatalog { }
+        let missingArtwork = PackingCatalog(version: catalog.version, activeItemIDs: catalog.activeItemIDs,
+            items: catalog.items.map { item in
+                item.id == "passport" ? .init(id: item.id, nameZh: item.nameZh, category: item.category,
+                    legacyNames: item.legacyNames, artworkKey: nil) : item
+            })
+        do { try missingArtwork.validate(rules: StaticDataStore.shared.packingRules); fatalError("missing artwork accepted") }
+        catch PackingCatalog.ContractError.invalidArtwork { }
         var invalidRules = try JSONSerialization.jsonObject(with: JSONEncoder().encode(StaticDataStore.shared.packingRules)) as! [[String: Any]]
         var invalidItems = invalidRules[0]["items"] as! [[String: Any]]
         invalidItems[0]["quantity"] = 0

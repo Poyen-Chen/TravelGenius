@@ -70,7 +70,8 @@
       "category": "documents",
       "legacyNames": [
         "護照"
-      ]
+      ],
+      "artworkKey": "passport"
     },
     {
       "id": "clothes-change",
@@ -86,7 +87,8 @@
       "category": "electronics",
       "legacyNames": [
         "行動電源"
-      ]
+      ],
+      "artworkKey": "power-bank"
     },
     {
       "id": "charging-kit",
@@ -94,7 +96,8 @@
       "category": "electronics",
       "legacyNames": [
         "充電線與充電頭"
-      ]
+      ],
+      "artworkKey": "charging-kit"
     },
     {
       "id": "toiletry-kit",
@@ -158,7 +161,8 @@
       "category": "toiletries",
       "legacyNames": [
         "防曬乳"
-      ]
+      ],
+      "artworkKey": "sunscreen"
     },
     {
       "id": "sunglasses",
@@ -166,7 +170,8 @@
       "category": "other",
       "legacyNames": [
         "太陽眼鏡"
-      ]
+      ],
+      "artworkKey": "sunglasses"
     },
     {
       "id": "water-bottle",
@@ -174,7 +179,8 @@
       "category": "other",
       "legacyNames": [
         "隨身水瓶"
-      ]
+      ],
+      "artworkKey": "water-bottle"
     },
     {
       "id": "warm-coat",
@@ -182,7 +188,8 @@
       "category": "clothing",
       "legacyNames": [
         "保暖外套"
-      ]
+      ],
+      "artworkKey": "warm-coat"
     },
     {
       "id": "scarf-gloves",
@@ -198,7 +205,8 @@
       "category": "other",
       "legacyNames": [
         "暖暖包"
-      ]
+      ],
+      "artworkKey": "hand-warmer"
     },
     {
       "id": "light-jacket",
@@ -206,7 +214,8 @@
       "category": "clothing",
       "legacyNames": [
         "薄外套"
-      ]
+      ],
+      "artworkKey": "light-jacket"
     },
     {
       "id": "folding-umbrella",
@@ -214,7 +223,8 @@
       "category": "other",
       "legacyNames": [
         "摺疊傘"
-      ]
+      ],
+      "artworkKey": "folding-umbrella"
     },
     {
       "id": "dry-bag",
@@ -286,7 +296,8 @@
       "category": "documents",
       "legacyNames": [
         "名片"
-      ]
+      ],
+      "artworkKey": "business-cards"
     },
     {
       "id": "formal-clothes",
@@ -294,7 +305,8 @@
       "category": "clothing",
       "legacyNames": [
         "正式服裝"
-      ]
+      ],
+      "artworkKey": "formal-clothes"
     },
     {
       "id": "laptop-kit",
@@ -358,37 +370,43 @@
       "category": "toiletries",
       "legacyNames": [
         "衛生用品"
-      ]
+      ],
+      "artworkKey": "sanitary-products"
     },
     {
       "id": "plug-adapter",
       "nameZh": "插座轉接頭",
       "category": "electronics",
-      "legacyNames": []
+      "legacyNames": [],
+      "artworkKey": "plug-adapter"
     },
     {
       "id": "phone",
       "nameZh": "手機",
       "category": "electronics",
-      "legacyNames": []
+      "legacyNames": [],
+      "artworkKey": "phone"
     },
     {
       "id": "laptop",
       "nameZh": "筆電",
       "category": "electronics",
-      "legacyNames": []
+      "legacyNames": [],
+      "artworkKey": "laptop"
     },
     {
       "id": "laptop-charger",
       "nameZh": "筆電充電器",
       "category": "electronics",
-      "legacyNames": []
+      "legacyNames": [],
+      "artworkKey": "laptop-charger"
     },
     {
       "id": "tablet",
       "nameZh": "平板／電子閱讀器",
       "category": "electronics",
-      "legacyNames": []
+      "legacyNames": [],
+      "artworkKey": "tablet"
     },
     {
       "id": "camera",
@@ -396,31 +414,36 @@
       "category": "electronics",
       "legacyNames": [
         "隨身相機"
-      ]
+      ],
+      "artworkKey": "camera"
     },
     {
       "id": "camera-charger",
       "nameZh": "相機電池與充電器",
       "category": "electronics",
-      "legacyNames": []
+      "legacyNames": [],
+      "artworkKey": "camera-charger"
     },
     {
       "id": "memory-card",
       "nameZh": "記憶卡",
       "category": "electronics",
-      "legacyNames": []
+      "legacyNames": [],
+      "artworkKey": "memory-card"
     },
     {
       "id": "smartwatch",
       "nameZh": "智慧手錶",
       "category": "electronics",
-      "legacyNames": []
+      "legacyNames": [],
+      "artworkKey": "smartwatch"
     },
     {
       "id": "watch-charger",
       "nameZh": "手錶充電器",
       "category": "electronics",
-      "legacyNames": []
+      "legacyNames": [],
+      "artworkKey": "watch-charger"
     },
     {
       "id": "headphones",
@@ -428,7 +451,8 @@
       "category": "electronics",
       "legacyNames": [
         "耳機"
-      ]
+      ],
+      "artworkKey": "headphones"
     },
     {
       "id": "glasses",
@@ -452,7 +476,8 @@
       "category": "toiletries",
       "legacyNames": [
         "保養用品"
-      ]
+      ],
+      "artworkKey": "skincare"
     },
     {
       "id": "book",
@@ -466,13 +491,15 @@
       "id": "swimsuit",
       "nameZh": "泳衣",
       "category": "clothing",
-      "legacyNames": []
+      "legacyNames": [],
+      "artworkKey": "swimsuit"
     },
     {
       "id": "quick-dry-towel",
       "nameZh": "快乾毛巾",
       "category": "toiletries",
-      "legacyNames": []
+      "legacyNames": [],
+      "artworkKey": "quick-dry-towel"
     },
     {
       "id": "outdoor-shoes",
@@ -480,7 +507,8 @@
       "category": "clothing",
       "legacyNames": [
         "戶外鞋"
-      ]
+      ],
+      "artworkKey": "outdoor-shoes"
     },
     {
       "id": "sun-hat",
@@ -488,7 +516,8 @@
       "category": "clothing",
       "legacyNames": [
         "帽子"
-      ]
+      ],
+      "artworkKey": "sun-hat"
     },
     {
       "id": "daypack",
@@ -496,13 +525,15 @@
       "category": "other",
       "legacyNames": [
         "戶外背包"
-      ]
+      ],
+      "artworkKey": "daypack"
     },
     {
       "id": "rain-jacket",
       "nameZh": "防風防雨外套",
       "category": "clothing",
-      "legacyNames": []
+      "legacyNames": [],
+      "artworkKey": "rain-jacket"
     },
     {
       "id": "flashlight",
@@ -520,7 +551,8 @@
       "id": "warm-hat",
       "nameZh": "保暖帽",
       "category": "clothing",
-      "legacyNames": []
+      "legacyNames": [],
+      "artworkKey": "warm-hat"
     },
     {
       "id": "waterproof-gloves",
@@ -528,7 +560,8 @@
       "category": "clothing",
       "legacyNames": [
         "防水手套"
-      ]
+      ],
+      "artworkKey": "waterproof-gloves"
     },
     {
       "id": "snow-equipment",
@@ -546,13 +579,15 @@
       "id": "wet-item-bag",
       "nameZh": "濕物收納袋",
       "category": "other",
-      "legacyNames": []
+      "legacyNames": [],
+      "artworkKey": "wet-item-bag"
     },
     {
       "id": "workout-clothes",
       "nameZh": "運動衣褲",
       "category": "clothing",
-      "legacyNames": []
+      "legacyNames": [],
+      "artworkKey": "workout-clothes"
     },
     {
       "id": "athletic-shoes",
@@ -566,7 +601,8 @@
       "category": "clothing",
       "legacyNames": [
         "正式鞋款"
-      ]
+      ],
+      "artworkKey": "formal-shoes"
     },
     {
       "id": "laundry-supplies",
@@ -574,13 +610,15 @@
       "category": "toiletries",
       "legacyNames": [
         "洗衣用品"
-      ]
+      ],
+      "artworkKey": "laundry-supplies"
     },
     {
       "id": "laundry-bag",
       "nameZh": "待洗衣物袋",
       "category": "other",
-      "legacyNames": []
+      "legacyNames": [],
+      "artworkKey": "laundry-bag"
     },
     {
       "id": "travel-towel",
@@ -594,7 +632,8 @@
       "category": "other",
       "legacyNames": [
         "置物櫃鎖"
-      ]
+      ],
+      "artworkKey": "locker-lock"
     },
     {
       "id": "earplugs",
@@ -608,7 +647,8 @@
       "category": "clothing",
       "legacyNames": [
         "拖鞋"
-      ]
+      ],
+      "artworkKey": "slippers"
     },
     {
       "id": "payment-card",
@@ -616,73 +656,85 @@
       "category": "documents",
       "legacyNames": [
         "付款卡"
-      ]
+      ],
+      "artworkKey": "payment-card"
     },
     {
       "id": "tops",
       "nameZh": "上衣",
       "category": "clothing",
-      "legacyNames": []
+      "legacyNames": [],
+      "artworkKey": "tops"
     },
     {
       "id": "bottoms",
       "nameZh": "下身衣物",
       "category": "clothing",
-      "legacyNames": []
+      "legacyNames": [],
+      "artworkKey": "bottoms"
     },
     {
       "id": "underwear",
       "nameZh": "內衣褲",
       "category": "clothing",
-      "legacyNames": []
+      "legacyNames": [],
+      "artworkKey": "underwear"
     },
     {
       "id": "socks",
       "nameZh": "襪子",
       "category": "clothing",
-      "legacyNames": []
+      "legacyNames": [],
+      "artworkKey": "socks"
     },
     {
       "id": "walking-shoes",
       "nameZh": "舒適步行鞋",
       "category": "clothing",
-      "legacyNames": []
+      "legacyNames": [],
+      "artworkKey": "walking-shoes"
     },
     {
       "id": "toothbrush",
       "nameZh": "牙刷",
       "category": "toiletries",
-      "legacyNames": []
+      "legacyNames": [],
+      "artworkKey": "toothbrush"
     },
     {
       "id": "toothpaste",
       "nameZh": "牙膏",
       "category": "toiletries",
-      "legacyNames": []
+      "legacyNames": [],
+      "artworkKey": "toothpaste"
     },
     {
       "id": "sleepwear",
       "nameZh": "睡衣",
       "category": "clothing",
-      "legacyNames": []
+      "legacyNames": [],
+      "artworkKey": "sleepwear"
     },
     {
       "id": "travel-document-backup",
       "nameZh": "旅行文件備份",
       "category": "documents",
-      "legacyNames": []
+      "legacyNames": [],
+      "artworkKey": "travel-document-backup"
     },
     {
       "id": "local-cash",
       "nameZh": "當地現金",
       "category": "documents",
-      "legacyNames": []
+      "legacyNames": [],
+      "artworkKey": "local-cash"
     },
     {
       "id": "driving-documents",
       "nameZh": "駕照與國際駕照",
       "category": "documents",
-      "legacyNames": []
+      "legacyNames": [],
+      "artworkKey": "driving-documents"
     },
     {
       "id": "sweater-fleece",
@@ -690,19 +742,22 @@
       "category": "clothing",
       "legacyNames": [
         "保暖中層"
-      ]
+      ],
+      "artworkKey": "sweater-fleece"
     },
     {
       "id": "scarf",
       "nameZh": "圍巾",
       "category": "clothing",
-      "legacyNames": []
+      "legacyNames": [],
+      "artworkKey": "scarf"
     },
     {
       "id": "waterproof-nonslip-shoes",
       "nameZh": "防水防滑鞋",
       "category": "clothing",
-      "legacyNames": []
+      "legacyNames": [],
+      "artworkKey": "waterproof-nonslip-shoes"
     },
     {
       "id": "thermal-base-layer",
@@ -710,37 +765,43 @@
       "category": "clothing",
       "legacyNames": [
         "保暖內層"
-      ]
+      ],
+      "artworkKey": "thermal-base-layer"
     },
     {
       "id": "ski-socks",
       "nameZh": "滑雪襪",
       "category": "clothing",
-      "legacyNames": []
+      "legacyNames": [],
+      "artworkKey": "ski-socks"
     },
     {
       "id": "ski-goggles",
       "nameZh": "雪鏡",
       "category": "other",
-      "legacyNames": []
+      "legacyNames": [],
+      "artworkKey": "ski-goggles"
     },
     {
       "id": "ski-jacket",
       "nameZh": "滑雪外套",
       "category": "clothing",
-      "legacyNames": []
+      "legacyNames": [],
+      "artworkKey": "ski-jacket"
     },
     {
       "id": "ski-pants",
       "nameZh": "滑雪褲",
       "category": "clothing",
-      "legacyNames": []
+      "legacyNames": [],
+      "artworkKey": "ski-pants"
     },
     {
       "id": "business-clothes",
       "nameZh": "商務服裝",
       "category": "clothing",
-      "legacyNames": []
+      "legacyNames": [],
+      "artworkKey": "business-clothes"
     }
   ]
 }

@@ -11,13 +11,12 @@ struct PackingItemCard: View {
     @Environment(\.packmonTheme) private var theme
 
     private var artwork: UIImage? {
-        let legacyCatalogID = item.isCustom ? nil : StaticDataStore.shared.packingCatalog.legacyID(name: item.name)
-        guard let key = PackingArtwork.key(
+        guard let definition = StaticDataStore.shared.packingCatalog.definition(
             catalogID: item.catalogItemID,
-            legacyCatalogID: legacyCatalogID,
+            name: item.name,
             isCustom: item.isCustom
-        ) else { return nil }
-        return UIImage(named: "packing-\(key)")
+        ), let artworkKey = definition.artworkKey else { return nil }
+        return UIImage(named: "packing-\(artworkKey)")
     }
 
     var body: some View {
