@@ -1,6 +1,6 @@
 # Packmon 最終物品圖候選交付
 
-日期：2026-09-27。方向：B — warm editorial cut-paper／gouache。狀態：App 與 PWA 候選完成，等待人工驗收；未部署、未建立 accepted tag。
+日期：2026-09-27；整合修正：2026-09-28。方向：B — warm editorial cut-paper／gouache。狀態：PWA 已部署，App 的 V1 catalog＋最終圖片整合候選已完成模擬器建置；未建立 accepted tag、未發布 TestFlight／App Store。
 
 ## 結果
 
@@ -12,8 +12,8 @@
 
 ## 雙端狀態
 
-- App：`codex/packmon-final-artwork`；新增／替換 61 個 asset catalog 圖、61-ID mapping 與 artwork regression。此分支刻意以 Stage 7 accepted code 為基線，只交付圖片層，不夾帶仍待驗收的 PD-052 catalog/recommendation candidate；因此 bundle 已備齊 61 張，當前畫面只會消費目前程式實際出現的 stable IDs。
-- PWA：獨立 worktree `codex/final-artwork`；V1 catalog 的 61 IDs 全數映射，service worker precache 61 張，離線版本提升至 `packmon-v24-final-artwork`。尚未公開部署。
+- App：`codex/packmon-final-artwork`；整合 PD-052 的 V1 catalog candidate 與 61 個 asset catalog 圖、61-ID mapping、舊資料 exact-name 相容與 artwork regression。新清單中的 61 個 active stable IDs 全數有對應圖片。
+- PWA：V1 catalog 的 61 IDs 全數映射並 precache；正式 Site 13 已公開部署，後續快取修正使用 `packmon-v26-final-artwork-hotfix`。
 - 共同 fallback：舊行程若尚未保存 stable ID，App 會透過目前 catalog 的 exact-name／明列 legacy name 還原 ID；PWA 使用相同 catalog identity。未知、自訂與近義名稱不做 fuzzy matching，仍顯示分類 fallback。
 
 ## 證據與驗收

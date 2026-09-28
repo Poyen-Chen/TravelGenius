@@ -21,6 +21,9 @@ import Foundation
         precondition(PackingArtwork.activeCatalogIDs.count == 61)
         precondition(Set(PackingArtwork.activeCatalogIDs).count == 61)
         precondition(PackingArtwork.catalogAssets.count == 61)
+        for id in PackingArtwork.activeCatalogIDs {
+            precondition(PackingArtwork.key(catalogID: id, legacyCatalogID: nil, isCustom: false) == id)
+        }
         let root = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
         for key in Set(PackingArtwork.catalogAssets.values) {
             precondition(FileManager.default.fileExists(atPath: root.appendingPathComponent("TravelGenius/Assets.xcassets/packing-\(key).imageset/\(key).png").path))
