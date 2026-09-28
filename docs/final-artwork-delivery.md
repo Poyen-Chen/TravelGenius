@@ -13,7 +13,7 @@
 ## 雙端狀態
 
 - App：`codex/packmon-final-artwork`；整合 PD-052 的 V1 catalog candidate 與 61 個 asset catalog 圖。`packing_items.json` 的每個 active item 自帶 `artworkKey`，舊資料保留 read-only exact-name 相容；新清單中的 61 個 active stable IDs 全數有對應圖片。
-- PWA：V1 item definitions 的 61 個 `artworkKey` 全數解析並 precache；正式 Site 13 目前使用 `packmon-v26-final-artwork-hotfix`，definition-owned refactor candidate 使用 `packmon-v27-item-owned-artwork`，尚未重新部署。
+- PWA：V1 item definitions 的 61 個 `artworkKey` 全數解析並 precache；definition-owned refactor 已與既有四關通關檢查整合，使用 `packmon-v30-item-owned-artwork` 部署為正式 Site version 15。
 - 共同 fallback：舊行程若尚未保存 stable ID，App 會透過目前 catalog 的 exact-name／明列 legacy name 還原 ID；PWA 使用相同 catalog identity。未知、自訂與近義名稱不做 fuzzy matching，仍顯示分類 fallback。
 
 ## 證據與驗收
