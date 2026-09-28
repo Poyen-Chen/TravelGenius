@@ -19,11 +19,10 @@ enum PackingArtwork {
 
     static let catalogAssets = Dictionary(uniqueKeysWithValues: activeCatalogIDs.map { ($0, $0) })
 
-    static func key(catalogID: String?, name: String, isCustom: Bool) -> String? {
+    static func key(catalogID: String?, legacyCatalogID: String?, isCustom: Bool) -> String? {
         if let catalogID, !catalogID.isEmpty { return catalogAssets[catalogID] }
         guard !isCustom else { return nil }
-        let legacy = ["護照": "passport", "充電線與充電頭": "charging-kit",
-                      "防曬乳": "sunscreen", "摺疊傘": "folding-umbrella"]
-        return legacy[name]
+        guard let legacyCatalogID else { return nil }
+        return catalogAssets[legacyCatalogID]
     }
 }

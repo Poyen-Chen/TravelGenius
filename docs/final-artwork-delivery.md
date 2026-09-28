@@ -14,7 +14,7 @@
 
 - App：`codex/packmon-final-artwork`；新增／替換 61 個 asset catalog 圖、61-ID mapping 與 artwork regression。此分支刻意以 Stage 7 accepted code 為基線，只交付圖片層，不夾帶仍待驗收的 PD-052 catalog/recommendation candidate；因此 bundle 已備齊 61 張，當前畫面只會消費目前程式實際出現的 stable IDs。
 - PWA：獨立 worktree `codex/final-artwork`；V1 catalog 的 61 IDs 全數映射，service worker precache 61 張，離線版本提升至 `packmon-v24-final-artwork`。尚未公開部署。
-- 共同 fallback：安全 legacy exact-name 只保留 `護照`、`充電線與充電頭`、`防曬乳`、`摺疊傘`；不把舊 bundle／copies／健康用品猜成新單品。
+- 共同 fallback：舊行程若尚未保存 stable ID，App 會透過目前 catalog 的 exact-name／明列 legacy name 還原 ID；PWA 使用相同 catalog identity。未知、自訂與近義名稱不做 fuzzy matching，仍顯示分類 fallback。
 
 ## 證據與驗收
 
