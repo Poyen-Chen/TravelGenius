@@ -2,7 +2,7 @@
 //  UserPreferences.swift
 //  TravelGenius
 //
-//  使用者偏好：五項打包相關偏好（影響清單生成）＋外觀設定。
+//  新版使用者偏好：設備、常備需求與打包風格。舊人口欄位僅供歷史快照解碼。
 //
 
 import Foundation
@@ -23,13 +23,20 @@ enum PersonalPackingOptions {
         .init(id: "headphones", label: "耳機", itemIDs: ["headphones"])
     ]
     static let needs: [Option] = [
-        .init(id: "glasses", label: "眼鏡", itemIDs: ["glasses"]),
-        .init(id: "contacts", label: "隱形眼鏡", itemIDs: ["contact-lenses"]),
         .init(id: "skincare", label: "保養用品", itemIDs: ["skincare"]),
         .init(id: "period", label: "生理用品", itemIDs: ["sanitary-products"]),
-        .init(id: "medicine", label: "自己的常備藥", itemIDs: ["regular-medicine"]),
-        .init(id: "book", label: "紙本讀物", itemIDs: ["book"])
+        .init(id: "document-backup", label: "旅行文件備份", itemIDs: ["travel-document-backup"])
     ]
+
+    static func validDevices(_ values: [String]?) -> [String]? { filtered(values, options: devices) }
+    static func validNeeds(_ values: [String]?) -> [String]? { filtered(values, options: needs) }
+
+    private static func filtered(_ values: [String]?, options: [Option]) -> [String]? {
+        guard let values else { return nil }
+        let allowed = Set(options.map(\.id))
+        var seen = Set<String>()
+        return values.filter { allowed.contains($0) && seen.insert($0).inserted }
+    }
 }
 
 enum AgeBand: String, Codable, CaseIterable, Identifiable {
@@ -175,18 +182,23 @@ struct UserPreferences: Codable, Equatable {
     var devices: [String]? = nil
     var needs: [String]? = nil
 
-    var usesExplicitNeeds: Bool { devices != nil }
+    var usesExplicitNeeds: Bool { devices != nil && needs != nil }
+    var isLegacySnapshot: Bool { !usesExplicitNeeds }
     var summary: String {
         usesExplicitNeeds ? "\(devices?.count ?? 0) 項設備・\(needs?.count ?? 0) 項需求・\(packingStyle.label)"
             : "\(party.label)・\(packingStyle.label)"
     }
 
-    static func forNewTrips() -> UserPreferences {
-        var value = load()
-        value.devices = value.devices ?? ["phone"]
-        value.needs = value.needs ?? []
-        if UserDefaults.standard.string(forKey: packingStyleKey) == nil { value.packingStyle = .normal }
-        return value
+    static func forNewTrips(defaults: UserDefaults = .standard) -> UserPreferences {
+        UserPreferences(
+            ageBand: .adult,
+            gender: .undisclosed,
+            party: .solo,
+            experience: .some,
+            packingStyle: PackingStyle(rawValue: defaults.string(forKey: packingStyleKey) ?? "") ?? .normal,
+            devices: PersonalPackingOptions.validDevices(defaults.stringArray(forKey: "pref.devices") ?? ["phone"]),
+            needs: PersonalPackingOptions.validNeeds(defaults.stringArray(forKey: "pref.needs") ?? [])
+        )
     }
 
     static let ageKey = "pref.ageBand"
@@ -203,19 +215,19 @@ struct UserPreferences: Codable, Equatable {
             party: TravelParty(rawValue: defaults.string(forKey: partyKey) ?? "") ?? .solo,
             experience: TravelExperience(rawValue: defaults.string(forKey: experienceKey) ?? "") ?? .some,
             packingStyle: PackingStyle(rawValue: defaults.string(forKey: packingStyleKey) ?? "") ?? .full,
-            devices: defaults.stringArray(forKey: "pref.devices"),
-            needs: defaults.stringArray(forKey: "pref.needs")
+            devices: PersonalPackingOptions.validDevices(defaults.stringArray(forKey: "pref.devices")),
+            needs: PersonalPackingOptions.validNeeds(defaults.stringArray(forKey: "pref.needs"))
         )
     }
 
-    func save() {
-        let defaults = UserDefaults.standard
-        defaults.set(ageBand.rawValue, forKey: Self.ageKey)
-        defaults.set(gender.rawValue, forKey: Self.genderKey)
-        defaults.set(party.rawValue, forKey: Self.partyKey)
-        defaults.set(experience.rawValue, forKey: Self.experienceKey)
+    func save(defaults: UserDefaults = .standard) {
+        // Do not keep writing hidden demographic controls into the modern preference store.
+        defaults.removeObject(forKey: Self.ageKey)
+        defaults.removeObject(forKey: Self.genderKey)
+        defaults.removeObject(forKey: Self.partyKey)
+        defaults.removeObject(forKey: Self.experienceKey)
         defaults.set(packingStyle.rawValue, forKey: Self.packingStyleKey)
-        defaults.set(devices, forKey: "pref.devices")
-        defaults.set(needs, forKey: "pref.needs")
+        defaults.set(devices ?? [], forKey: "pref.devices")
+        defaults.set(needs ?? [], forKey: "pref.needs")
     }
 }
