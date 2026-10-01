@@ -90,3 +90,38 @@ Full-source and implementation images were opened in the same comparison input. 
 Follow-up: expand image coverage after this first candidate review; commercial provenance confirmation for reused images; real-device accessibility and offline checks. Human Stage 6 acceptance is pending.
 
 final result: passed
+
+## Four-gate border review — selected compact checkpoint design, 2026-09-28
+
+Scope: the user-selected second concept for the iOS trip workspace, covering the compact four-checkpoint selector, action-first rule card, complete-rules disclosure and official-source access. This does not retroactively close the older full Structure C screen suite above.
+
+- Reference: `/Users/chenyuwen/.codex/generated_images/01a0e5d6-d0ec-7fc1-a141-b43017b7b054/exec-7a671a9c-b0fe-44da-84aa-3cb84d77e937.png` (853 × 1844 px concept).
+- Native evidence: `docs/evidence/border-review/ios-japan-arrival.png`, `ios-japan-arrival-actions.png`, and `ios-taiwan-departure.png` (1206 × 2622 px, iPhone 17 at 3×).
+- State: Taiwan-origin Tokyo trip; destination-arrival is the default checkpoint. The reference's illustrative count of eight is intentionally replaced by five sourced records actually present in the candidate.
+
+### Comparison and iteration history
+
+1. The native candidate preserves the selected hierarchy: four visible journey checkpoints, one active checkpoint, authority chips, three primary actions, checkboxes, complete-rules disclosure, sources and the no-match warning. It retains the existing Structure C navigation/header and uses the App's established tokens rather than reproducing the concept as a screenshot.
+2. [P1, fixed] Taiwan departure initially surfaced three generic aviation checks and hid cash/export customs actions. Rule data now carries an editorial display priority; the final evidence surfaces cash/valuables, controlled exports and returning high-value equipment first.
+3. [P1, fixed] The global floating Jelly dock covered a row confirmation control. The dock is now hidden only while the trip's「通關」workspace page is active and returns on other pages.
+4. The complete-rules list, rule detail, official URL label and last-verification date were opened in Simulator. A confirmation was checked, the checkpoint was changed, and the original checkpoint retained the checked state; the test mark was then cleared.
+
+### Final assessment
+
+- Information density: the 402 × 874 pt native viewport shows the four-stage route and the start of the three-action card without shrinking typography. One short scroll reveals the complete-rules and source links; no legal detail is deleted to fit the first viewport.
+- Accessibility: each checkpoint exposes its number, country/direction and authorities; each checkbox exposes the action and current toggle intent. Accessibility Dynamic Type replaces the four-column selector with a menu rather than forcing compressed labels. Real-device VoiceOver and all accessibility text sizes remain manual follow-up checks.
+- Content safety: sourced rules retain authority, URL and verification date. Missing coverage and unmatched searches never mean permission. Checkmarks mean reviewed only, not approved.
+- Parity: this information architecture is suitable for PWA, but the web implementation is intentionally deferred until iOS human review; existing untracked `web/` work was not modified.
+
+No remaining P0/P1/P2 findings in this component scope. P3/follow-up: validate VoiceOver and the largest Dynamic Type sizes on a physical device, and extend sourced directional coverage beyond the current Taiwan/Japan candidate.
+
+Four-gate border review component result: passed
+
+### Sourced-rule refresh and PWA parity follow-up — 2026-09-28
+
+- Expanded the same four-checkpoint model from the Taiwan／Japan candidate to all currently selectable destinations: Japan, Korea, Hong Kong, the United States and Vietnam. The national or regional rule set is shared across each destination's supported cities; city selection does not falsely alter customs law.
+- Synchronized the PWA workspace label, default destination-arrival checkpoint, four-button selector, official-source links, verification dates, journey-date filtering and departure-country aviation filtering. Mobile inspection at 390 × 844 CSS px confirmed the selector becomes a readable two-by-two grid and the floating mascot does not cover the rule list.
+- Checked a Tokyo trip dated 2026-11-10 through 2026-11-15: Japan departure showed the 2026-11-01 refund-method rule and Japan-specific power-bank rule, while Taiwan arrival showed the meat, electronic-cigarette／unapproved heated-tobacco, cannabis／THC, quarantine, allowance and unaccompanied-baggage records.
+- [P1, fixed] An installed PWA could briefly combine the new module with an older cached data payload that had no `border_rules`, causing the trip screen to stop rendering. The domain now tolerates mixed-version data and the new service worker activates the compatible cache immediately; a regression test covers this transition.
+
+No remaining P0/P1/P2 findings in the refreshed four-checkpoint web scope. Automated verification: two destination-data contract tests, 63 PWA tests, JavaScript syntax checks and a successful unsigned iOS Simulator build. Physical-device accessibility remains a manual follow-up.

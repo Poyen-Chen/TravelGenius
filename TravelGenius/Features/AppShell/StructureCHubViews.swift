@@ -125,21 +125,21 @@ struct StandaloneBringCheckerView: View {
         guard let top = verdicts.first else { return "" }
         switch top.kind {
         case .banned: return "這個不能帶，先看看原因與官方規定。"
-        case .permit, .declare, .carryOnOnly, .checkedOnly, .limited: return "可以準備，但有條件限制。"
-        case .unrestricted: return "目前收錄規則中查無限制。"
+        case .permit, .declare, .carryOnOnly, .checkedOnly, .limited, .review: return "可以準備，但有條件限制。"
+        case .unrestricted: return "目前沒有足夠資料判定，請查官方來源。"
         }
     }
 
     private func runCheck() {
         verdicts = CanIBringService.check(query, destination: destination, origin: origin)
         guard let top = verdicts.first else { return }
-        mascot.speak(summaryText, expression: top.kind == .unrestricted ? .happy : .alert)
+        mascot.speak(summaryText, expression: top.kind == .unrestricted ? .normal : .alert)
     }
 
     private func verdictTint(_ kind: BringVerdict.Kind) -> Color {
         switch kind {
         case .banned: theme.colors.danger
-        case .unrestricted: theme.colors.success
+        case .unrestricted, .review: theme.colors.warning
         case .carryOnOnly: theme.colors.accent
         default: theme.colors.warning
         }

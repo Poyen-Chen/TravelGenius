@@ -100,7 +100,9 @@ struct RootTabView: View {
                 .tag(AppTab.profile)
         }
         .overlay {
-            FloatingMascotDock(onExpand: speakTrivia)
+            if !mascot.isDockHidden {
+                FloatingMascotDock(onExpand: speakTrivia)
+            }
         }
         .onAppear {
             refreshMascotMessage()

@@ -16,6 +16,7 @@ struct BringVerdict: Identifiable {
         case carryOnOnly
         case checkedOnly
         case limited
+        case review
         case unrestricted
 
         var label: String {
@@ -26,7 +27,8 @@ struct BringVerdict: Identifiable {
             case .carryOnOnly: "限隨身・禁托運"
             case .checkedOnly: "限托運・禁隨身"
             case .limited: "有限量規定"
-            case .unrestricted: "查無限制"
+            case .review: "需進一步確認"
+            case .unrestricted: "尚未收錄"
             }
         }
 
@@ -38,7 +40,8 @@ struct BringVerdict: Identifiable {
             case .carryOnOnly: "airplane"
             case .checkedOnly: "suitcase.rolling.fill"
             case .limited: "exclamationmark.triangle.fill"
-            case .unrestricted: "checkmark.seal.fill"
+            case .review: "checklist"
+            case .unrestricted: "questionmark.circle.fill"
             }
         }
     }
@@ -57,9 +60,15 @@ struct BringVerdict: Identifiable {
 }
 
 enum CanIBringService {
-    /// 同時查目的地（去程入境）與出發地（回程入境）＋航線安檢；
-    /// 回傳最嚴重的前三筆，查無命中時回傳單筆「查無限制」
-    static func check(_ query: String, destination: String, origin: String = "TW") -> [BringVerdict] {
+    /// 同時查四道通關關卡與航線安檢；
+    /// 回傳最嚴重的前三筆，查無命中時明確標為「尚未收錄」。
+    static func check(
+        _ query: String,
+        destination: String,
+        origin: String = "TW",
+        travelStartDate: Date = .now,
+        travelEndDate: Date = .now
+    ) -> [BringVerdict] {
         let normalized = query
             .trimmingCharacters(in: .whitespacesAndNewlines)
             .lowercased()
@@ -96,24 +105,61 @@ enum CanIBringService {
             customsMatches(countryCode: origin, context: "回程入境\(originName)")
         }
 
-        for rule in store.aviationRules(destination: destination, origin: origin)
-        where matches(query: normalized, name: rule.itemZh, aliases: rule.aliases) {
-            verdicts.append(BringVerdict(
-                kind: kind(for: rule.restriction),
-                matchedName: rule.itemZh,
-                reason: rule.detailZh,
-                sourceName: rule.sourceName,
-                sourceUrl: rule.sourceUrl,
-                lastVerified: rule.lastVerified,
-                context: "航空安檢"
-            ))
+        for checkpoint in BorderCheckpoint.allCases {
+            let countryCode: String
+            switch checkpoint {
+            case .originDeparture, .originArrival: countryCode = origin
+            case .destinationArrival, .destinationDeparture: countryCode = destination
+            }
+            let countryName = store.country(code: countryCode)?.nameZh ?? countryCode
+            let ruleDate: Date
+            switch checkpoint {
+            case .originDeparture, .destinationArrival: ruleDate = travelStartDate
+            case .destinationDeparture, .originArrival: ruleDate = travelEndDate
+            }
+            for rule in store.borderRules(countryCode: countryCode, checkpoint: checkpoint, on: ruleDate)
+            where matches(
+                query: normalized,
+                name: rule.titleZh,
+                aliases: rule.aliases,
+                keywords: rule.keywords,
+                exclusions: rule.exclusions
+            ) {
+                verdicts.append(BringVerdict(
+                    kind: kind(for: rule.status),
+                    matchedName: rule.titleZh,
+                    reason: rule.detailZh,
+                    sourceName: rule.sourceName,
+                    sourceUrl: rule.sourceUrl,
+                    lastVerified: rule.lastVerified,
+                    context: "\(countryName)\(checkpoint.isDeparture ? "出境" : "入境")・\(checkpoint.legLabel)"
+                ))
+            }
+        }
+
+        for (departureCountry, context) in [
+            (origin, "去程・\(store.country(code: origin)?.nameZh ?? origin)出境航空安檢"),
+            (destination, "回程・\(store.country(code: destination)?.nameZh ?? destination)出境航空安檢")
+        ] {
+            for rule in store.aviationRules(departureCountry: departureCountry)
+            where matches(query: normalized, name: rule.itemZh, aliases: rule.aliases) {
+                verdicts.append(BringVerdict(
+                    kind: kind(for: rule.restriction),
+                    matchedName: rule.itemZh,
+                    reason: rule.detailZh,
+                    sourceName: rule.sourceName,
+                    sourceUrl: rule.sourceUrl,
+                    lastVerified: rule.lastVerified,
+                    context: context
+                ))
+            }
         }
 
         if verdicts.isEmpty {
             return [BringVerdict(
                 kind: .unrestricted,
                 matchedName: query.trimmingCharacters(in: .whitespacesAndNewlines),
-                reason: "在去程與回程海關、航空安檢的收錄規則中查無此物品的限制。一般個人用品通常可以攜帶，特殊物品出發前仍建議向航空公司或海關確認。",
+                reason: "目前收錄的四道通關與航空安檢規則中沒有找到可判定的資料。這不代表可以攜帶；請向海關、檢疫機關或航空公司確認。",
                 sourceName: nil,
                 sourceUrl: nil,
                 lastVerified: nil,
@@ -166,6 +212,15 @@ enum CanIBringService {
         case .banned: .banned
         case .permit: .permit
         case .declare: .declare
+        case .review: .review
+        }
+    }
+
+    private static func kind(for status: BorderRuleStatus) -> BringVerdict.Kind {
+        switch status {
+        case .avoid: .banned
+        case .declare: .declare
+        case .prepare, .review: .review
         }
     }
 

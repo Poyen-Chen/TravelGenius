@@ -150,7 +150,7 @@ struct TipsRootView: View {
     private func expression(for verdict: BringVerdict) -> MascotExpression {
         switch verdict.kind {
         case .banned, .permit: .alert
-        case .unrestricted: .happy
+        case .unrestricted, .review: .normal
         default: .normal
         }
     }
@@ -163,7 +163,8 @@ struct TipsRootView: View {
         case .carryOnOnly: "只能隨身、不能托運 — \(verdict.matchedName)"
         case .checkedOnly: "只能托運、不能隨身 — \(verdict.matchedName)"
         case .limited: "可以帶，但有量的限制 — \(verdict.matchedName)"
-        case .unrestricted: "查過了，沒有限制，放心帶！"
+        case .review: "這項要再確認官方規定 — \(verdict.matchedName)"
+        case .unrestricted: "目前還沒有足夠資料判定，請查官方來源。"
         }
     }
 }
@@ -176,11 +177,11 @@ private struct VerdictCard: View {
     private var tint: Color {
         switch verdict.kind {
         case .banned: .red
-        case .permit, .limited: .orange
+        case .permit, .limited, .review: .orange
         case .declare: .yellow
         case .carryOnOnly: .blue
         case .checkedOnly: .indigo
-        case .unrestricted: .green
+        case .unrestricted: .orange
         }
     }
 
