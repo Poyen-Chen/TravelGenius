@@ -105,7 +105,9 @@ struct OnboardingRevealView: View {
 
     private var aviationCount: Int {
         guard let trip else { return 0 }
-        return StaticDataStore.shared.aviationRules(destination: trip.countryCode, origin: trip.originCountryCode).count
+        let rules = StaticDataStore.shared.aviationRules(departureCountry: trip.originCountryCode)
+            + StaticDataStore.shared.aviationRules(departureCountry: trip.countryCode)
+        return Set(rules.map(\.id)).count
     }
 
     private var itemCount: Int {

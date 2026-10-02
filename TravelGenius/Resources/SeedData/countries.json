@@ -1,5 +1,15 @@
 [
   {
+    "code": "HK",
+    "nameZh": "香港",
+    "nameEn": "Hong Kong",
+    "currencyCode": "HKD",
+    "languageCode": "zh-Hant",
+    "emergency": { "police": "999", "ambulance": "999", "fire": "999" },
+    "plugTypes": ["G"],
+    "voltage": "220V"
+  },
+  {
     "code": "JP",
     "nameZh": "日本",
     "nameEn": "Japan",

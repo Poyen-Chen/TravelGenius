@@ -43,10 +43,13 @@ enum PackingCategory: String, Codable, CaseIterable, Identifiable {
 final class PackingItem {
     var id: UUID = UUID()
     var name: String = ""
+    /// nil for pre-catalog records and user-created items; backfilled without replacing the record.
+    var catalogItemID: String?
     var categoryRaw: String = PackingCategory.other.rawValue
     /// 「因為是…」分組（例如：因為是日本、基本必備、自訂）
     var reasonKey: String = ""
     var quantity: Int = 1
+    var unitWeightKg: Double?
     var isPacked: Bool = false
     /// 使用者自行新增（重新產生清單時永不移除）
     var isCustom: Bool = false

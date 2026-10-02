@@ -1,464 +1,500 @@
-//
-//  TripCreationFlowView.swift
-//  TravelGenius
-//
-
 import SwiftUI
 import SwiftData
 
-private struct CustomPackingDraft: Identifiable {
-    let id = UUID()
-    var name: String
-    var category: PackingCategory
-    var quantity: Int
-}
-
-/// 新版三步驟行程建立流程：基本資訊 → 推薦清單 → 海關提醒。
 struct TripCreationFlowView: View {
-    private enum Step: Int, CaseIterable {
-        case basics = 1
-        case recommendations = 2
-        case travelRules = 3
-
-        var title: String {
-            switch self {
-            case .basics: "行程基本資訊"
-            case .recommendations: "推薦打包清單"
-            case .travelRules: "海關與出入境提醒"
-            }
-        }
-
-        var subtitle: String {
-            switch self {
-            case .basics: "告訴我們去哪裡與旅行日期。"
-            case .recommendations: "保留需要的建議，也可以加入自己的物品。"
-            case .travelRules: "出發前先掌握去程、回程與安檢風險。"
-            }
-        }
-    }
-
+    @Binding var createdTrip: Trip?
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.packmonTheme) private var theme
     @Environment(AppState.self) private var appState
 
-    @State private var step: Step
+    @State private var countryCode = ""
+    @State private var cityName = ""
+    @State private var startDate = Calendar.current.date(byAdding: .day, value: 3, to: .now) ?? .now
+    @State private var endDate = Calendar.current.date(byAdding: .day, value: 7, to: .now) ?? .now
+    @State private var step = 1
+    @State private var name = ""
     @State private var workingTrip: Trip?
-    @State private var name: String
-    @State private var countryCode: String
-    @State private var city: String
-    @State private var originCountryCode: String
-    @State private var originCity: String
-    @State private var startDate: Date
-    @State private var endDate: Date
     @State private var recommendations: [PackingListGenerator.GeneratedItem] = []
-    @State private var selectedRecommendationNames: Set<String> = []
-    @State private var customItems: [CustomPackingDraft] = []
+    @State private var excludedIDs: Set<String> = []
+    @State private var customItems: [CreationCustomItem] = []
     @State private var showingAddItem = false
-    @State private var showingDiscardConfirmation = false
-    @State private var saveFeedback = false
+    @State private var confirmDiscard = false
+    @State private var saveFailed = false
+    @State private var isSaving = false
+    @State private var didSave = false
+    @State private var creationPreferences = UserPreferences.forNewTrips()
+    @State private var packingContext = TripPackingContext.empty
+    @State private var showingPackingOptions = true
+    @State private var loadedStaples = false
+    @State private var stapleLoadError = false
+    @State private var weatherDraft = WeatherDraft()
+    @State private var previewWeather: PackingWeather?
 
-    init() {
-        let arguments = ProcessInfo.processInfo.arguments
-        let debugStep: Int? = arguments.firstIndex(of: "-createTripStep").flatMap { index in
-            guard index + 1 < arguments.count else { return nil }
-            return Int(arguments[index + 1])
-        }
-        let defaultCountryCode = "JP"
-        let defaultOriginCode = "TW"
-        let today = Calendar.current.startOfDay(for: .now)
-        _step = State(initialValue: Step(rawValue: debugStep ?? 1) ?? .basics)
-        _workingTrip = State(initialValue: nil)
-        _name = State(initialValue: "")
-        _countryCode = State(initialValue: defaultCountryCode)
-        _city = State(initialValue: StaticDataStore.shared.defaultCity(countryCode: defaultCountryCode)?.cityZh ?? "")
-        _originCountryCode = State(initialValue: defaultOriginCode)
-        _originCity = State(initialValue: StaticDataStore.shared.defaultCity(countryCode: defaultOriginCode)?.cityZh ?? "")
-        _startDate = State(initialValue: today)
-        _endDate = State(initialValue: Calendar.current.date(byAdding: .day, value: 4, to: today) ?? today)
+    private var weatherRequest: WeatherRequest? {
+        selectedCity.flatMap { WeatherService.request(city: $0, start: startDate, end: endDate) }
+    }
+    private var readyWeather: PackingWeather? {
+        guard let query = weatherRequest, weatherDraft.request == query,
+              let result = weatherDraft.result, result.request == query, result.valid else { return nil }
+        return result
     }
 
-    private var availableCities: [City] {
-        StaticDataStore.shared.cities(countryCode: countryCode)
-    }
-
-    private var availableOriginCities: [City] {
-        StaticDataStore.shared.cities(countryCode: originCountryCode)
-    }
-
-    private var automaticName: String {
-        let countryName = StaticDataStore.shared.country(code: countryCode)?.nameZh ?? countryCode
-        let days = Calendar.current.dateComponents(
-            [.day],
-            from: Calendar.current.startOfDay(for: startDate),
-            to: Calendar.current.startOfDay(for: endDate)
-        ).day ?? 0
-        return "\(countryName)\(city.isEmpty ? "" : "・\(city)") \(max(days + 1, 1)) 天"
+    private var selectedCity: City? {
+        StaticDataStore.shared.cities(countryCode: countryCode).first { $0.cityZh == cityName }
     }
 
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                FlowProgressHeader(
-                    currentStep: step.rawValue,
-                    totalSteps: Step.allCases.count,
-                    title: step.title,
-                    subtitle: step.subtitle
-                )
-                .padding(.horizontal)
-                .padding(.top, PackSmartDesign.Spacing.medium)
-                .padding(.bottom, PackSmartDesign.Spacing.small)
-
-                Group {
-                    switch step {
-                    case .basics: basicsForm
-                    case .recommendations: recommendationList
-                    case .travelRules: travelRulesList
-                    }
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("步驟 \(step)／3・\(["基本資訊", "確認推薦清單", "海關與航空提醒"][step - 1])")
+                        .font(.headline)
+                        .accessibilityAddTraits(.isHeader)
+                    ProgressView(value: Double(step), total: 3).tint(theme.colors.accent)
+                }.padding(theme.spacing.medium)
+                if step == 3, let workingTrip {
+                    List {
+                        Section {
+                            Text("以下為已收錄的參考提醒，不是完整通關檢查；未收錄不代表可攜帶，請以官方最新公告為準。")
+                        }
+                        ProhibitedSections(trip: workingTrip, mode: .customs)
+                        ProhibitedSections(trip: workingTrip, mode: .aviation)
+                    }.scrollContentBackground(.hidden)
+                } else {
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: theme.spacing.large) {
+                            if step == 1 {
+                                destinationSection
+                                dateSection
+                                weatherSection
+                                packingOptionsSection
+                            } else {
+                                if let previewWeather { PackingWeatherCard(weather: previewWeather) }
+                                recommendationSection
+                            }
+                        }.padding(theme.spacing.medium)
+                    }.id(step)
                 }
-                .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: step)
             }
-            .background(PackSmartDesign.ColorToken.canvas)
-            .navigationTitle("新增行程")
+            .safeAreaInset(edge: .bottom) { actionBar }
+            .background(theme.colors.canvas.ignoresSafeArea())
+            .navigationTitle("新行程")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("關閉") {
-                        showingDiscardConfirmation = true
-                    }
+                    Button("關閉") { confirmDiscard = true }.disabled(isSaving)
                 }
             }
-            .safeAreaInset(edge: .bottom) {
-                actionBar
+            .onChange(of: startDate) { _, value in if endDate < value { endDate = value } }
+            .task(id: weatherRequest) {
+                guard step == 1 else { return }
+                weatherDraft.begin(weatherRequest, fetch: WeatherService.fetch,
+                    fallback: { WeatherService.fallback($0, failure: $1) })
             }
-            .sheet(isPresented: $showingAddItem) {
-                AddCustomPackingDraftView(items: $customItems)
+            .onDisappear { weatherDraft.cancel() }
+            .onAppear {
+                guard !loadedStaples else { return }
+                do {
+                    customItems = try PackingStaples.load().map {
+                        CreationCustomItem(name: $0.name, category: $0.category, quantity: $0.quantity, isStaple: true, unitWeightKg: $0.unitWeightKg)
+                    }
+                    loadedStaples = true
+                } catch { stapleLoadError = true }
             }
-            .confirmationDialog(
-                "放棄建立這趟行程？",
-                isPresented: $showingDiscardConfirmation,
-                titleVisibility: .visible
-            ) {
+            .alert("無法讀取常備用品", isPresented: $stapleLoadError) {
+                Button("好", role: .cancel) {}
+            } message: { Text("請關閉後重試。原有資料未被覆寫，也不會略過你的常備用品建立行程。") }
+            .interactiveDismissDisabled()
+            .confirmationDialog("放棄建立這趟行程？", isPresented: $confirmDiscard, titleVisibility: .visible) {
                 Button("放棄建立", role: .destructive) { dismiss() }
                 Button("繼續編輯", role: .cancel) {}
-            } message: {
-                Text("行程尚未建立，離開後不會保留目前輸入。")
+            } message: { Text("尚未建立行程，離開後不會保留目前輸入。") }
+            .sheet(isPresented: $showingAddItem) {
+                CreationCustomItemForm(items: $customItems, recommendationNames: Set(recommendations.map(\.name)))
             }
-            .sensoryFeedback(.success, trigger: saveFeedback)
-            .onAppear {
-                if step != .basics {
-                    prepareRecommendations()
-                }
-            }
-        }
-        .interactiveDismissDisabled()
-    }
-
-    private var basicsForm: some View {
-        Form {
-            Section("出發地") {
-                Picker("國家", selection: $originCountryCode) {
-                    ForEach(StaticDataStore.shared.focusCountries) { country in
-                        Text("\(country.flagEmoji) \(country.nameZh)").tag(country.code)
-                    }
-                }
-                Picker("城市", selection: $originCity) {
-                    ForEach(availableOriginCities) { cityOption in
-                        Text(cityOption.cityZh).tag(cityOption.cityZh)
-                    }
-                }
-            }
-
-            Section("目的地") {
-                Picker("國家", selection: $countryCode) {
-                    ForEach(StaticDataStore.shared.focusCountries) { country in
-                        Text("\(country.flagEmoji) \(country.nameZh)").tag(country.code)
-                    }
-                }
-                Picker("城市", selection: $city) {
-                    ForEach(availableCities) { cityOption in
-                        Text(cityOption.cityZh).tag(cityOption.cityZh)
-                    }
-                }
-            }
-
-            Section("日期") {
-                DatePicker("出發", selection: $startDate, displayedComponents: .date)
-                DatePicker("回程", selection: $endDate, in: startDate..., displayedComponents: .date)
-            }
-
-            Section {
-                TextField("名稱（選填）", text: $name)
-            } header: {
-                Text("行程名稱")
-            } footer: {
-                Text("留空會使用「\(automaticName)」。")
-            }
-        }
-        .scrollContentBackground(.hidden)
-        .onChange(of: countryCode) { _, newValue in
-            city = StaticDataStore.shared.defaultCity(countryCode: newValue)?.cityZh ?? ""
-        }
-        .onChange(of: originCountryCode) { _, newValue in
-            originCity = StaticDataStore.shared.defaultCity(countryCode: newValue)?.cityZh ?? ""
-        }
-        .onChange(of: startDate) { _, newValue in
-            if endDate < newValue { endDate = newValue }
+            .alert("未能儲存行程", isPresented: $saveFailed) {
+                Button("好", role: .cancel) {}
+            } message: { Text("目前輸入仍保留，請稍後再試。") }
         }
     }
 
-    private var recommendationList: some View {
-        List {
-            Section {
-                HStack(spacing: PackSmartDesign.Spacing.small) {
-                    Image(systemName: "sparkles")
-                        .foregroundStyle(.tint)
-                    Text("已選 \(selectedRecommendationNames.count)／\(recommendations.count) 項推薦")
-                        .font(.subheadline.weight(.semibold))
+    private var destinationSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            sectionTitle("想去哪裡？", subtitle: "先選國家／地區，再選一個城市")
+            Text("1. 國家／地區").font(.subheadline.weight(.semibold))
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 9) {
+                ForEach(StaticDataStore.shared.destinationCountries) { country in
+                    selectionChip("\(country.flagEmoji) \(country.nameZh)", isSelected: countryCode == country.code) {
+                        if countryCode != country.code {
+                            countryCode = country.code
+                            cityName = ""
+                        }
+                    }
+                }
+            }
+            if !countryCode.isEmpty {
+                Text("2. 城市").font(.subheadline.weight(.semibold))
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 9) {
+                    ForEach(StaticDataStore.shared.cities(countryCode: countryCode)) { city in
+                        selectionChip(city.cityZh, isSelected: cityName == city.cityZh) {
+                            cityName = city.cityZh
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private var dateSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            sectionTitle("什麼時候出發？", subtitle: "共 \(tripDays) 天")
+            PackmonCard {
+                VStack(spacing: 12) {
+                    DatePicker("出發", selection: $startDate, displayedComponents: .date)
+                    Divider().overlay(theme.colors.separator)
+                    DatePicker("回程", selection: $endDate, in: startDate..., displayedComponents: .date)
+                }
+            }
+        }
+    }
+
+    private var packingOptionsSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            sectionTitle("這趟怎麼準備？", subtitle: "先沿用全域設定；這裡的調整只影響這趟行程")
+            PackmonCard {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("出發地：台灣").font(.subheadline.weight(.semibold))
+                    TextField("行程名稱（留空使用城市名）", text: $name)
+                    DisclosureGroup(isExpanded: $showingPackingOptions) {
+                        VStack(alignment: .leading, spacing: 18) {
+                            Text("打包風格").font(.subheadline.weight(.semibold))
+                            Picker("打包風格", selection: $creationPreferences.packingStyle) {
+                                ForEach(PackingStyle.allCases) { Text($0 == .full ? "準備齊全" : $0.label).tag($0) }
+                            }.pickerStyle(.segmented).labelsHidden()
+
+                            packingOptionGrid("這趟會帶的設備", options: PersonalPackingOptions.devices,
+                                selected: creationPreferences.devices ?? []) { togglePersonalOption($0, devices: true) }
+                            packingOptionGrid("這趟常備需求", options: PersonalPackingOptions.needs,
+                                selected: creationPreferences.needs ?? []) { togglePersonalOption($0, devices: false) }
+
+                            Text("活動（可複選）").font(.subheadline.weight(.semibold))
+                            LazyVGrid(columns: [GridItem(.adaptive(minimum: 135), spacing: 8)], spacing: 8) {
+                                ForEach(PackingActivity.recommendationOptions) { activity in
+                                    selectionChip(activity.label, isSelected: packingContext.activities.contains(activity)) {
+                                        toggle(activity, in: &packingContext.activities)
+                                        packingContext.snowPlan = packingContext.activities.contains(.snow) ? .view : .unknown
+                                    }
+                                }
+                            }
+
+                            Text("住宿").font(.subheadline.weight(.semibold))
+                            LazyVGrid(columns: [GridItem(.adaptive(minimum: 135), spacing: 8)], spacing: 8) {
+                                ForEach(PackingStay.recommendationOptions) { stay in
+                                    selectionChip(stay.label, isSelected: packingContext.stays.contains(stay)) {
+                                        toggle(stay, in: &packingContext.stays)
+                                    }
+                                }
+                            }
+
+                            Picker("途中洗衣", selection: $packingContext.laundry) {
+                                ForEach(PackingLaundryPlan.allCases) { Text($0.label).tag($0) }
+                            }
+                            Text("只有青旅／共用住宿會增加用品；其他住宿不預設缺少任何物品。")
+                                .font(.caption).foregroundStyle(theme.colors.secondaryText)
+                        }.padding(.top, 12)
+                    } label: {
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text("本次打包設定").font(.subheadline.weight(.semibold))
+                            Text("\(creationPreferences.summary)・\(packingContext.summary)")
+                                .font(.caption).foregroundStyle(theme.colors.secondaryText)
+                        }
+                    }.tint(theme.colors.accent)
+                }
+            }
+        }
+    }
+
+    private func packingOptionGrid(
+        _ title: String,
+        options: [PersonalPackingOptions.Option],
+        selected: [String],
+        toggle: @escaping (String) -> Void
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title).font(.subheadline.weight(.semibold))
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 135), spacing: 8)], spacing: 8) {
+                ForEach(options) { option in
+                    selectionChip(option.label, isSelected: selected.contains(option.id)) { toggle(option.id) }
+                }
+            }
+        }
+    }
+
+    private var recommendationSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            sectionTitle("決定要帶哪些物品", subtitle: "勾選代表加入清單，不代表已經打包。")
+            Text("採納 \(recommendations.filter { !excludedIDs.contains($0.id) }.count)／\(recommendations.count) 項推薦")
+            ForEach(recommendations) { item in
+                PackmonCard {
+                    Toggle(isOn: Binding(get: { !excludedIDs.contains(item.id) }, set: { included in
+                        if included { excludedIDs.remove(item.id) } else { excludedIDs.insert(item.id) }
+                    })) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("\(item.name) ×\(item.quantity)")
+                            Text(item.reason).font(.caption).foregroundStyle(theme.colors.secondaryText)
+                        }
+                    }
+                    .tint(theme.colors.accent)
+                    .accessibilityLabel("加入清單：\(item.name)，\(item.quantity) 件")
+                }
+            }
+            Text("常備與自訂用品").font(.headline)
+            Text("常備用品只複製到這趟行程；在這裡移除不會更改常備清單。")
+                .font(.caption).foregroundStyle(theme.colors.secondaryText)
+            ForEach(customItems) { item in
+                HStack {
+                    Text("\(item.isStaple ? "常備・" : "")\(item.name) ×\(item.quantity)")
                     Spacer()
-                    Button(selectedRecommendationNames.count == recommendations.count ? "全不選" : "全選") {
-                        if selectedRecommendationNames.count == recommendations.count {
-                            selectedRecommendationNames.removeAll()
-                        } else {
-                            selectedRecommendationNames = Set(recommendations.map(\.name))
+                    Button {
+                        if item.isStaple, let catalogID = PackingStaples.catalogID(for: item.name) {
+                            excludedIDs.insert(catalogID)
                         }
-                    }
-                    .font(.subheadline)
-                }
-                .accessibilityElement(children: .combine)
-            }
-
-            ForEach(groupedRecommendations, id: \.category) { group in
-                Section(group.category.label) {
-                    ForEach(group.items) { item in
-                        Button {
-                            if selectedRecommendationNames.contains(item.name) {
-                                selectedRecommendationNames.remove(item.name)
-                            } else {
-                                selectedRecommendationNames.insert(item.name)
-                            }
-                        } label: {
-                            HStack(spacing: PackSmartDesign.Spacing.medium) {
-                                Image(systemName: selectedRecommendationNames.contains(item.name) ? "checkmark.circle.fill" : "circle")
-                                    .font(.title3)
-                                    .foregroundStyle(selectedRecommendationNames.contains(item.name) ? AnyShapeStyle(.tint) : AnyShapeStyle(.secondary))
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(item.name)
-                                        .foregroundStyle(.primary)
-                                    Text(item.reason)
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                }
-                                Spacer()
-                                if item.quantity > 1 {
-                                    Text("×\(item.quantity)")
-                                        .font(.footnote.monospacedDigit())
-                                        .foregroundStyle(.secondary)
-                                }
-                            }
-                            .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel("\(item.name)，\(selectedRecommendationNames.contains(item.name) ? "已採納" : "未採納")")
-                    }
+                        customItems.removeAll { $0.id == item.id }
+                    } label: {
+                        Label("移除", systemImage: "minus.circle")
+                    }.accessibilityLabel("移除自訂用品：\(item.name)")
                 }
             }
-
-            Section("自訂物品") {
-                ForEach(customItems) { item in
-                    Label("\(item.name)\(item.quantity > 1 ? " ×\(item.quantity)" : "")", systemImage: item.category.symbolName)
-                }
-                .onDelete { offsets in
-                    customItems.remove(atOffsets: offsets)
-                }
-                Button("新增自訂物品", systemImage: "plus.circle.fill") {
-                    showingAddItem = true
-                }
-            }
+            Button("新增自訂用品", systemImage: "plus.circle") { showingAddItem = true }
+                .frame(minHeight: 44)
         }
-        .scrollContentBackground(.hidden)
-    }
-
-    private var groupedRecommendations: [(category: PackingCategory, items: [PackingListGenerator.GeneratedItem])] {
-        PackingCategory.allCases.compactMap { category in
-            let items = recommendations.filter { $0.category == category }
-            return items.isEmpty ? nil : (category, items)
-        }
-    }
-
-    private var travelRulesList: some View {
-        List {
-            if let workingTrip {
-                Section {
-                    Label("禁止攜帶、需許可與申報項目都會保留在行程 Tips。", systemImage: "checkmark.shield.fill")
-                        .foregroundStyle(.primary)
-                } footer: {
-                    Text("規定可能變動；每項資料均附官方來源，出發前請再次確認最新公告。")
-                }
-                ProhibitedSections(trip: workingTrip, mode: .customs)
-                ProhibitedSections(trip: workingTrip, mode: .aviation)
-            }
-        }
-        .scrollContentBackground(.hidden)
     }
 
     private var actionBar: some View {
-        HStack(spacing: PackSmartDesign.Spacing.medium) {
-            if step != .basics {
-                Button("上一步") {
-                    goBack()
+        HStack(spacing: 12) {
+            if step > 1 {
+                Button("上一步") { step -= 1 }.frame(minWidth: 64, minHeight: 48)
+            }
+            Button(step == 1 ? "下一步：確認清單" : step == 2 ? "下一步：旅行提醒" : "完成建立，開始打包") {
+                if step == 1 {
+                    guard let weather = readyWeather else { return }
+                    weatherDraft.cancel()
+                    previewWeather = weather
+                    let trip = makeTrip()
+                    trip.packingWeather = weather
+                    workingTrip = trip
+                    recommendations = PackingListGenerator.generate(for: trip).filter { recommendation in
+                        !customItems.contains { item in
+                            item.isStaple && PackingStaples.matches(
+                                .init(name: item.name, category: item.category, quantity: item.quantity),
+                                recommendation: recommendation)
+                        }
+                    }
+                    step = 2
+                } else if step == 2 {
+                    step = 3
+                } else { createTrip() }
+            }
+            .buttonStyle(PackmonPrimaryButtonStyle())
+            .disabled(selectedCity == nil || isSaving || !loadedStaples || (step == 1 && readyWeather == nil))
+        }
+        .disabled(isSaving || didSave)
+        .padding(theme.spacing.medium)
+        .background(theme.colors.canvas)
+    }
+
+    @ViewBuilder
+    private var weatherSection: some View {
+        if let result = readyWeather {
+            PackingWeatherCard(weather: result)
+            Text("若返回修改城市或日期，推薦將依新條件更新；已排除項目與自訂用品會保留。")
+                .font(.caption).foregroundStyle(theme.colors.secondaryText)
+        } else if let query = weatherRequest, !query.dates.isEmpty {
+            PackmonCard {
+                VStack(alignment: .leading, spacing: 10) {
+                    ProgressView("正在查詢目的地天氣…")
+                    Text("最多等待 10 秒；也可以先用季節參考建立清單。")
+                        .font(.caption).foregroundStyle(theme.colors.secondaryText)
+                    Button("使用季節參考繼續") {
+                        weatherDraft.useFallback(WeatherService.fallback(query, failure: .skipped))
+                    }.frame(minHeight: 44)
                 }
-                .frame(minWidth: 88, minHeight: 52)
-                .buttonStyle(.bordered)
             }
+        } else if selectedCity != nil {
+            Text("日期範圍或城市時區無法辨識，請調整日期後再試。")
+                .font(.caption).foregroundStyle(theme.colors.secondaryText)
+        }
+    }
 
-            Button {
-                advance()
-            } label: {
-                Text(step == .travelRules ? "我知道了，完成建立" : "繼續")
+    private func sectionTitle(_ title: String, subtitle: String) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(title).font(.title3.weight(.black)).foregroundStyle(theme.colors.text)
+            Text(subtitle).font(.caption).foregroundStyle(theme.colors.secondaryText)
+        }
+    }
+
+    private func selectionChip(_ title: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 6) {
+                if isSelected { Image(systemName: "checkmark") }
+                Text(title)
             }
-            .buttonStyle(PackSmartPrimaryButtonStyle())
-        }
-        .padding(.horizontal)
-        .padding(.vertical, PackSmartDesign.Spacing.small)
-        .background(.bar)
+            .font(.subheadline.weight(.semibold))
+            .foregroundStyle(isSelected ? Color.white : theme.colors.text)
+            .frame(maxWidth: .infinity, minHeight: 42)
+            .background(isSelected ? theme.colors.accent : theme.colors.elevatedSurface, in: Capsule())
+            .overlay { if !isSelected { Capsule().stroke(theme.colors.separator, lineWidth: 0.75) } }
+        }.buttonStyle(.plain)
     }
 
-    private func advance() {
-        switch step {
-        case .basics:
-            prepareRecommendations()
-            step = .recommendations
-        case .recommendations:
-            step = .travelRules
-        case .travelRules:
-            finishCreation()
-        }
+    private func togglePersonalOption(_ id: String, devices: Bool) {
+        var values = devices ? (creationPreferences.devices ?? []) : (creationPreferences.needs ?? [])
+        if let index = values.firstIndex(of: id) { values.remove(at: index) }
+        else { values.append(id) }
+        if devices { creationPreferences.devices = values }
+        else { creationPreferences.needs = values }
     }
 
-    private func goBack() {
-        switch step {
-        case .basics:
-            break
-        case .recommendations:
-            step = .basics
-        case .travelRules:
-            step = .recommendations
-        }
+    private func toggle<Value: Equatable>(_ value: Value, in values: inout [Value]) {
+        if let index = values.firstIndex(of: value) { values.remove(at: index) }
+        else { values.append(value) }
     }
 
-    private func prepareWorkingTrip() -> Trip {
-        let resolvedName = name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? automaticName : name.trimmingCharacters(in: .whitespacesAndNewlines)
-        let trip: Trip
-        if let workingTrip {
-            trip = workingTrip
-        } else {
-            let country = StaticDataStore.shared.country(code: countryCode)
-            trip = Trip(
-                name: resolvedName,
-                countryCode: countryCode,
-                startDate: startDate,
-                endDate: endDate,
-                homeCurrencyCode: "TWD",
-                localCurrencyCode: country?.currencyCode ?? "TWD",
-                totalBudget: 0,
-                tripType: .leisure
-            )
-            workingTrip = trip
-        }
-        trip.name = resolvedName
-        trip.countryCode = countryCode
-        trip.city = city
-        trip.originCountryCode = originCountryCode
-        trip.originCity = originCity
-        trip.startDate = startDate
-        trip.endDate = endDate
-        trip.localCurrencyCode = StaticDataStore.shared.country(code: countryCode)?.currencyCode ?? "TWD"
-        trip.isDraft = false
+    private var tripDays: Int {
+        max((Calendar.current.dateComponents([.day], from: Calendar.current.startOfDay(for: startDate), to: Calendar.current.startOfDay(for: endDate)).day ?? 0) + 1, 1)
+    }
+
+    private func makeTrip() -> Trip {
+        let country = StaticDataStore.shared.country(code: countryCode)
+        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trip = Trip(
+            name: trimmedName.isEmpty ? cityName : trimmedName,
+            countryCode: countryCode,
+            startDate: startDate,
+            endDate: endDate,
+            homeCurrencyCode: "TWD",
+            localCurrencyCode: country?.currencyCode ?? "TWD",
+            totalBudget: 0,
+            tripType: .leisure
+        )
+        trip.city = cityName
+        trip.originCountryCode = "TW"
+        trip.originCity = ""
+        trip.capturePackingPreferencesIfNeeded(creationPreferences)
+        trip.capturePackingContextIfNeeded(packingContext)
         return trip
     }
 
-    private func prepareRecommendations() {
-        let previouslyExcluded = Set(recommendations.map(\.name)).subtracting(selectedRecommendationNames)
-        let trip = prepareWorkingTrip()
-        recommendations = PackingListGenerator.generate(for: trip)
-        selectedRecommendationNames = Set(recommendations.map(\.name)).subtracting(previouslyExcluded)
-    }
-
-    private func finishCreation() {
-        let trip = prepareWorkingTrip()
-        trip.excludedPackingNames = Set(recommendations.map(\.name)).subtracting(selectedRecommendationNames)
+    private func createTrip() {
+        guard selectedCity != nil, !isSaving, !didSave,
+              let previewWeather, previewWeather.request == weatherRequest else { return }
+        isSaving = true
+        defer { isSaving = false }
+        // Isolated save context: failure rollback must not discard other screens' edits.
+        let saveContext = ModelContext(context.container)
+        saveContext.autosaveEnabled = false
+        let trip = makeTrip()
+        trip.packingWeather = previewWeather
         trip.hasReviewedTravelRules = true
-        context.insert(trip)
-
-        for item in recommendations where selectedRecommendationNames.contains(item.name) {
-            context.insert(PackingItem(
-                name: item.name,
-                category: item.category,
-                reasonKey: item.reason,
-                quantity: item.quantity,
-                isCustom: false,
-                sortIndex: item.sortIndex,
-                trip: trip
-            ))
+        trip.excludedPackingIDs = excludedIDs
+        trip.excludedPackingNames = Set(recommendations.filter { excludedIDs.contains($0.id) }.map(\.name))
+        saveContext.insert(trip)
+        for item in recommendations where !excludedIDs.contains(item.id) {
+            let saved = PackingItem(name: item.name, category: item.category, reasonKey: item.reason,
+                                    quantity: item.quantity, sortIndex: item.sortIndex, trip: trip)
+            saved.catalogItemID = item.id
+            saveContext.insert(saved)
         }
-        for (index, item) in customItems.enumerated() {
-            context.insert(PackingItem(
-                name: item.name,
-                category: item.category,
-                reasonKey: PackingListGenerator.customReason,
-                quantity: item.quantity,
-                isCustom: true,
-                sortIndex: PackingListGenerator.customSortIndex + index,
-                trip: trip
-            ))
+        for item in customItems {
+            let saved = PackingItem(name: item.name, category: item.category,
+                reasonKey: item.isStaple ? "我的常備用品" : PackingListGenerator.customReason, quantity: item.quantity, isCustom: true,
+                sortIndex: PackingListGenerator.customSortIndex, trip: trip)
+            if item.isStaple { saved.catalogItemID = PackingStaples.catalogID(for: item.name) }
+            saved.unitWeightKg = item.unitWeightKg
+            saveContext.insert(saved)
         }
-        appState.setActive(trip)
-        WidgetSync.update(trip: trip)
-        try? context.save()
-        saveFeedback.toggle()
-        dismiss()
+        do {
+            try saveContext.save()
+            didSave = true
+            // Resolve in the UI's context before passing the trip into its navigation stack.
+            let saved = context.model(for: trip.persistentModelID) as! Trip
+            appState.setActive(saved)
+            WidgetSync.update(trip: saved)
+            createdTrip = saved
+            dismiss()
+        } catch {
+            saveContext.rollback()
+            saveFailed = true
+        }
     }
 }
 
-private struct AddCustomPackingDraftView: View {
-    @Binding var items: [CustomPackingDraft]
+private struct CreationCustomItem: Identifiable {
+    let id = UUID()
+    let name: String
+    let category: PackingCategory
+    let quantity: Int
+    var isStaple = false
+    var unitWeightKg: Double? = nil
+}
 
+private struct CreationCustomItemForm: View {
+    @Binding var items: [CreationCustomItem]
+    let recommendationNames: Set<String>
     @Environment(\.dismiss) private var dismiss
     @State private var name = ""
     @State private var category: PackingCategory = .other
     @State private var quantity = 1
+    @State private var duplicateName: String?
 
     var body: some View {
         NavigationStack {
             Form {
                 TextField("物品名稱", text: $name)
                 Picker("分類", selection: $category) {
-                    ForEach(PackingCategory.allCases) { category in
-                        Label(category.label, systemImage: category.symbolName).tag(category)
-                    }
+                    ForEach(PackingCategory.allCases) { Text($0.label).tag($0) }
                 }
                 Stepper("數量：\(quantity)", value: $quantity, in: 1...99)
             }
-            .navigationTitle("新增物品")
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationTitle("新增自訂用品")
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("取消") { dismiss() }
-                }
+                ToolbarItem(placement: .cancellationAction) { Button("取消") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("加入") {
-                        items.append(.init(
-                            name: name.trimmingCharacters(in: .whitespacesAndNewlines),
-                            category: category,
-                            quantity: quantity
-                        ))
-                        dismiss()
-                    }
-                    .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    Button("加入", action: attemptAdd)
+                        .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
             }
         }
-        .presentationDetents([.medium])
+        .alert("可能已經在清單中", isPresented: Binding(
+            get: { duplicateName != nil },
+            set: { if !$0 { duplicateName = nil } }
+        )) {
+            Button("仍然加入") { addAndDismiss() }
+            Button("返回修改", role: .cancel) { duplicateName = nil }
+        } message: {
+            Text("「\(duplicateName ?? "這項物品")」和既有推薦或自訂用品可能重複，請確認是否真的需要兩筆。")
+        }
+    }
+
+    private func attemptAdd() {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let normalized = PackingStaples.normalized(trimmed)
+        let catalogID = PackingStaples.catalogID(for: trimmed)
+        let allNames = items.map(\.name) + Array(recommendationNames)
+        if let match = allNames.first(where: {
+            PackingStaples.normalized($0) == normalized
+                || (catalogID != nil && PackingStaples.catalogID(for: $0) == catalogID)
+        }) {
+            duplicateName = match
+        } else {
+            addAndDismiss()
+        }
+    }
+
+    private func addAndDismiss() {
+        items.append(CreationCustomItem(name: name.trimmingCharacters(in: .whitespacesAndNewlines),
+            category: category, quantity: quantity))
+        dismiss()
     }
 }

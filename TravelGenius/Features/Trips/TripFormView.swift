@@ -15,8 +15,8 @@ struct TripFormView: View {
     var trip: Trip?
 
     @State private var name = ""
-    @State private var countryCode = "JP"
-    @State private var city = StaticDataStore.shared.defaultCity(countryCode: "JP")?.cityZh ?? ""
+    @State private var countryCode = ""
+    @State private var city = ""
     @State private var originCountryCode = "TW"
     @State private var originCity = StaticDataStore.shared.defaultCity(countryCode: "TW")?.cityZh ?? ""
     @State private var startDate = Calendar.current.startOfDay(for: .now)
@@ -43,12 +43,21 @@ struct TripFormView: View {
         NavigationStack {
             Form {
                 Section("出發地") {
-                    Picker("國家", selection: $originCountryCode) {
+                    Picker("國家／地區", selection: Binding(get: { originCountryCode }, set: {
+                        originCountryCode = $0
+                        originCity = StaticDataStore.shared.defaultCity(countryCode: $0)?.cityZh ?? ""
+                    })) {
+                        if !StaticDataStore.focusCountryCodes.contains(originCountryCode) {
+                            Text(StaticDataStore.shared.country(code: originCountryCode)?.nameZh ?? originCountryCode).tag(originCountryCode)
+                        }
                         ForEach(StaticDataStore.shared.focusCountries) { country in
                             Text("\(country.flagEmoji) \(country.nameZh)").tag(country.code)
                         }
                     }
                     Picker("城市", selection: $originCity) {
+                        if !availableOriginCities.contains(where: { $0.cityZh == originCity }) {
+                            Text(originCity.isEmpty ? "未指定" : originCity).tag(originCity)
+                        }
                         ForEach(availableOriginCities) { cityOption in
                             Text(cityOption.cityZh).tag(cityOption.cityZh)
                         }
@@ -56,16 +65,28 @@ struct TripFormView: View {
                 }
 
                 Section("目的地") {
-                    Picker("國家", selection: $countryCode) {
-                        ForEach(StaticDataStore.shared.focusCountries) { country in
+                    Picker("國家／地區", selection: Binding(get: { countryCode }, set: {
+                        if countryCode != $0 { countryCode = $0; city = "" }
+                    })) {
+                        Text("請選擇").tag("")
+                        if let trip, !StaticDataStore.destinationCountryCodes.contains(trip.countryCode) {
+                            Text("\(StaticDataStore.shared.country(code: trip.countryCode)?.nameZh ?? trip.countryCode)（原有行程）").tag(trip.countryCode)
+                        }
+                        ForEach(StaticDataStore.shared.destinationCountries) { country in
                             Text("\(country.flagEmoji) \(country.nameZh)").tag(country.code)
                         }
                     }
                     Picker("城市", selection: $city) {
+                        Text("請選擇城市").tag("")
+                        if let trip, trip.countryCode == countryCode, !trip.city.isEmpty,
+                           !availableCities.contains(where: { $0.cityZh == trip.city }) {
+                            Text("\(trip.city)（原有行程）").tag(trip.city)
+                        }
                         ForEach(availableCities) { cityOption in
                             Text(cityOption.cityZh).tag(cityOption.cityZh)
                         }
                     }
+                    .disabled(countryCode.isEmpty)
                 }
 
                 Section("日期") {
@@ -87,13 +108,8 @@ struct TripFormView: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("儲存", action: save)
+                        .disabled(countryCode.isEmpty || (city.isEmpty && !(trip?.countryCode == countryCode && trip?.city == city)))
                 }
-            }
-            .onChange(of: countryCode) { _, newValue in
-                city = StaticDataStore.shared.defaultCity(countryCode: newValue)?.cityZh ?? ""
-            }
-            .onChange(of: originCountryCode) { _, newValue in
-                originCity = StaticDataStore.shared.defaultCity(countryCode: newValue)?.cityZh ?? ""
             }
             .onChange(of: startDate) { _, newValue in
                 if endDate < newValue { endDate = newValue }
@@ -118,21 +134,18 @@ struct TripFormView: View {
         let trimmedName = name.trimmingCharacters(in: .whitespaces)
         let name = trimmedName.isEmpty ? autoName : trimmedName
         if let trip {
-            let packingContextChanged = trip.countryCode != countryCode
-                || trip.city != city
-                || trip.startDate != startDate
-                || trip.endDate != endDate
             trip.name = name
             trip.countryCode = countryCode
+            if let country = StaticDataStore.shared.country(code: countryCode) {
+                trip.localCurrencyCode = country.currencyCode
+            }
             trip.city = city
             trip.originCountryCode = originCountryCode
             trip.originCity = originCity
             trip.startDate = startDate
             trip.endDate = endDate
-            // 目的地／日期變更會影響清單內容與海關規則，需重新合併生成
-            if packingContextChanged && !(trip.packingItems ?? []).isEmpty {
-                PackingListGenerator.sync(trip: trip, context: context)
-            }
+            // Saved metadata must never implicitly replace the user's packing list.
+            // Missing recommendations are reviewed explicitly on the packing page.
         } else {
             let country = StaticDataStore.shared.country(code: countryCode)
             let newTrip = Trip(

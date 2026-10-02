@@ -57,7 +57,7 @@ final class Trip {
     var city: String = ""
     /// 出發地（回程入境的海關規定、航線安檢規則依此判定）
     var originCountryCode: String = "TW"
-    var originCity: String = "台北"
+    var originCity: String = ""
     var startDate: Date = Date()
     var endDate: Date = Date()
     var homeCurrencyCode: String = "TWD"
@@ -77,6 +77,60 @@ final class Trip {
     var hasReviewedTravelRules: Bool = false
     /// 使用者主動取消的自動推薦，避免重新產生清單時又被加入。
     var excludedPackingNamesRaw: String = ""
+    /// Additive migration; retain old names for downgrade/reference compatibility.
+    var excludedPackingIDsRaw: String = ""
+    /// Empty only for pre-stage-3 records; once captured, never follows global settings.
+    var packingPreferencesRaw: String = ""
+    /// Versioned creation reference; empty for old trips, never fabricated during migration.
+    var packingWeatherRaw: String = ""
+    /// Versioned per-trip recommendation inputs. Empty means a historical trip with no context record.
+    var packingContextRaw: String = ""
+
+    var packingWeather: PackingWeather? {
+        get {
+            guard let data = packingWeatherRaw.data(using: .utf8),
+                  let value = try? JSONDecoder().decode(PackingWeather.self, from: data), value.valid else { return nil }
+            return value
+        }
+        set {
+            guard let newValue, newValue.valid,
+                  let data = try? JSONEncoder().encode(newValue), let raw = String(data: data, encoding: .utf8) else { return }
+            packingWeatherRaw = raw
+        }
+    }
+
+    var packingPreferences: UserPreferences? {
+        guard let data = packingPreferencesRaw.data(using: .utf8) else { return nil }
+        return try? JSONDecoder().decode(UserPreferences.self, from: data)
+    }
+
+    func capturePackingPreferencesIfNeeded(_ preferences: UserPreferences) {
+        guard packingPreferencesRaw.isEmpty,
+              let data = try? JSONEncoder().encode(preferences),
+              let raw = String(data: data, encoding: .utf8) else { return }
+        packingPreferencesRaw = raw
+    }
+
+    func replacePackingPreferences(_ preferences: UserPreferences) {
+        guard let data = try? JSONEncoder().encode(preferences),
+              let raw = String(data: data, encoding: .utf8) else { return }
+        packingPreferencesRaw = raw
+    }
+
+    var packingContext: TripPackingContext? {
+        guard !packingContextRaw.isEmpty,
+              let data = packingContextRaw.data(using: .utf8),
+              let value = try? JSONDecoder().decode(TripPackingContext.self, from: data),
+              value.valid else { return nil }
+        return value
+    }
+
+    func capturePackingContextIfNeeded(_ value: TripPackingContext) {
+        guard packingContextRaw.isEmpty, value.valid,
+              let data = try? JSONEncoder().encode(value),
+              let raw = String(data: data, encoding: .utf8) else { return }
+        packingContextRaw = raw
+    }
     var createdAt: Date = Date()
 
     @Relationship(deleteRule: .cascade, inverse: \Expense.trip)
@@ -164,12 +218,39 @@ final class Trip {
         var names = excludedPackingNames
         names.insert(name)
         excludedPackingNames = names
+        if let id = StaticDataStore.shared.packingCatalog.legacyID(name: name) {
+            var ids = excludedPackingIDs
+            ids.insert(id)
+            excludedPackingIDs = ids
+        }
     }
 
     func includePackingItem(named name: String) {
         var names = excludedPackingNames
         names.remove(name)
         excludedPackingNames = names
+        if let id = StaticDataStore.shared.packingCatalog.legacyID(name: name) {
+            var ids = excludedPackingIDs
+            ids.remove(id)
+            excludedPackingIDs = ids
+            excludedPackingNames = excludedPackingNames.filter {
+                StaticDataStore.shared.packingCatalog.legacyID(name: $0) != id
+            }
+        }
+    }
+
+    var excludedPackingIDs: Set<String> {
+        get { Set(excludedPackingIDsRaw.split(separator: "\n").map(String.init)) }
+        set { excludedPackingIDsRaw = newValue.sorted().joined(separator: "\n") }
+    }
+
+    func excludePackingItem(_ item: PackingItem) {
+        excludePackingItem(named: item.name)
+        if let id = item.catalogItemID {
+            var ids = excludedPackingIDs
+            ids.insert(id)
+            excludedPackingIDs = ids
+        }
     }
 
     /// 旅程總天數（含出發與回程當日）

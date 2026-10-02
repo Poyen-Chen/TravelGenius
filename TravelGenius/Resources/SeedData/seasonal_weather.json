@@ -1,0 +1,13 @@
+[
+  {"version":1,"cityID":"JP-東京","timeZoneID":"Asia/Tokyo","hot":[6,7,8,9],"cold":[12,1,2],"rain":[6,7,8,9],"sourceName":"JNTO 日本國家旅遊局","sourceURL":"https://www.japan.travel/en/plan/weather/","checkedOn":"2026-09-24"},
+  {"version":1,"cityID":"JP-大阪","timeZoneID":"Asia/Tokyo","hot":[6,7,8,9],"cold":[12,1,2],"rain":[6,7,8,9],"sourceName":"JNTO 日本國家旅遊局","sourceURL":"https://www.japan.travel/en/plan/weather/","checkedOn":"2026-09-24"},
+  {"version":1,"cityID":"JP-京都","timeZoneID":"Asia/Tokyo","hot":[6,7,8,9],"cold":[12,1,2],"rain":[6,7,8,9],"sourceName":"JNTO 日本國家旅遊局","sourceURL":"https://www.japan.travel/en/plan/weather/","checkedOn":"2026-09-24"},
+  {"version":1,"cityID":"KR-首爾","timeZoneID":"Asia/Seoul","hot":[6,7,8],"cold":[12,1,2],"rain":[6,7,8],"sourceName":"韓國觀光公社","sourceURL":"https://english.visitkorea.or.kr/svc/contents/infoBscView.do?vcontsId=140636","checkedOn":"2026-09-24"},
+  {"version":1,"cityID":"KR-釜山","timeZoneID":"Asia/Seoul","hot":[6,7,8],"cold":[12,1,2],"rain":[6,7,8],"sourceName":"韓國觀光公社","sourceURL":"https://english.visitkorea.or.kr/svc/contents/infoBscView.do?vcontsId=140636","checkedOn":"2026-09-24"},
+  {"version":1,"cityID":"HK-香港","timeZoneID":"Asia/Hong_Kong","hot":[5,6,7,8,9],"cold":[],"rain":[4,5,6,7,8,9],"sourceName":"香港天文台","sourceURL":"https://www.hko.gov.hk/en/cis/climahk.htm","checkedOn":"2026-09-24"},
+  {"version":1,"cityID":"US-紐約","timeZoneID":"America/New_York","hot":[6,7,8],"cold":[12,1,2,3],"rain":[1,2,3,4,5,6,7,8,9,10,11,12],"sourceName":"美國 NWS・Central Park 氣候資料","sourceURL":"https://www.weather.gov/okx/CentralParkHistorical","checkedOn":"2026-09-24"},
+  {"version":1,"cityID":"US-洛杉磯","timeZoneID":"America/Los_Angeles","hot":[7,8,9],"cold":[],"rain":[11,12,1,2,3],"sourceName":"美國 NWS・Los Angeles 氣候概述","sourceURL":"https://www.weather.gov/media/wrh/online_publications/TMs/TM-261.pdf","checkedOn":"2026-09-24"},
+  {"version":1,"cityID":"VN-河內","timeZoneID":"Asia/Ho_Chi_Minh","hot":[4,5,6,7,8],"cold":[12,1,2,3],"rain":[6,7,8],"sourceName":"越南國家旅遊局","sourceURL":"https://www.vietnam.travel/things-to-do/weather-and-climate-vietnam","checkedOn":"2026-09-24"},
+  {"version":1,"cityID":"VN-峴港","timeZoneID":"Asia/Ho_Chi_Minh","hot":[6,7,8],"cold":[],"rain":[11,12,1,2],"sourceName":"越南國家旅遊局・峴港城市指南","sourceURL":"https://www.vietnam.travel/places-to-go/central-vietnam/da-nang","checkedOn":"2026-09-24"},
+  {"version":1,"cityID":"VN-胡志明市","timeZoneID":"Asia/Ho_Chi_Minh","hot":[1,2,3,4,5,6,7,8,9,10,11,12],"cold":[],"rain":[5,6,7,8,9,10,11],"sourceName":"越南國家旅遊局","sourceURL":"https://www.vietnam.travel/things-to-do/weather-and-climate-vietnam","checkedOn":"2026-09-24"}
+]

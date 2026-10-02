@@ -1,181 +1,148 @@
-//
-//  TripDetailView.swift
-//  TravelGenius
-//
-
 import SwiftUI
 import SwiftData
 
 struct TripDetailView: View {
-    @Environment(\.modelContext) private var context
+    private enum WorkspacePage: String, CaseIterable, Identifiable {
+        case overview = "總覽"
+        case packing = "打包"
+        case restrictions = "通關"
+        case knowledge = "知識"
+        var id: String { rawValue }
+    }
+
+    private enum Preview: String, Identifiable { case airport, returnMode, knowledge; var id: String { rawValue } }
+
+    @Environment(\.packmonTheme) private var theme
     @Environment(AppState.self) private var appState
-    @Query private var trips: [Trip]
+    @Environment(MascotState.self) private var mascot
     let trip: Trip
+    @State private var page: WorkspacePage = .overview
+    @State private var preview: Preview?
 
-    @State private var showingEdit = false
-    @State private var confirmClose = false
-
-    private var country: Country? {
-        StaticDataStore.shared.country(code: trip.countryCode)
-    }
-
-    private var originCountry: Country? {
-        StaticDataStore.shared.country(code: trip.originCountryCode)
-    }
-
-    private var isActive: Bool {
-        appState.activeTrip(in: trips) === trip
+    init(trip: Trip, startsInPacking: Bool = false) {
+        self.trip = trip
+        _page = State(initialValue: startsInPacking ? .packing : .overview)
     }
 
     var body: some View {
-        List {
-            Section {
-                HStack(spacing: 12) {
-                    Image(systemName: trip.lifecycleStatus.symbolName)
-                        .font(.title2)
-                        .foregroundStyle(.tint)
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text(trip.lifecycleStatus.label)
-                            .font(.headline)
-                        Text(isActive ? "目前 App 使用這趟行程的清單與 Tips" : "可設為目前行程後從底部分頁快速查看")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-                .accessibilityElement(children: .combine)
-            }
-
-            Section("基本資料") {
-                LabeledContent("出發地") {
-                    Text("\(originCountry?.flagEmoji ?? "") \(originCountry?.nameZh ?? trip.originCountryCode)\(trip.originCity.isEmpty ? "" : "・\(trip.originCity)")")
-                }
-                LabeledContent("目的地") {
-                    Text("\(country?.flagEmoji ?? "") \(country?.nameZh ?? trip.countryCode)\(trip.city.isEmpty ? "" : "・\(trip.city)")")
-                }
-                LabeledContent("日期") {
-                    Text("\(trip.startDate.formatted(date: .abbreviated, time: .omitted)) – \(trip.endDate.formatted(date: .abbreviated, time: .omitted))")
-                }
-                LabeledContent("天數") {
-                    Text("\(trip.totalDays) 天")
-                }
-            }
-
-            Section("行前準備") {
-                NavigationLink {
-                    PackingListView(trip: trip)
-                        .navigationTitle("清單・\(trip.name)")
-                        .navigationBarTitleDisplayMode(.inline)
-                } label: {
-                    DetailDestinationRow(
-                        title: "行李 Checklist",
-                        subtitle: packingProgressText,
-                        symbol: "checklist",
-                        tint: .blue
-                    )
-                }
-
-                NavigationLink {
-                    TipsRootView(trip: trip, embedded: true)
-                } label: {
-                    DetailDestinationRow(
-                        title: "海關 Tips",
-                        subtitle: "查物品、看海關與城市文化提醒",
-                        symbol: "lightbulb.fill",
-                        tint: .orange
-                    )
-                }
-
-                NavigationLink {
-                    TripRegulationsView(trip: trip)
-                } label: {
-                    DetailDestinationRow(
-                        title: "出入境管制物品",
-                        subtitle: trip.hasReviewedTravelRules ? "建立行程時已閱讀" : "尚未確認閱讀",
-                        symbol: "checkmark.shield.fill",
-                        tint: .red
-                    )
-                }
-            }
-
-            Section {
-                if !trip.isClosed {
-                    if isActive {
-                        Button("開始打包這趟行程", systemImage: "checklist") {
-                            appState.open(.checklist, for: trip)
-                        }
-                    } else {
-                        Button("設為目前行程", systemImage: "checkmark.circle") {
-                            appState.setActive(trip)
-                        }
-                    }
-                }
-                Button("編輯行程", systemImage: "pencil") { showingEdit = true }
-                if trip.isClosed {
-                    Button("重新開啟行程", systemImage: "arrow.uturn.backward") {
-                        trip.isClosed = false
-                    }
-                } else {
-                    Button("結束行程", systemImage: "flag.checkered", role: .destructive) {
-                        confirmClose = true
-                    }
+        VStack(spacing: 0) {
+            workspaceHeader
+            pagePicker
+            Group {
+                switch page {
+                case .overview: overview
+                case .packing: PackingListView(trip: trip)
+                case .restrictions: TripBorderReviewView(trip: trip)
+                case .knowledge:
+                    FeaturePreviewCard(title: "\(trip.city)旅行知識", subtitle: "城市文化與禮儀將在下一階段完成", symbol: "book.pages")
+                        .padding(theme.spacing.medium)
+                        .frame(maxHeight: .infinity, alignment: .top)
                 }
             }
         }
-        .navigationTitle(trip.name)
+        .background(theme.colors.canvas.ignoresSafeArea())
+        .navigationTitle("我的行程")
         .navigationBarTitleDisplayMode(.inline)
-        .sheet(isPresented: $showingEdit) { TripFormView(trip: trip) }
-        .confirmationDialog(
-            "結束行程後會從「目前行程」移除，之後仍可重新開啟。",
-            isPresented: $confirmClose,
-            titleVisibility: .visible
-        ) {
-            Button("結束行程", role: .destructive) {
-                trip.isClosed = true
+        .sheet(item: $preview) { value in
+            switch value {
+            case .airport: FeaturePreviewSheet(title: "機場模式", message: "入口先保留。之後會把當天最重要的證件、安檢與登機事項集中在這裡。", symbol: "airplane.departure")
+            case .returnMode: FeaturePreviewSheet(title: "回程模式", message: "入口先保留。之後可用同一份清單反向檢查，避免把物品留在住宿處。", symbol: "arrow.uturn.left.circle")
+            case .knowledge: FeaturePreviewSheet(title: "旅行知識", message: "完整城市知識會在下一階段加入。", symbol: "book.pages")
             }
+        }
+        .onAppear {
+            appState.setActive(trip)
+            mascot.isDockHidden = page == .restrictions
+        }
+        .onChange(of: page) { _, newPage in
+            mascot.isDockHidden = newPage == .restrictions
+        }
+        .onDisappear {
+            mascot.isDockHidden = false
         }
     }
 
-    private var packingProgressText: String {
+    private var workspaceHeader: some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Text(statusText).font(.caption.weight(.bold)).foregroundStyle(theme.colors.accent)
+            Text(trip.name).font(.system(size: 28, weight: .black, design: .rounded)).foregroundStyle(theme.colors.text)
+            if let preferences = trip.packingPreferences {
+                Text("此行程設定：\(preferences.summary)")
+                    .font(.caption).foregroundStyle(theme.colors.secondaryText)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, theme.spacing.medium).padding(.top, 4).padding(.bottom, 12)
+    }
+
+    private var pagePicker: some View {
+        HStack(spacing: 4) {
+            ForEach(WorkspacePage.allCases) { item in
+                Button { page = item } label: {
+                    Text(item.rawValue).font(.caption.weight(.bold)).foregroundStyle(page == item ? Color.white : theme.colors.secondaryText)
+                        .frame(maxWidth: .infinity).padding(.vertical, 9)
+                        .background(page == item ? theme.colors.accent : Color.clear, in: Capsule())
+                }.buttonStyle(.plain)
+            }
+        }
+        .padding(4).background(theme.colors.surface, in: Capsule()).padding(.horizontal, theme.spacing.medium).padding(.bottom, 10)
+    }
+
+    private var overview: some View {
         let items = trip.packingItems ?? []
-        guard !items.isEmpty else { return "尚未產生清單" }
-        return "已打包 \(items.filter(\.isPacked).count)／\(items.count) 項"
+        let packed = items.filter(\.isPacked).count
+        return ScrollView {
+            VStack(alignment: .leading, spacing: theme.spacing.medium) {
+                PackmonCard {
+                    VStack(alignment: .leading, spacing: 10) {
+                        HStack {
+                            Text("打包進度").font(.headline.weight(.bold))
+                            Spacer()
+                            Text("\(packed)/\(items.count)").font(.title3.weight(.black)).foregroundStyle(theme.colors.secondaryAccent)
+                        }
+                        ProgressView(value: items.isEmpty ? 0 : Double(packed), total: Double(max(items.count, 1))).tint(theme.colors.secondaryAccent)
+                        Text(items.isEmpty ? "清單還沒生成" : "還有 \(items.count - packed) 件要確認")
+                            .font(.caption).foregroundStyle(theme.colors.secondaryText)
+                    }
+                }
+
+                HStack(spacing: 10) {
+                    overviewMetric(title: "待處理", value: "\(min(max(items.count - packed, 0), 9)) 項", symbol: "exclamationmark.circle")
+                    overviewMetric(title: "旅程天數", value: "\(trip.totalDays) 天", symbol: "calendar")
+                }
+
+                if let weather = trip.packingWeather {
+                    PackingWeatherCard(weather: weather, saved: true)
+                } else {
+                    Text("尚無可讀取的建立時天氣紀錄；不影響原有打包清單。")
+                        .font(.caption).foregroundStyle(theme.colors.secondaryText)
+                }
+
+                Button { page = .packing } label: {
+                    Label("繼續打包", systemImage: "checklist").frame(maxWidth: .infinity)
+                }.buttonStyle(PackmonPrimaryButtonStyle())
+
+                Text("旅程工具").font(.headline.weight(.bold)).padding(.top, 4)
+                Button { preview = .airport } label: { FeaturePreviewCard(title: "機場模式", subtitle: "出發當天快速查看重點", symbol: "airplane.departure") }.buttonStyle(.plain)
+                Button { preview = .returnMode } label: { FeaturePreviewCard(title: "回程模式", subtitle: "反向檢查，不遺留物品", symbol: "arrow.uturn.left.circle") }.buttonStyle(.plain)
+            }
+            .padding(.horizontal, theme.spacing.medium).padding(.bottom, 32)
+        }
     }
-}
 
-private struct DetailDestinationRow: View {
-    let title: String
-    let subtitle: String
-    let symbol: String
-    let tint: Color
-
-    var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: symbol)
-                .foregroundStyle(tint)
-                .frame(width: 32, height: 32)
-                .background(tint.opacity(0.12), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(.body.weight(.semibold))
-                Text(subtitle)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+    private func overviewMetric(title: String, value: String, symbol: String) -> some View {
+        PackmonCard {
+            VStack(alignment: .leading, spacing: 8) {
+                Image(systemName: symbol).foregroundStyle(theme.colors.accent)
+                Text(value).font(.title3.weight(.black)).foregroundStyle(theme.colors.text)
+                Text(title).font(.caption).foregroundStyle(theme.colors.secondaryText)
             }
         }
-        .padding(.vertical, 3)
-        .accessibilityElement(children: .combine)
     }
-}
 
-private struct TripRegulationsView: View {
-    let trip: Trip
-
-    var body: some View {
-        List {
-            ProhibitedSections(trip: trip, mode: .customs)
-            ProhibitedSections(trip: trip, mode: .aviation)
-        }
-        .navigationTitle("管制物品")
-        .navigationBarTitleDisplayMode(.inline)
+    private var statusText: String {
+        let days = Calendar.current.dateComponents([.day], from: Calendar.current.startOfDay(for: .now), to: Calendar.current.startOfDay(for: trip.startDate)).day ?? 0
+        if days > 0 { return "還有\(days)天・\(trip.startDate.formatted(.dateTime.month().day()))出發" }
+        return trip.contains(.now) ? "旅途中・回程 (trip.endDate.formatted(.dateTime.month().day()))" : "行程已完成"
     }
 }

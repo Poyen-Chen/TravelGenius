@@ -1,0 +1,191 @@
+[
+  {
+    "id": "tw-depart-currency-valuables", "countryCode": "TW", "checkpoint": "originDeparture", "authority": "customs", "status": "declare", "priority": 0,
+    "titleZh": "超額現金、黃金與有價證券", "actionZh": "確認現金、黃金與有價證券是否達申報門檻",
+    "detailZh": "外幣現鈔逾等值 1 萬美元、有價證券總面額逾等值 1 萬美元、黃金價值逾 2 萬美元須申報。新臺幣逾 10 萬元、人民幣逾 2 萬元的超額部分不得攜出；申報不代表可攜出超額部分。",
+    "lastVerified": "2026-09-28", "sourceName": "財政部關務署・旅客出境通關須知", "sourceUrl": "https://web.customs.gov.tw/keelung/singlehtml/243?cntId=cus3_98481_243",
+    "aliases": ["現金", "外幣", "新台幣", "人民幣", "黃金", "有價證券"], "keywords": ["現金", "黃金", "證券"]
+  },
+  {
+    "id": "tw-depart-returning-equipment", "countryCode": "TW", "checkpoint": "originDeparture", "authority": "customs", "status": "review", "priority": 20,
+    "titleZh": "會再帶回台灣的高價器材", "actionZh": "高價自用器材若會帶回，先詢問出口登記",
+    "detailZh": "個人電腦、專業攝影器材等高價自用物品若日後會再帶回，可在出境前向海關確認是否辦理登記，回國時較容易證明並非海外新購。",
+    "lastVerified": "2026-09-28", "sourceName": "財政部關務署・旅客出境通關須知", "sourceUrl": "https://web.customs.gov.tw/keelung/singlehtml/243?cntId=cus3_98481_243",
+    "aliases": ["相機", "攝影器材", "筆電", "電腦", "高價器材"], "keywords": ["相機", "攝影", "電腦", "筆電"]
+  },
+  {
+    "id": "tw-depart-controlled-exports", "countryCode": "TW", "checkpoint": "originDeparture", "authority": "customs", "status": "review", "priority": 30,
+    "titleZh": "限制輸出或非自用物品", "actionZh": "商業、樣品或受限制輸出物品先向海關確認",
+    "detailZh": "自用行李以外的商業物品、樣品或限制輸出項目，可能需要輸出許可與一般出口報關，不能只依旅客行李規則判斷。",
+    "lastVerified": "2026-09-28", "sourceName": "財政部關務署・旅客出境通關須知", "sourceUrl": "https://web.customs.gov.tw/keelung/singlehtml/243?cntId=cus3_98481_243",
+    "aliases": ["貨樣", "樣品", "商業物品", "限制輸出"], "keywords": ["貨樣", "商業", "出口"]
+  },
+  {
+    "id": "tw-arrive-red-green", "countryCode": "TW", "checkpoint": "originArrival", "authority": "customs", "status": "prepare", "priority": 0,
+    "titleZh": "紅線或綠線通關", "actionZh": "有應申報物品時走紅線；不確定先詢問",
+    "detailZh": "有應申報、應稅、管制或限制輸入物品時應走紅線；無應申報事項才走綠線。走綠線仍可能接受抽查，不確定時應在通關前主動詢問。",
+    "lastVerified": "2026-09-28", "sourceName": "財政部關務署・入境紅綠線通關", "sourceUrl": "https://web.customs.gov.tw/singlehtml/2597?cntId=cus1_114543_2597",
+    "aliases": ["紅線", "綠線", "入境申報", "海關申報"], "keywords": ["紅線", "綠線", "申報"]
+  },
+  {
+    "id": "tw-arrive-duty-free", "countryCode": "TW", "checkpoint": "originArrival", "authority": "customs", "status": "declare", "priority": 20,
+    "titleZh": "菸酒與行李免稅額", "actionZh": "菸酒或其他物品超過免稅量時走紅線",
+    "detailZh": "年滿 20 歲旅客免稅限量為菸 200 支或雪茄 25 支或菸絲 1 磅，酒 1.5 公升；其他自用家用行李物品完稅價格總值以新臺幣 3.5 萬元為限。超量或應稅物品須走紅線申報。",
+    "lastVerified": "2026-09-28", "sourceName": "財政部關務署・入境紅綠線通關", "sourceUrl": "https://web.customs.gov.tw/singlehtml/2597?cntId=cus1_114543_2597",
+    "aliases": ["菸", "煙", "酒", "免稅", "購物", "伴手禮"], "keywords": ["菸", "煙", "酒", "免稅", "購物"]
+  },
+  {
+    "id": "tw-arrive-quarantine", "countryCode": "TW", "checkpoint": "originArrival", "authority": "quarantine", "status": "declare", "priority": 10,
+    "titleZh": "動植物、水產品與其加工品", "actionZh": "有肉品、動植物或水產品時主動申報檢疫",
+    "detailZh": "肉品、動植物、水產品及其加工品可能禁止輸入或須檢疫。不要只依密封、熟食或自用判斷；有疑問時在檢查前主動申報。",
+    "lastVerified": "2026-09-28", "sourceName": "財政部關務署・入境紅綠線通關", "sourceUrl": "https://web.customs.gov.tw/singlehtml/2597?cntId=cus1_114543_2597",
+    "aliases": ["肉品", "香腸", "肉乾", "水果", "植物", "種子", "海鮮", "水產品"], "keywords": ["肉", "水果", "植物", "種子", "海鮮", "水產"], "exclusions": ["肉桂", "素肉", "植物肉"]
+  },
+  {
+    "id": "tw-arrive-unaccompanied", "countryCode": "TW", "checkpoint": "originArrival", "authority": "customs", "status": "declare", "priority": 40,
+    "titleZh": "後送或不隨身行李", "actionZh": "有後送行李時，在本人入境當下走紅線申報",
+    "detailZh": "有不隨本人同班入境的行李時，應在本人入境時申報件數與主要品目；未在入境時申報，後續行李可能按一般貨物處理。",
+    "lastVerified": "2026-09-28", "sourceName": "財政部關務署・入境紅綠線通關", "sourceUrl": "https://web.customs.gov.tw/singlehtml/2597?cntId=cus1_114543_2597",
+    "aliases": ["後送行李", "不隨身行李", "海運行李"], "keywords": ["後送", "不隨身"]
+  },
+  {
+    "id": "jp-arrive-declaration", "countryCode": "JP", "checkpoint": "destinationArrival", "authority": "customs", "status": "prepare", "priority": 0,
+    "titleZh": "入境與海關申報", "actionZh": "完成 Visit Japan Web 或紙本海關申報",
+    "detailZh": "日本海關要求所有入境旅客申報攜帶品與後送物品。可事先使用 Visit Japan Web 填寫；電子申報不代表免除行李檢查。",
+    "lastVerified": "2026-09-28", "sourceName": "日本稅關・入境旅客申報", "sourceUrl": "https://www.customs.go.jp/english/passenger/declaration/declaration_app.html",
+    "aliases": ["Visit Japan Web", "入境申報", "海關申報", "後送行李"], "keywords": ["申報", "入境"]
+  },
+  {
+    "id": "jp-arrive-currency", "countryCode": "JP", "checkpoint": "destinationArrival", "authority": "customs", "status": "declare", "priority": 30,
+    "titleZh": "支付工具逾等值 100 萬日圓", "actionZh": "現金等逾 100 萬日圓時申報",
+    "detailZh": "現金、支票、旅行支票、證券等支付工具合計逾等值 100 萬日圓時須申報；純度 90% 以上且重量超過 1 公斤的金塊也須申報。",
+    "lastVerified": "2026-09-28", "sourceName": "日本稅關・支付工具申報", "sourceUrl": "https://www.customs.go.jp/english/c-answer_e/keitaibetsuso/7305_e.htm",
+    "aliases": ["現金", "日圓", "支票", "旅行支票", "證券", "金條"], "keywords": ["現金", "支票", "證券", "金條"]
+  },
+  {
+    "id": "jp-depart-tax-free-before-refund", "countryCode": "JP", "checkpoint": "destinationDeparture", "authority": "customs", "status": "review", "priority": 0,
+    "titleZh": "日本免稅商品（現行制度）", "actionZh": "免稅商品帶離日本，備妥護照與商品接受確認",
+    "detailZh": "免稅購買的商品必須帶離日本。離境時海關可能確認護照與商品；未實際輸出或不符規定時可能須補繳消費稅。",
+    "lastVerified": "2026-09-28", "sourceName": "日本稅關・旅客離境程序", "sourceUrl": "https://www.customs.go.jp/english/c-answer_e/keitaibetsuso/7201_e.htm",
+    "aliases": ["免稅品", "免稅商品", "退稅", "tax free"], "keywords": ["免稅", "退稅"], "effectiveUntil": "2026-10-31"
+  },
+  {
+    "id": "jp-depart-tax-free-refund-method", "countryCode": "JP", "checkpoint": "destinationDeparture", "authority": "customs", "status": "prepare", "priority": 0,
+    "titleZh": "日本免稅退款新制", "actionZh": "離境確認商品輸出後，再依商店方式申請退稅",
+    "detailZh": "2026 年 11 月 1 日起改採退款制：購物時先支付消費稅，於購買日起 90 日內離境並由海關確認商品輸出後，才能依免稅店程序取得退款。離境時須備妥護照與商品。",
+    "lastVerified": "2026-09-28", "sourceName": "日本國稅廳・免稅制度退款方式", "sourceUrl": "https://www.nta.go.jp/publication/pamph/shohi/menzei/201805/format/002.htm",
+    "aliases": ["免稅品", "免稅商品", "退稅", "tax free"], "keywords": ["免稅", "退稅"], "effectiveFrom": "2026-11-01"
+  },
+  {
+    "id": "jp-depart-currency", "countryCode": "JP", "checkpoint": "destinationDeparture", "authority": "customs", "status": "declare", "priority": 20,
+    "titleZh": "支付工具逾等值 100 萬日圓", "actionZh": "現金等逾門檻時，在日本出境前申報",
+    "detailZh": "現金、支票、旅行支票、證券等支付工具合計逾等值 100 萬日圓時，出境也須申報；純度 90% 以上且重量超過 1 公斤的金塊也須申報。",
+    "lastVerified": "2026-09-28", "sourceName": "日本稅關・支付工具申報", "sourceUrl": "https://www.customs.go.jp/english/c-answer_e/keitaibetsuso/7305_e.htm",
+    "aliases": ["現金", "日圓", "支票", "旅行支票", "證券", "金條"], "keywords": ["現金", "支票", "證券", "金條"]
+  },
+  {
+    "id": "kr-arrive-declaration", "countryCode": "KR", "checkpoint": "destinationArrival", "authority": "customs", "status": "declare", "priority": 0,
+    "titleZh": "韓國入境申報與免稅限量", "actionZh": "超過免稅量或有檢疫物品時主動申報",
+    "detailZh": "一般物品免稅總值為 800 美元；酒類限 2 公升且合計 400 美元、香菸 200 支、香水 100 毫升。動物、肉品、植物、食品及其他管制物品須申報並依主管機關判定。",
+    "lastVerified": "2026-09-28", "sourceName": "韓國關稅廳・旅客申報", "sourceUrl": "https://customs.go.kr/english/cm/cntnts/cntntsView.do?cntntsId=2743&mi=8069",
+    "aliases": ["免稅", "申報", "酒", "香菸", "香水", "食品"], "keywords": ["免稅", "申報", "酒", "煙", "食品"]
+  },
+  {
+    "id": "kr-arrive-currency", "countryCode": "KR", "checkpoint": "destinationArrival", "authority": "customs", "status": "declare", "priority": 20,
+    "titleZh": "支付工具逾等值 1 萬美元", "actionZh": "支付工具逾 1 萬美元等值時申報",
+    "detailZh": "攜帶韓元、外幣、旅行支票等支付工具合計超過等值 1 萬美元入境時，須向韓國海關申報。",
+    "lastVerified": "2026-09-28", "sourceName": "韓國關稅廳・外匯申報", "sourceUrl": "https://www.customs.go.kr/english/cm/cntnts/cntntsView.do?cntntsId=5500&mi=10800",
+    "aliases": ["現金", "韓元", "外幣", "旅行支票"], "keywords": ["現金", "外幣", "支票"]
+  },
+  {
+    "id": "kr-depart-currency", "countryCode": "KR", "checkpoint": "destinationDeparture", "authority": "customs", "status": "declare", "priority": 10,
+    "titleZh": "支付工具逾等值 1 萬美元", "actionZh": "支付工具逾 1 萬美元等值時在韓國出境前申報",
+    "detailZh": "攜帶韓元、外幣、旅行支票等支付工具合計超過等值 1 萬美元出境時，須依韓國外匯與海關規定申報。",
+    "lastVerified": "2026-09-28", "sourceName": "韓國關稅廳・外匯申報", "sourceUrl": "https://www.customs.go.kr/english/cm/cntnts/cntntsView.do?cntntsId=5500&mi=10800",
+    "aliases": ["現金", "韓元", "外幣", "旅行支票"], "keywords": ["現金", "外幣", "支票"]
+  },
+  {
+    "id": "kr-depart-high-value-goods", "countryCode": "KR", "checkpoint": "destinationDeparture", "authority": "customs", "status": "review", "priority": 30,
+    "titleZh": "高價物品與需再入境韓國的物品", "actionZh": "高價或需再帶回韓國的物品先確認出口程序",
+    "detailZh": "高價物品、商業貨物或之後會再帶回韓國的物品，可能需要在托運前接受海關確認或辦理出口申報。一般旅客行李仍應依物品性質與用途判斷。",
+    "lastVerified": "2026-09-28", "sourceName": "韓國關稅廳・出境旅客通關", "sourceUrl": "https://customs.go.kr/english/cm/cntnts/cntntsView.do?cntntsId=2720&mi=8032",
+    "aliases": ["高價物品", "商業貨物", "樣品", "相機"], "keywords": ["高價", "商業", "樣品"]
+  },
+  {
+    "id": "hk-arrive-red-green", "countryCode": "HK", "checkpoint": "destinationArrival", "authority": "customs", "status": "prepare", "priority": 0,
+    "titleZh": "紅綠通道與應申報物品", "actionZh": "有應課稅或受管制物品時走紅通道",
+    "detailZh": "有應課稅、受管制、禁運或超過現金申報門檻的物品時，應走紅通道並向香港海關申報；只有確定沒有應申報事項才走綠通道。",
+    "lastVerified": "2026-09-28", "sourceName": "香港海關・紅綠通道系統", "sourceUrl": "https://www.customs.gov.hk/en/service-enforcement-information/passenger-clearance/red-green-channel-system/index.html",
+    "aliases": ["紅通道", "綠通道", "申報", "海關"], "keywords": ["紅", "綠", "申報"]
+  },
+  {
+    "id": "hk-arrive-duty-free", "countryCode": "HK", "checkpoint": "destinationArrival", "authority": "customs", "status": "declare", "priority": 20,
+    "titleZh": "酒類與菸草免稅限量", "actionZh": "菸酒超過免稅限量時走紅通道申報",
+    "detailZh": "年滿 18 歲旅客可免稅攜入酒精濃度超過 30% 的酒 1 公升；菸草為香菸 19 支，或雪茄 1 支／25 克，或其他製成菸草 25 克。超量須申報並課稅。",
+    "lastVerified": "2026-09-28", "sourceName": "香港海關・旅客免稅優惠", "sourceUrl": "https://www.customs.gov.hk/en/service-enforcement-information/passenger-clearance/duty-free-concessions/index.html",
+    "aliases": ["酒", "香菸", "煙草", "雪茄", "免稅"], "keywords": ["酒", "煙", "免稅"]
+  },
+  {
+    "id": "hk-arrive-currency", "countryCode": "HK", "checkpoint": "destinationArrival", "authority": "customs", "status": "declare", "priority": 30,
+    "titleZh": "現金類物品逾港幣 12 萬元", "actionZh": "現金類物品總值逾 12 萬港元時申報",
+    "detailZh": "入境時攜帶總值超過港幣 12 萬元的現金類物品，須使用申報表向香港海關作書面申報。",
+    "lastVerified": "2026-09-28", "sourceName": "香港海關・現金類物品申報", "sourceUrl": "https://www.customs.gov.hk/en/service-enforcement-information/passenger-clearance/currency-bearer-negotiable-instruments/index.html",
+    "aliases": ["現金", "港幣", "支票", "不記名票據"], "keywords": ["現金", "港幣", "支票"]
+  },
+  {
+    "id": "hk-depart-currency", "countryCode": "HK", "checkpoint": "destinationDeparture", "authority": "customs", "status": "review", "priority": 10,
+    "titleZh": "現金類物品逾港幣 12 萬元", "actionZh": "出境攜帶逾 12 萬港元時備妥資料並依要求申報",
+    "detailZh": "離境旅客攜帶總值超過港幣 12 萬元的現金類物品，海關要求時必須披露，並在海關指示下作書面申報。",
+    "lastVerified": "2026-09-28", "sourceName": "香港海關・現金類物品申報", "sourceUrl": "https://www.customs.gov.hk/en/service-enforcement-information/passenger-clearance/currency-bearer-negotiable-instruments/index.html",
+    "aliases": ["現金", "港幣", "支票", "不記名票據"], "keywords": ["現金", "港幣", "支票"]
+  },
+  {
+    "id": "us-arrive-declaration", "countryCode": "US", "checkpoint": "destinationArrival", "authority": "quarantine", "status": "declare", "priority": 0,
+    "titleZh": "所有食品與農產品都先申報", "actionZh": "食品、植物、動物產品全部主動申報",
+    "detailZh": "所有食品、植物、種子、土壤、肉品、動物產品與野生動植物相關物品都應申報。是否准入由檢查人員依品項與來源地判定；未申報可能遭沒收與裁罰。",
+    "lastVerified": "2026-09-28", "sourceName": "美國海關暨邊境保護局・農產品申報", "sourceUrl": "https://www.help.cbp.gov/s/article/Article-1277?language=en_US",
+    "aliases": ["食品", "水果", "蔬菜", "肉品", "種子", "植物", "土壤", "農產品"], "keywords": ["食物", "食品", "肉", "水果", "植物", "種子", "土壤"]
+  },
+  {
+    "id": "us-arrive-currency", "countryCode": "US", "checkpoint": "destinationArrival", "authority": "customs", "status": "declare", "priority": 20,
+    "titleZh": "貨幣工具逾 1 萬美元", "actionZh": "貨幣工具逾 1 萬美元時申報 FinCEN 105",
+    "detailZh": "攜帶合計超過 1 萬美元的貨幣或貨幣工具入境，必須申報並填寫 FinCEN 105。攜帶金額本身沒有上限，但不得漏報。",
+    "lastVerified": "2026-09-28", "sourceName": "美國海關暨邊境保護局・貨幣申報", "sourceUrl": "https://www.help.cbp.gov/s/article/Article-1413?language=en_US",
+    "aliases": ["現金", "美元", "旅行支票", "匯票", "FinCEN 105"], "keywords": ["現金", "美元", "支票", "匯票"]
+  },
+  {
+    "id": "us-arrive-medication", "countryCode": "US", "checkpoint": "destinationArrival", "authority": "customs", "status": "review", "priority": 30,
+    "titleZh": "個人藥品", "actionZh": "藥品保留原包裝、處方並主動申報",
+    "detailZh": "個人藥品應保留原包裝與處方或醫師證明，通常以不超過 90 天用量為原則；受管制或未核准藥物可能不得輸入，需依成分確認。",
+    "lastVerified": "2026-09-28", "sourceName": "美國海關暨邊境保護局・旅客攜帶物品", "sourceUrl": "https://www.help.cbp.gov/s/article/Article-1909?language=en_US",
+    "aliases": ["藥品", "處方藥", "感冒藥", "安眠藥", "止痛藥"], "keywords": ["藥"]
+  },
+  {
+    "id": "us-depart-currency", "countryCode": "US", "checkpoint": "destinationDeparture", "authority": "customs", "status": "declare", "priority": 10,
+    "titleZh": "貨幣工具逾 1 萬美元", "actionZh": "貨幣工具逾 1 萬美元時在離境前申報",
+    "detailZh": "從美國離境攜帶合計超過 1 萬美元的貨幣或貨幣工具，也必須申報並填寫 FinCEN 105；金額本身沒有上限，但不得漏報。",
+    "lastVerified": "2026-09-28", "sourceName": "美國海關暨邊境保護局・貨幣申報", "sourceUrl": "https://www.help.cbp.gov/s/article/Article-1413?language=en_US",
+    "aliases": ["現金", "美元", "旅行支票", "匯票", "FinCEN 105"], "keywords": ["現金", "美元", "支票", "匯票"]
+  },
+  {
+    "id": "vn-arrive-currency", "countryCode": "VN", "checkpoint": "destinationArrival", "authority": "customs", "status": "declare", "priority": 0,
+    "titleZh": "現金超過 5,000 美元或 1,500 萬越南盾", "actionZh": "現金超過門檻時在越南入境申報",
+    "detailZh": "攜帶超過 5,000 美元或等值外幣，或超過 1,500 萬越南盾入境，須向越南口岸海關申報。等於門檻不屬於本條所稱「超過」。",
+    "lastVerified": "2026-09-28", "sourceName": "越南國家銀行・第 15/2011/TT-NHNN 號通知", "sourceUrl": "https://vbpl.vn/FileData/TW/Lists/vbpq/Attachments/26707/VanBanGoc_15_2011_TT-NHNN.pdf",
+    "aliases": ["現金", "美元", "越南盾", "外幣"], "keywords": ["現金", "美元", "越南盾", "外幣"]
+  },
+  {
+    "id": "vn-arrive-coverage", "countryCode": "VN", "checkpoint": "destinationArrival", "authority": "customs", "status": "review", "priority": 90,
+    "titleZh": "越南其他禁限帶物品", "actionZh": "食品、動植物、藥品與高價物品另向官方確認",
+    "detailZh": "目前 App 已查核現金與電子煙等高風險項目，但尚未逐項涵蓋越南所有食品、動植物、藥品及高價物品規定。沒有列出不代表可以攜帶。",
+    "lastVerified": "2026-09-28", "sourceName": "越南海關總署", "sourceUrl": "https://www.customs.gov.vn/",
+    "aliases": ["食品", "動物", "植物", "藥品", "高價物品"], "keywords": ["食品", "動物", "植物", "藥", "高價"]
+  },
+  {
+    "id": "vn-depart-currency", "countryCode": "VN", "checkpoint": "destinationDeparture", "authority": "customs", "status": "declare", "priority": 10,
+    "titleZh": "現金超過 5,000 美元或 1,500 萬越南盾", "actionZh": "現金超過門檻時在越南出境申報",
+    "detailZh": "攜帶超過 5,000 美元或等值外幣，或超過 1,500 萬越南盾出境，須向越南口岸海關申報；銀行提款等特定情形另需依規定備妥文件。",
+    "lastVerified": "2026-09-28", "sourceName": "越南國家銀行・第 15/2011/TT-NHNN 號通知", "sourceUrl": "https://vbpl.vn/FileData/TW/Lists/vbpq/Attachments/26707/VanBanGoc_15_2011_TT-NHNN.pdf",
+    "aliases": ["現金", "美元", "越南盾", "外幣"], "keywords": ["現金", "美元", "越南盾", "外幣"]
+  }
+]

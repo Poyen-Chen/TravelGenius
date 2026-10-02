@@ -1,4 +1,4 @@
-# TravelGenius 旅行天才
+# Packmon（目前 Xcode target：TravelGenius）
 
 > **出國前，先看懂海關風險，再開始打包。**
 
@@ -45,7 +45,7 @@
 
 <img src="docs/screenshots/03-checklist.png" width="240" alt="打包清單與小史萊姆">
 
-依「目的地規定＋文化＋**即時天氣**（Open-Meteo）＋**你的偏好**」生成，「因為是…」分組說明理由；預計有雨小史萊姆會自動加傘並跳出播報。工具列：回程模式（同一份清單反向檢查防遺留，誤觸自動還原）、分享清單；左上可回行程管理與偏好設定。
+依「目的地規定＋文化＋**建立時天氣參考**（目前 Open-Meteo／城市季節備援）＋**個人需求快照**」生成。第 4 階段候選在清單確認前查詢，保存使用者確認內容；開啟打包頁不再自動加傘或重算。完整／部分預報與季節參考分開標示；保留 WeatherKit adapter 供未來開通切換，目前不呼叫。工具列保留回程模式及分享；詳見 [天氣技術規格](docs/weather-integration-spec.md)。
 
 ### 4. Tips：能帶嗎＋雙向海關＋城市文化
 
@@ -69,7 +69,7 @@
 - 開發用啟動引數：`-seedDemo`（示範行程）、`-resetOnboarding`、`-openPackTab` / `-openTipsTab`、`-checkItem 肉絲`（log 印出能帶嗎判定）、`-mascotDockOnLeft YES`
 - 靜態資料在 `TravelGenius/Resources/SeedData/*.json` — 海關/安檢規則支援 `aliases`（口語別名）、`keywords`／`exclusions`（語意判定）與 `sourceUrl`，直接編輯即可擴充
 - **AI 冷知識金鑰（選配）**：複製 `TravelGenius/Resources/Secrets.example.plist` 為 `Secrets.plist` 並填入 Anthropic API key（`Secrets.plist` 已被 gitignore，**絕不提交**）。未設定時小史萊姆自動使用內建冷知識庫。⚠️ 從 App 直接呼叫 API 僅適合 demo，正式上架請改走自家後端代理
-- 設計系統：`TravelGenius/SharedUI/PackSmartDesignSystem.swift`＋`design-system/` 文件
+- 設計系統：`TravelGenius/SharedUI/PackmonDesignSystem.swift`；可在「偏好設定 → 設計驗證」即時切換，導入流程見 `design-system/packmon/INTEGRATION.md`
 - 實機安裝需在兩個 target 設定 Development Team 並註冊 App Group（`group.com.example.TravelGenius`）
 
 ## 資料來源
@@ -80,7 +80,7 @@
 | 海關違禁品（韓國） | [關稅廳](https://www.customs.go.kr)・[農林畜產檢疫本部](https://www.qia.go.kr) |
 | 海關違禁品（台灣） | [財政部關務署](https://web.customs.gov.tw)・[動植物防疫檢疫署](https://www.aphia.gov.tw) |
 | 航空安檢規則 | [交通部民用航空局](https://www.caa.gov.tw)・[IATA 鋰電池指引](https://www.iata.org/en/programs/cargo/dgr/lithium-batteries/)・[韓國國土交通部](https://www.molit.go.kr)（2025 行動電源新規） |
-| 天氣預報 | [Open-Meteo](https://open-meteo.com)（免金鑰，僅目的地城市座標查詢，離線退回月份規則） |
+| iOS 天氣預報 | [Open-Meteo](https://open-meteo.com/)（目前非商業測試；查目的地城市、不讀裝置定位；失敗採城市季節參考）。保留未啟用的 [WeatherKit](https://developer.apple.com/weatherkit/) 接入，商用前另處理服務授權。 |
 | 文化提醒（罰則類） | 各地官方機構（京都市、台北捷運、海雲台區廳等，App 內附連結） |
 
 > ⚠️ 法規可能變動，App 內顯示「最後查證日期」，出發前請點擊來源以最新公告為準。
@@ -91,6 +91,6 @@
 - 階段式導航：`RootTabView` 依「是否有進行中行程」切換分頁組；onboarding 完成後鎖定行程階段直到明確選定行程
 - 規則引擎：`packing_rules.json` 多層（base/regulation/culture/weather/party/experience/age/gender＋fullOnly 輕便過濾），`PackingListGenerator.sync` 合併式重生成（永不動自訂與已打包項目）
 - `CanIBringService`：別名／關鍵字＋排除詞／異體字三層比對 → 嚴重度排序，去程回程雙向
-- `WeatherService`：Open-Meteo，6 小時快取，16 天預報範圍外自動退回
+- `WeatherService`／`WeatherPlanning`／`WeatherDraft`：供應商分離、有效快取 6 小時且不可跨目的地日期，過期不回用；最多 10 秒等待、請求身分保護。Open-Meteo 最長 16 天、未啟用 WeatherKit 10 天，其餘採城市季節參考。未來切換 WeatherKit 才需開通 Developer Team／服務及 entitlement。
 - `TriviaService`：Claude API 依目的地批次生成 5 則冷知識輪播（金鑰缺席時退回內建庫）
 - 小史萊姆：`MascotState`（@Observable）＋`FloatingMascotDock`（單一手勢零延遲拖曳）＋`AnimatedGIFView`（縮圖解碼、尊重減少動態）

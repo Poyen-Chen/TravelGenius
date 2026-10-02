@@ -27,13 +27,14 @@ struct ProhibitedSections: View {
 
     /// 依嚴重度排序：禁止 → 需許可 → 需申報
     private func sortedCustoms(countryCode: String) -> [ProhibitedItem] {
-        let order: [ProhibitedSeverity] = [.banned, .permit, .declare]
+        let order: [ProhibitedSeverity] = [.banned, .permit, .review, .declare]
         return StaticDataStore.shared.prohibitedItems(countryCode: countryCode)
             .sorted { (order.firstIndex(of: $0.severity) ?? 9) < (order.firstIndex(of: $1.severity) ?? 9) }
     }
 
     private var aviationRules: [AviationRule] {
-        StaticDataStore.shared.aviationRules(destination: trip.countryCode, origin: trip.originCountryCode)
+        StaticDataStore.shared.aviationRules(departureCountry: trip.originCountryCode)
+            + StaticDataStore.shared.aviationRules(departureCountry: trip.countryCode)
     }
 
     private var lastVerified: String? {
@@ -87,19 +88,27 @@ struct ProhibitedSections: View {
             }
             verifiedFooter
         case .aviation:
-            Section("航空安檢・隨身／托運") {
-                ForEach(aviationRules) { rule in
-                    RegulationRow(
-                        title: rule.itemZh,
-                        detail: rule.detailZh,
-                        sourceName: rule.sourceName,
-                        sourceUrl: rule.sourceUrl
-                    ) {
-                        RestrictionBadge(restriction: rule.restriction)
-                    }
+            aviationSection(countryCode: trip.originCountryCode, leg: "去程")
+            aviationSection(countryCode: trip.countryCode, leg: "回程")
+            verifiedFooter
+        }
+    }
+
+    @ViewBuilder
+    private func aviationSection(countryCode: String, leg: String) -> some View {
+        let countryName = StaticDataStore.shared.country(code: countryCode)?.nameZh ?? countryCode
+        let rules = StaticDataStore.shared.aviationRules(departureCountry: countryCode)
+        Section("\(leg)航空安檢・\(countryName)出境") {
+            ForEach(rules) { rule in
+                RegulationRow(
+                    title: rule.itemZh,
+                    detail: rule.detailZh,
+                    sourceName: rule.sourceName,
+                    sourceUrl: rule.sourceUrl
+                ) {
+                    RestrictionBadge(restriction: rule.restriction)
                 }
             }
-            verifiedFooter
         }
     }
 
@@ -181,7 +190,7 @@ struct SeverityBadge: View {
     private var color: Color {
         switch severity {
         case .banned: .red
-        case .permit: .orange
+        case .permit, .review: .orange
         case .declare: .yellow
         }
     }
@@ -189,10 +198,10 @@ struct SeverityBadge: View {
     var body: some View {
         Label(severity.label, systemImage: severity.symbolName)
             .font(.caption.weight(.semibold))
-            .foregroundStyle(severity == .declare ? Color.primary : .white)
+            .foregroundStyle(severity == .declare || severity == .review ? Color.primary : .white)
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
-            .background(color.opacity(severity == .declare ? 0.35 : 1), in: Capsule())
+            .background(color.opacity(severity == .declare || severity == .review ? 0.35 : 1), in: Capsule())
             .accessibilityLabel("嚴重度：\(severity.label)")
     }
 }

@@ -11,6 +11,7 @@ struct TravelGeniusApp: App {
     @State private var appState = AppState()
     @State private var mascotState = MascotState()
     private let container: ModelContainer
+    @State private var snapshotError: String?
 
     init() {
         do {
@@ -24,11 +25,28 @@ struct TravelGeniusApp: App {
             fatalError("無法建立資料庫：\(error)")
         }
         migrateLegacyTripLifecycleIfNeeded()
+        _snapshotError = State(initialValue: captureLegacyPackingPreferences())
         if ProcessInfo.processInfo.arguments.contains("-seedDemo") {
             DemoSeeder.seedIfNeeded(into: container.mainContext)
         }
         configureOnboardingGate()
         logCheckerDebugQuery()
+    }
+
+    /// Freeze the upgrade-time settings without regenerating old lists.
+    private func captureLegacyPackingPreferences() -> String? {
+        let context = container.mainContext
+        do {
+            let preferences = UserPreferences.load()
+            for trip in try context.fetch(FetchDescriptor<Trip>()) {
+                trip.capturePackingPreferencesIfNeeded(preferences)
+            }
+            try context.save()
+            return nil
+        } catch {
+            // Do not allow global settings changes before legacy trips have a durable snapshot.
+            return "無法保存既有行程設定，請確認裝置可用空間後重試。原有清單未重新產生。"
+        }
     }
 
     /// 將舊版由日期推導的狀態轉成使用者操作狀態，並移除舊草稿。
@@ -90,7 +108,17 @@ struct TravelGeniusApp: App {
 
     var body: some Scene {
         WindowGroup {
-            RootGateView()
+            Group {
+                if let snapshotError {
+                    VStack(spacing: 16) {
+                        Text("暫時無法完成資料更新").font(.headline)
+                        Text(snapshotError)
+                        Button("重試") { self.snapshotError = captureLegacyPackingPreferences() }
+                    }.padding()
+                } else {
+                    RootGateView()
+                }
+            }
                 .environment(appState)
                 .environment(mascotState)
         }

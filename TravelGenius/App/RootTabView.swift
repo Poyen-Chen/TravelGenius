@@ -13,6 +13,11 @@ struct RootGateView: View {
     @AppStorage("hasOnboarded") private var hasOnboarded = false
     @AppStorage("hasSeenFirstLaunchGuide") private var hasSeenFirstLaunchGuide = false
     @AppStorage(AppAppearance.storageKey) private var appearanceRaw = AppAppearance.system.rawValue
+    @AppStorage(PackmonThemeID.storageKey) private var designThemeRaw = PackmonThemeID.structureC.rawValue
+
+    private var designTheme: PackmonThemeID {
+        PackmonThemeID(rawValue: designThemeRaw) ?? .structureC
+    }
 
     var body: some View {
         Group {
@@ -38,6 +43,8 @@ struct RootGateView: View {
         }
         .onAppear { applyAppearance() }
         .onChange(of: appearanceRaw) { _, _ in applyAppearance() }
+        .environment(\.packmonTheme, designTheme.theme)
+        .tint(designTheme.theme.colors.accent)
     }
 
     private func applyAppearance() {
@@ -55,8 +62,8 @@ struct RootGateView: View {
     }
 }
 
-/// 階段式分頁：建行程前 =「行程＋偏好設定」；有進行中行程後 =「清單＋Tips」。
-/// 旅行階段仍可從清單頁工具列回到行程管理與偏好設定（sheet）。
+/// 結構 C：頂層導航固定為行程／查詢／知識／我的；
+/// 行程內再切換總覽／打包／違禁品／知識。
 struct RootTabView: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(AppState.self) private var appState
@@ -65,8 +72,8 @@ struct RootTabView: View {
 
     @State private var selection: AppTab = {
         let arguments = ProcessInfo.processInfo.arguments
-        if arguments.contains("-openPackTab") { return .checklist }
-        if arguments.contains("-openTipsTab") || arguments.contains("-showProhibited") || arguments.contains("-showEtiquette") { return .tips }
+        if arguments.contains("-openTipsTab") || arguments.contains("-showProhibited") { return .checker }
+        if arguments.contains("-showEtiquette") { return .knowledge }
         return .trips
     }()
 
@@ -74,39 +81,30 @@ struct RootTabView: View {
         appState.activeTrip(in: trips)
     }
 
-    /// 旅行模式（清單＋Tips）＝有進行中行程「且」本次 session 已明確選定行程；
-    /// 冷啟動一律從「行程」階段開始
-    private var hasActiveTrip: Bool { activeTrip != nil && appState.hasEnteredTrip }
-
     var body: some View {
-        Group {
-            if hasActiveTrip {
-                TabView(selection: $selection) {
-                    PackingRootView()
-                        .tabItem { Label("清單", systemImage: "checklist") }
-                        .tag(AppTab.checklist)
+        TabView(selection: $selection) {
+            TripListView()
+                .tabItem { Label("行程", systemImage: "suitcase.rolling") }
+                .tag(AppTab.trips)
 
-                    TipsRootView()
-                        .tabItem { Label("Tips", systemImage: "lightbulb") }
-                        .tag(AppTab.tips)
-                }
-            } else {
-                TabView(selection: $selection) {
-                    TripListView()
-                        .tabItem { Label("行程", systemImage: "airplane") }
-                        .tag(AppTab.trips)
+            StandaloneBringCheckerView()
+                .tabItem { Label("查詢", systemImage: "magnifyingglass") }
+                .tag(AppTab.checker)
 
-                    PreferenceSettingsView(embedded: true)
-                        .tabItem { Label("偏好設定", systemImage: "person.crop.circle") }
-                        .tag(AppTab.preferences)
-                }
-            }
+            KnowledgeLibraryView()
+                .tabItem { Label("知識", systemImage: "book.pages") }
+                .tag(AppTab.knowledge)
+
+            ProfileHubView()
+                .tabItem { Label("我的", systemImage: "person") }
+                .tag(AppTab.profile)
         }
         .overlay {
-            FloatingMascotDock(onExpand: speakTrivia)
+            if !mascot.isDockHidden {
+                FloatingMascotDock(onExpand: speakTrivia)
+            }
         }
         .onAppear {
-            clampSelectionToStage()
             refreshMascotMessage()
         }
         .onChange(of: selection) { _, _ in refreshMascotMessage() }
@@ -115,30 +113,11 @@ struct RootTabView: View {
             selection = requested
             appState.requestedTab = nil
         }
-        .onChange(of: activeTrip?.id) { _, _ in
-            clampSelectionToStage()
-            refreshMascotMessage()
-        }
-        .onChange(of: appState.hasEnteredTrip) { _, _ in
-            clampSelectionToStage()
-        }
+        .onChange(of: activeTrip?.id) { _, _ in refreshMascotMessage() }
         .onChange(of: scenePhase) { _, newPhase in
             // 離開前景時更新主畫面小工具
             if newPhase != .active {
                 WidgetSync.update(trip: activeTrip)
-            }
-        }
-    }
-
-    /// 階段切換時把選中分頁夾到該階段可見的分頁
-    private func clampSelectionToStage() {
-        if hasActiveTrip {
-            if selection == .trips || selection == .preferences {
-                selection = .checklist
-            }
-        } else {
-            if selection == .checklist || selection == .tips {
-                selection = .trips
             }
         }
     }

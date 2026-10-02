@@ -40,7 +40,7 @@ enum MascotMessenger {
         }
         if daysToStart <= 3 {
             if let weather, weather.rainDays > 0 {
-                return ("查了\(weather.cityZh)天氣：\(weather.headline)。傘我加進清單了，記得帶", .alert)
+                return ("建立清單時的\(weather.cityZh)預報有降雨機會，可以再確認是否帶了雨具", .alert)
             }
             return ("還剩 \(unpackedCount) 項沒打包，這幾天分批收，別留到最後一晚", .normal)
         }
