@@ -471,3 +471,11 @@ This log records accepted product choices that affect behavior, navigation, scop
 - Decision: 在 PD-057 的單一 Swift 推薦引擎上整合衣物更換週期、完整插頭型式涵蓋判定、每趟行程編輯，以及新增／增量／減量／移除的明確清單 review。無洗衣時，內衣褲與襪子維持每日一件；上衣依輕便／一般／齊全約每 2 天、每 1.5 天、每日更換；下身衣物約每 4／3／2 天更換。有洗衣時，上衣上限為 2／3／4，下身為 2／2／3，內衣褲與襪子為 3／4／5。目的地必須涵蓋出發地所有常見插頭型式才不建議轉接頭；此規則不宣稱能處理電壓差異。
 - Context: 來源分支 `1db13d0` 的功能已由使用者明確表示「已驗證，可提交」，但它從舊的 modern／legacy 雙軌基線開發，且在自己的分支重複使用 PD-053～057。整合時保留其已接受的產品行為，移除歷史引擎條件與舊 API，並以新的 canonical 編號記錄，而不是覆寫 `dev` 已存在的 PD-053～057。
 - Consequences: 每趟行程可獨立修改名稱、城市、日期、打包風格、設備、個人需求、活動、青旅與洗衣設定。儲存前先比較既有清單；新增與增量預設勾選，減量與移除不預選，自訂項目受到保護，未採納差異時保留待 review 提醒。目的地或日期改變時重新取得候選天氣依據，目的地改變會使先前通關確認失效。iOS 行為由本地整合測試重新驗證後才可提交或推送。PWA 目前未同步每趟編輯與衣物數量精修；依 PD-056 的發布慣例，未經另一次明確 PWA 更新範圍與線上驗證，不將本地 iOS 整合描述為跨平台完成。
+
+## PD-059 — Integrate definition-owned final artwork into the 61-item catalog
+
+- Date: 2026-10-02
+- Status: Selected artwork direction and production assets integrated locally; pending consolidated visual acceptance
+- Decision: 將方向 B（warm editorial cut-paper／gouache）的 61 張最終 PNG 納入 iOS，且每一筆 canonical 61-item definition 直接持有唯一的 `artworkKey`。卡片只透過 stable catalog ID 或非自訂項目的精確現行名稱解析 definition，不保留第二份 artwork registry、不使用 fuzzy matching，也不恢復 95-item active／legacy catalog。
+- Context: 來源分支 `f09b2b2` 已完成 61/61 素材、contact sheet、provenance 與 PWA Site version 15 發布，但它建基於舊的 active/legacy catalog 並重複使用 PD-053～056。為符合 PD-057 的單一路徑架構，本次保留素材與 definition-owned 關係，捨棄舊 catalog 相容層，並以新的 canonical 編號記錄。
+- Consequences: 61 筆正式定義都必須有唯一、格式有效且實際存在的 1024×1024 透明 PNG；缺圖或重複 key 由自動測試阻擋。自訂或未知物品仍顯示具名稱的分類 fallback。PWA 已在來源工作完成並驗證為 Site version 15，本地整合不重新部署或改變其線上狀態；App 仍需通過 artwork regression、packing regression、完整 build 與人工 contact-sheet／Simulator 視覺檢查，才可視為整體驗收。

@@ -4,307 +4,368 @@
     {
       "id": "passport",
       "nameZh": "護照",
-      "category": "documents"
+      "category": "documents",
+      "artworkKey": "passport"
     },
     {
       "id": "power-bank",
       "nameZh": "行動電源",
-      "category": "electronics"
+      "category": "electronics",
+      "artworkKey": "power-bank"
     },
     {
       "id": "charging-kit",
       "nameZh": "共用充電器與充電線",
-      "category": "electronics"
+      "category": "electronics",
+      "artworkKey": "charging-kit"
     },
     {
       "id": "sunscreen",
       "nameZh": "防曬乳",
-      "category": "toiletries"
+      "category": "toiletries",
+      "artworkKey": "sunscreen"
     },
     {
       "id": "sunglasses",
       "nameZh": "太陽眼鏡",
-      "category": "other"
+      "category": "other",
+      "artworkKey": "sunglasses"
     },
     {
       "id": "water-bottle",
       "nameZh": "隨身水瓶",
-      "category": "other"
+      "category": "other",
+      "artworkKey": "water-bottle"
     },
     {
       "id": "warm-coat",
       "nameZh": "保暖外套",
-      "category": "clothing"
+      "category": "clothing",
+      "artworkKey": "warm-coat"
     },
     {
       "id": "hand-warmer",
       "nameZh": "暖暖包",
-      "category": "other"
+      "category": "other",
+      "artworkKey": "hand-warmer"
     },
     {
       "id": "light-jacket",
       "nameZh": "薄外套",
-      "category": "clothing"
+      "category": "clothing",
+      "artworkKey": "light-jacket"
     },
     {
       "id": "folding-umbrella",
       "nameZh": "摺疊傘",
-      "category": "other"
+      "category": "other",
+      "artworkKey": "folding-umbrella"
     },
     {
       "id": "business-cards",
       "nameZh": "名片",
-      "category": "documents"
+      "category": "documents",
+      "artworkKey": "business-cards"
     },
     {
       "id": "formal-clothes",
       "nameZh": "正式服裝",
-      "category": "clothing"
+      "category": "clothing",
+      "artworkKey": "formal-clothes"
     },
     {
       "id": "sanitary-products",
       "nameZh": "生理用品",
-      "category": "toiletries"
+      "category": "toiletries",
+      "artworkKey": "sanitary-products"
     },
     {
       "id": "plug-adapter",
       "nameZh": "插座轉接頭",
-      "category": "electronics"
+      "category": "electronics",
+      "artworkKey": "plug-adapter"
     },
     {
       "id": "phone",
       "nameZh": "手機",
-      "category": "electronics"
+      "category": "electronics",
+      "artworkKey": "phone"
     },
     {
       "id": "laptop",
       "nameZh": "筆電",
-      "category": "electronics"
+      "category": "electronics",
+      "artworkKey": "laptop"
     },
     {
       "id": "laptop-charger",
       "nameZh": "筆電充電器",
-      "category": "electronics"
+      "category": "electronics",
+      "artworkKey": "laptop-charger"
     },
     {
       "id": "tablet",
       "nameZh": "平板／電子閱讀器",
-      "category": "electronics"
+      "category": "electronics",
+      "artworkKey": "tablet"
     },
     {
       "id": "camera",
       "nameZh": "相機",
-      "category": "electronics"
+      "category": "electronics",
+      "artworkKey": "camera"
     },
     {
       "id": "camera-charger",
       "nameZh": "相機電池與充電器",
-      "category": "electronics"
+      "category": "electronics",
+      "artworkKey": "camera-charger"
     },
     {
       "id": "memory-card",
       "nameZh": "記憶卡",
-      "category": "electronics"
+      "category": "electronics",
+      "artworkKey": "memory-card"
     },
     {
       "id": "smartwatch",
       "nameZh": "智慧手錶",
-      "category": "electronics"
+      "category": "electronics",
+      "artworkKey": "smartwatch"
     },
     {
       "id": "watch-charger",
       "nameZh": "手錶充電器",
-      "category": "electronics"
+      "category": "electronics",
+      "artworkKey": "watch-charger"
     },
     {
       "id": "headphones",
       "nameZh": "耳機與收納盒",
-      "category": "electronics"
+      "category": "electronics",
+      "artworkKey": "headphones"
     },
     {
       "id": "skincare",
       "nameZh": "個人保養用品",
-      "category": "toiletries"
+      "category": "toiletries",
+      "artworkKey": "skincare"
     },
     {
       "id": "swimsuit",
       "nameZh": "泳衣",
-      "category": "clothing"
+      "category": "clothing",
+      "artworkKey": "swimsuit"
     },
     {
       "id": "quick-dry-towel",
       "nameZh": "快乾毛巾",
-      "category": "toiletries"
+      "category": "toiletries",
+      "artworkKey": "quick-dry-towel"
     },
     {
       "id": "outdoor-shoes",
       "nameZh": "健行鞋",
-      "category": "clothing"
+      "category": "clothing",
+      "artworkKey": "outdoor-shoes"
     },
     {
       "id": "sun-hat",
       "nameZh": "遮陽帽",
-      "category": "clothing"
+      "category": "clothing",
+      "artworkKey": "sun-hat"
     },
     {
       "id": "daypack",
       "nameZh": "小型日用背包",
-      "category": "other"
+      "category": "other",
+      "artworkKey": "daypack"
     },
     {
       "id": "rain-jacket",
       "nameZh": "防風防雨外套",
-      "category": "clothing"
+      "category": "clothing",
+      "artworkKey": "rain-jacket"
     },
     {
       "id": "warm-hat",
       "nameZh": "保暖帽",
-      "category": "clothing"
+      "category": "clothing",
+      "artworkKey": "warm-hat"
     },
     {
       "id": "waterproof-gloves",
       "nameZh": "保暖手套",
-      "category": "clothing"
+      "category": "clothing",
+      "artworkKey": "waterproof-gloves"
     },
     {
       "id": "wet-item-bag",
       "nameZh": "濕物收納袋",
-      "category": "other"
+      "category": "other",
+      "artworkKey": "wet-item-bag"
     },
     {
       "id": "workout-clothes",
       "nameZh": "運動衣褲",
-      "category": "clothing"
+      "category": "clothing",
+      "artworkKey": "workout-clothes"
     },
     {
       "id": "formal-shoes",
       "nameZh": "正式鞋",
-      "category": "clothing"
+      "category": "clothing",
+      "artworkKey": "formal-shoes"
     },
     {
       "id": "laundry-supplies",
       "nameZh": "旅行用洗衣劑",
-      "category": "toiletries"
+      "category": "toiletries",
+      "artworkKey": "laundry-supplies"
     },
     {
       "id": "laundry-bag",
       "nameZh": "待洗衣物袋",
-      "category": "other"
+      "category": "other",
+      "artworkKey": "laundry-bag"
     },
     {
       "id": "locker-lock",
       "nameZh": "小型密碼鎖",
-      "category": "other"
+      "category": "other",
+      "artworkKey": "locker-lock"
     },
     {
       "id": "slippers",
       "nameZh": "淋浴拖鞋",
-      "category": "clothing"
+      "category": "clothing",
+      "artworkKey": "slippers"
     },
     {
       "id": "payment-card",
       "nameZh": "信用卡／金融卡",
-      "category": "documents"
+      "category": "documents",
+      "artworkKey": "payment-card"
     },
     {
       "id": "tops",
       "nameZh": "上衣",
-      "category": "clothing"
+      "category": "clothing",
+      "artworkKey": "tops"
     },
     {
       "id": "bottoms",
       "nameZh": "下身衣物",
-      "category": "clothing"
+      "category": "clothing",
+      "artworkKey": "bottoms"
     },
     {
       "id": "underwear",
       "nameZh": "內衣褲",
-      "category": "clothing"
+      "category": "clothing",
+      "artworkKey": "underwear"
     },
     {
       "id": "socks",
       "nameZh": "襪子",
-      "category": "clothing"
+      "category": "clothing",
+      "artworkKey": "socks"
     },
     {
       "id": "walking-shoes",
       "nameZh": "舒適步行鞋",
-      "category": "clothing"
+      "category": "clothing",
+      "artworkKey": "walking-shoes"
     },
     {
       "id": "toothbrush",
       "nameZh": "牙刷",
-      "category": "toiletries"
+      "category": "toiletries",
+      "artworkKey": "toothbrush"
     },
     {
       "id": "toothpaste",
       "nameZh": "牙膏",
-      "category": "toiletries"
+      "category": "toiletries",
+      "artworkKey": "toothpaste"
     },
     {
       "id": "sleepwear",
       "nameZh": "睡衣",
-      "category": "clothing"
+      "category": "clothing",
+      "artworkKey": "sleepwear"
     },
     {
       "id": "travel-document-backup",
       "nameZh": "旅行文件備份",
-      "category": "documents"
+      "category": "documents",
+      "artworkKey": "travel-document-backup"
     },
     {
       "id": "local-cash",
       "nameZh": "當地現金",
-      "category": "documents"
+      "category": "documents",
+      "artworkKey": "local-cash"
     },
     {
       "id": "driving-documents",
       "nameZh": "駕照與國際駕照",
-      "category": "documents"
+      "category": "documents",
+      "artworkKey": "driving-documents"
     },
     {
       "id": "sweater-fleece",
       "nameZh": "毛衣／刷毛上衣",
-      "category": "clothing"
+      "category": "clothing",
+      "artworkKey": "sweater-fleece"
     },
     {
       "id": "scarf",
       "nameZh": "圍巾",
-      "category": "clothing"
+      "category": "clothing",
+      "artworkKey": "scarf"
     },
     {
       "id": "waterproof-nonslip-shoes",
       "nameZh": "防水防滑鞋",
-      "category": "clothing"
+      "category": "clothing",
+      "artworkKey": "waterproof-nonslip-shoes"
     },
     {
       "id": "thermal-base-layer",
       "nameZh": "排汗保暖內層",
-      "category": "clothing"
+      "category": "clothing",
+      "artworkKey": "thermal-base-layer"
     },
     {
       "id": "ski-socks",
       "nameZh": "滑雪襪",
-      "category": "clothing"
+      "category": "clothing",
+      "artworkKey": "ski-socks"
     },
     {
       "id": "ski-goggles",
       "nameZh": "雪鏡",
-      "category": "other"
+      "category": "other",
+      "artworkKey": "ski-goggles"
     },
     {
       "id": "ski-jacket",
       "nameZh": "滑雪外套",
-      "category": "clothing"
+      "category": "clothing",
+      "artworkKey": "ski-jacket"
     },
     {
       "id": "ski-pants",
       "nameZh": "滑雪褲",
-      "category": "clothing"
+      "category": "clothing",
+      "artworkKey": "ski-pants"
     },
     {
       "id": "business-clothes",
       "nameZh": "商務服裝",
-      "category": "clothing"
+      "category": "clothing",
+      "artworkKey": "business-clothes"
     }
   ]
 }

@@ -38,7 +38,9 @@ struct PackingRegression {
         expect(PackingListGenerator.referencedItemIDs.isSubset(of: ids), "Swift rule references must exist")
         expect(catalog.id(named: "護照") == "passport", "current display name must resolve")
         expect(catalog.id(named: "插座轉接頭（當地 Type-G）") == "plug-adapter", "dynamic plug name must resolve")
-
+        let artworkKeys = catalog.items.compactMap(\.artworkKey)
+        expect(artworkKeys.count == 61, "every catalog item must own artwork")
+        expect(Set(artworkKeys).count == 61, "artwork keys must be unique")
         let duplicate = PackingCatalog(version: catalog.version, items: catalog.items + [catalog.items[0]])
         do {
             try duplicate.validate(referencedItemIDs: PackingListGenerator.referencedItemIDs)
