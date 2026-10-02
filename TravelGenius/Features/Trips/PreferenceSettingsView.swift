@@ -35,7 +35,7 @@ struct PreferenceSettingsView: View {
                              .accessibilityAddTraits(preferences.packingStyle == style ? .isSelected : [])
                         }
                     }
-                    Text("輕便最多四套換洗；一般依天數準備；準備齊全另加入備用品。只影響新行程，已建立的清單不會改變。")
+                    Text("上衣與下身衣物依更換頻率及打包風格估算；內衣褲與襪子每日一份，途中洗衣時會減量。這些設定是新行程的預設值，每趟都能另外調整。")
                         .font(.footnote).foregroundStyle(theme.colors.secondaryText)
                 }.padding(20)
             }

@@ -463,3 +463,11 @@ This log records accepted product choices that affect behavior, navigation, scop
 - Consequences: 移除 JSON PackingRule 模型與載入、人口推測欄位、可空設備／需求所代表的歷史狀態、舊推薦模式對話框、推薦偏好升級阻擋畫面及直接 sync 合併路徑。TripPackingContext 只保留目前會影響 V1 的活動、青旅與洗衣輸入；不保留溫泉、非青旅住宿、雪具租借／自備等解碼分支。Catalog 收斂為 61 筆正式定義，不再使用 95 筆定義加 active set，也不保留 legacy aliases。既有清單更新仍採唯讀新增／減量／移除提案並由使用者勾選後套用，因為這是資料安全機制而非版本雙軌。城市季節資料、國家插座及其他事實資料仍保留 JSON。
 - Supersedes: PD-046 的舊行程選擇、PD-047 的歷史輸出相容、PD-048 的重複遷移選擇，以及 PD-049～PD-052 中要求保留 compatibility-only IDs、legacy aliases、歷史解碼、95 筆 catalog 與 7,200 組舊引擎比對的部分。PD-050／051 驗證過的 61 項內容、觸發、洗衣數量政策，以及 PD-041 的人工確認更新安全仍有效。
 - Verification boundary: 這個整合步驟必須通過單一 Swift 引擎的 61 項目錄契約、540 組目的地／月份／天數／三種風格矩陣、設備／需求、活動、青旅、洗衣、插座、去重、唯讀 review、選擇性套用、自訂品保護、損毀快照安全、目的地資料測試與完整 App build，才可形成整合提交；所有剩餘功能分支仍須逐一評估語意衝突並各自重跑驗證後才可合入。PWA 已使用 V1 的單一路徑，本步驟不改其程式或部署狀態。
+
+## PD-058 — Integrate trip editing and recommendation refinements into the single engine
+
+- Date: 2026-10-02
+- Status: Previously human-accepted behavior; local consolidated candidate pending complete verification
+- Decision: 在 PD-057 的單一 Swift 推薦引擎上整合衣物更換週期、完整插頭型式涵蓋判定、每趟行程編輯，以及新增／增量／減量／移除的明確清單 review。無洗衣時，內衣褲與襪子維持每日一件；上衣依輕便／一般／齊全約每 2 天、每 1.5 天、每日更換；下身衣物約每 4／3／2 天更換。有洗衣時，上衣上限為 2／3／4，下身為 2／2／3，內衣褲與襪子為 3／4／5。目的地必須涵蓋出發地所有常見插頭型式才不建議轉接頭；此規則不宣稱能處理電壓差異。
+- Context: 來源分支 `1db13d0` 的功能已由使用者明確表示「已驗證，可提交」，但它從舊的 modern／legacy 雙軌基線開發，且在自己的分支重複使用 PD-053～057。整合時保留其已接受的產品行為，移除歷史引擎條件與舊 API，並以新的 canonical 編號記錄，而不是覆寫 `dev` 已存在的 PD-053～057。
+- Consequences: 每趟行程可獨立修改名稱、城市、日期、打包風格、設備、個人需求、活動、青旅與洗衣設定。儲存前先比較既有清單；新增與增量預設勾選，減量與移除不預選，自訂項目受到保護，未採納差異時保留待 review 提醒。目的地或日期改變時重新取得候選天氣依據，目的地改變會使先前通關確認失效。iOS 行為由本地整合測試重新驗證後才可提交或推送。PWA 目前未同步每趟編輯與衣物數量精修；依 PD-056 的發布慣例，未經另一次明確 PWA 更新範圍與線上驗證，不將本地 iOS 整合描述為跨平台完成。

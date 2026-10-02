@@ -81,6 +81,8 @@ final class Trip {
     var packingWeatherRaw: String = ""
     /// Per-trip recommendation inputs.
     var packingContextRaw: String = ""
+    /// True when trip settings were saved without applying every checklist proposal.
+    var packingReviewPending: Bool = false
 
     var packingWeather: PackingWeather? {
         get {
@@ -123,6 +125,13 @@ final class Trip {
 
     func capturePackingContextIfNeeded(_ value: TripPackingContext) {
         guard packingContextRaw.isEmpty, value.valid,
+              let data = try? JSONEncoder().encode(value),
+              let raw = String(data: data, encoding: .utf8) else { return }
+        packingContextRaw = raw
+    }
+
+    func replacePackingContext(_ value: TripPackingContext) {
+        guard value.valid,
               let data = try? JSONEncoder().encode(value),
               let raw = String(data: data, encoding: .utf8) else { return }
         packingContextRaw = raw
