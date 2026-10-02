@@ -1,6 +1,6 @@
 # Packmon V1 最小充分物品目錄規格
 
-日期：2026-09-26。狀態：內容人工驗證完成；iOS 與 PWA 實作候選已完成，待人工驗收。依 PD-049～PD-052 制定；本文件取代先前候選規格中的具體物品對應，但不改寫歷史決策或既有資料。
+日期：2026-09-26；2026-10-02 依 PD-057 更新整合契約。狀態：內容人工驗證完成；iOS 單一路徑候選待完整分支驗證與人工驗收。
 
 ## 目標與邊界
 
@@ -16,12 +16,11 @@
 - **基本必備**：一般國際旅行直接加入。
 - **明確條件**：目的地、天氣、活動、住宿或洗衣條件命中才加入。
 - **個人選擇**：只有使用者明確勾選設備或需求才加入；不可依年齡、性別或旅伴推測。
-- **相容性保留**：既有 ID、名稱與既有行程仍可解碼及顯示，但不再產生新的自動推薦。
 - **自訂／常備**：不在標準推薦目錄；由使用者自行建立並沿用既有保護規則。
 
 ## 已確認的 61 項標準物品
 
-下表的 ID 是目錄身份方向。既有可沿用的 ID 不更名；新 ID 於實作時加入。顯示名稱可調整，但既有名稱必須保留為相容別名。
+下表的 ID 是 V1 唯一正式目錄身份。顯示名稱可以在後續決策調整，但程式規則一律引用 ID。
 
 ### 基本必備（9）
 
@@ -129,7 +128,7 @@ V1 只保留「青旅／共用住宿」作為會影響目錄的住宿輸入。�
 - 相同 catalog ID 無論被多少規則命中都只出現一次。共用水瓶、防曬用品、保暖手套與充電用品不得重複產生。
 - 同一件可兼用但身份不同的鞋款或外套，不在資料層強制合併；推薦理由必須讓使用者判斷能否共用，避免把不同功能誤當完全相同。
 
-## 不主動推薦及相容性處理
+## 不主動推薦的項目
 
 ### 使用者自行新增
 
@@ -137,19 +136,9 @@ V1 只保留「青旅／共用住宿」作為會影響目錄的住宿輸入。�
 
 頭燈／手電筒只有在日出、日落、偏遠或過夜活動資料可靠時才適合條件推薦；防蚊用品只有在目的地與地形風險資料可靠時才適合條件推薦。V1 尚無足夠輸入，不先猜測。
 
-### 不再參與新推薦的既有項目
+### 已排除的候選
 
-至少包含：`clothes-change`、`toiletry-kit`、`regular-medicine`、`cash-japan`、`slip-on-shoes`、`hand-towel`、`tmoney-card`、`stomach-medicine`、`scarf-gloves`、`dry-bag`、`luggage-lock`、`document-money-pouch`、`selfie-tripod`、`split-bill-kit`、`children-medicine`、`wet-wipes`、`snacks`、`laptop-kit`、`passport-copies`、`insurance-copy`、`emergency-card`、`prescription-medicine`、`reading-glasses`、`student-id`、`book`、`glasses`、`contact-lenses`、`flashlight`、`first-aid-kit`、`snow-equipment`、`spa-towel`、`athletic-shoes`、`travel-towel`、`earplugs`。
-
-這些 ID 不刪除、不重用；既有行程繼續顯示原有項目與名稱。實作時應將舊組合／重複身份映射到新的單一身份，避免新行程重複推薦：
-
-- `laptop-kit` → `laptop` + `laptop-charger`
-- `passport-copies` + `insurance-copy` + `emergency-card` → 使用者選擇的 `travel-document-backup`
-- `luggage-lock` + `locker-lock` → `locker-lock`，顯示為「小型密碼鎖」
-- `scarf-gloves` → `scarf` + `waterproof-gloves`
-- `dry-bag`／既有濕物用途 → `wet-item-bag`
-- `travel-towel`／`spa-towel` 的一般推薦 → 不產生；青旅使用 `quick-dry-towel`
-- `cash-japan` → 有可靠條件才使用 `local-cash`
+先前原型曾使用的組合型、人口推測型或缺少可靠觸發的身份不進入正式 catalog。需要相同用途時，只使用本文件已確認的單一身份，例如筆電與筆電充電器分開、文件備份使用 `travel-document-backup`、青旅毛巾使用 `quick-dry-towel`、濕物收納使用 `wet-item-bag`。
 
 T-money、分帳 App 不是打包物品。同行者類型不得自動帶出自拍用品、兒童用品、濕紙巾、零食或藥品。
 
@@ -165,18 +154,18 @@ T-money、分帳 App 不是打包物品。同行者類型不得自動帶出自�
 
 本文件確認內容，不直接授權靜默改寫既有行程。後續實作至少必須：
 
-1. 升級 catalog 版本，保留所有已發布 ID、別名與未知舊資料。
+1. Catalog 只保留本文件確認的 61 個正式 ID；App 尚未上架，不建立舊目錄相容層。
 2. 對 iOS 與 PWA 分別列出同步範圍；若平台暫不同步，必須記錄原因。
 3. 固定 61 個 active identity 的唯一性與所有觸發矩陣，驗證單趟不會因多規則重複。
 4. 覆蓋設備配件去重、雨具相加、UV 共用品、活動鞋／衣物、青旅與洗衣數量測試。
-5. 驗證所有相容性項目不會出現在新推薦，但既有行程不被刪除或改名。
+5. 驗證所有 Swift 規則引用都存在於 61 項目錄，且每趟輸出以 catalog ID 去重。
 6. 以人工案例確認最少清單不會一次顯示全部 61 項，並檢視每項推薦理由。
 7. 在人工作品目錄驗收後再製作最終一致的物品圖片；PD-044 的臨時圖片不因本規格自動成為最終素材。
 
-## 2026-09-26 實作候選紀錄
+## 2026-09-27 單一路徑實作紀錄
 
-- iOS 將 catalog 升為 version 2：保留既有 74 個身份與別名、補齊新身份，共 95 筆定義；`activeItemIDs` 明確固定為 61 個。新版行程只可從 active set 產生推薦，舊版快照仍走歷史輸出。
-- iOS 與 PWA 都使用九項基本物品、相同的設備／需求／活動／青旅／洗衣對應，以及 catalog ID 去重。新版介面移除溫泉、非青旅住宿、舊醫藥／視力需求及滑雪租借問項；舊備份值仍可解碼但不再產生 V1 項目。
+- iOS catalog version 2 直接收斂為 61 筆正式定義，只保留 ID、中文名稱與分類；不再使用 95 筆定義、active set 或 legacy aliases。
+- iOS 使用九項基本物品與單一 Swift 規則，涵蓋設備／需求／天氣／活動／青旅／洗衣、插座與 catalog ID 去重。介面和資料模型不保留溫泉、非青旅住宿、人口推測、雪具租借或歷史版本分支。
 - 新增「自駕」作為 `driving-documents` 的明確觸發。`local-cash` 保留為 active identity，但目前沒有足夠可靠的目的地／抵達情境輸入，因此不會僅依國家自動產生。
-- 既有行程不在載入時靜默改寫；iOS 延續唯讀差異提案後由使用者採用，PWA 延續只補入勾選項目的流程。此次沒有資料庫批次遷移、最終圖片、公開部署或 release tag。
-- 工程驗證：iOS 7,200 組歷史輸出相容、V1 規則／快照／重開測試與完整 device build 通過；PWA 59 項 Node 測試及 JavaScript 語法檢查通過。這些結果不取代本候選的人工驗收。
+- 既有清單不在載入時靜默改寫；iOS 延續唯讀差異提案後由使用者採用。此次不建立舊資料遷移 UI，沒有最終圖片、公開部署或 release tag。
+- 工程驗證：iOS 單一引擎通過 61 項目錄契約、540 組目的地／月份／天數／風格矩陣、情境、快照、唯讀 review、自訂品保護與重複執行測試。PWA 既有測試紀錄不因本次 iOS 收斂而重寫。

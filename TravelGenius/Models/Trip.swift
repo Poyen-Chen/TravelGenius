@@ -65,10 +65,6 @@ final class Trip {
     var totalBudget: Decimal = 0
     var tripTypeRaw: String = TripType.leisure.rawValue
     var isClosed: Bool = false
-    /// 舊版相容欄位。新版建立流程不再產生草稿。
-    var isDraft: Bool = false
-    /// 舊版相容欄位。
-    var draftCreationStep: Int = 1
     /// 使用者主動按下「開始行程」的時間；日期本身不會自動改變狀態。
     var startedAt: Date?
     /// 使用者主動按下「完成行程」的時間。
@@ -77,13 +73,13 @@ final class Trip {
     var hasReviewedTravelRules: Bool = false
     /// 使用者主動取消的自動推薦，避免重新產生清單時又被加入。
     var excludedPackingNamesRaw: String = ""
-    /// Additive migration; retain old names for downgrade/reference compatibility.
+    /// Stable catalog identities excluded by the traveler.
     var excludedPackingIDsRaw: String = ""
-    /// Empty only for pre-stage-3 records; once captured, never follows global settings.
+    /// Immutable per-trip recommendation preferences.
     var packingPreferencesRaw: String = ""
-    /// Versioned creation reference; empty for old trips, never fabricated during migration.
+    /// Immutable creation-time weather reference.
     var packingWeatherRaw: String = ""
-    /// Versioned per-trip recommendation inputs. Empty means a historical trip with no context record.
+    /// Per-trip recommendation inputs.
     var packingContextRaw: String = ""
 
     var packingWeather: PackingWeather? {
@@ -188,7 +184,6 @@ final class Trip {
         startedAt = date
         completedAt = nil
         isClosed = false
-        isDraft = false
     }
 
     func complete(relativeTo date: Date = .now) {
@@ -218,7 +213,7 @@ final class Trip {
         var names = excludedPackingNames
         names.insert(name)
         excludedPackingNames = names
-        if let id = StaticDataStore.shared.packingCatalog.legacyID(name: name) {
+        if let id = StaticDataStore.shared.packingCatalog.id(named: name) {
             var ids = excludedPackingIDs
             ids.insert(id)
             excludedPackingIDs = ids
@@ -229,12 +224,12 @@ final class Trip {
         var names = excludedPackingNames
         names.remove(name)
         excludedPackingNames = names
-        if let id = StaticDataStore.shared.packingCatalog.legacyID(name: name) {
+        if let id = StaticDataStore.shared.packingCatalog.id(named: name) {
             var ids = excludedPackingIDs
             ids.remove(id)
             excludedPackingIDs = ids
             excludedPackingNames = excludedPackingNames.filter {
-                StaticDataStore.shared.packingCatalog.legacyID(name: $0) != id
+                StaticDataStore.shared.packingCatalog.id(named: $0) != id
             }
         }
     }

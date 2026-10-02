@@ -65,8 +65,8 @@ enum PackingStaples {
     }
     static func catalogID(for name: String) -> String? {
         let catalog = StaticDataStore.shared.packingCatalog
-        return catalog.legacyID(name: name) ?? catalog.items.first { item in
-            (item.legacyNames + [item.nameZh]).contains { normalized($0) == normalized(name) }
+        return catalog.id(named: name) ?? catalog.items.first {
+            normalized($0.nameZh) == normalized(name)
         }?.id
     }
 }

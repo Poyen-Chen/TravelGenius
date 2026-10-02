@@ -174,16 +174,15 @@ struct TripCreationFlowView: View {
                             }.pickerStyle(.segmented).labelsHidden()
 
                             packingOptionGrid("這趟會帶的設備", options: PersonalPackingOptions.devices,
-                                selected: creationPreferences.devices ?? []) { togglePersonalOption($0, devices: true) }
+                                selected: creationPreferences.devices) { togglePersonalOption($0, devices: true) }
                             packingOptionGrid("這趟常備需求", options: PersonalPackingOptions.needs,
-                                selected: creationPreferences.needs ?? []) { togglePersonalOption($0, devices: false) }
+                                selected: creationPreferences.needs) { togglePersonalOption($0, devices: false) }
 
                             Text("活動（可複選）").font(.subheadline.weight(.semibold))
                             LazyVGrid(columns: [GridItem(.adaptive(minimum: 135), spacing: 8)], spacing: 8) {
                                 ForEach(PackingActivity.recommendationOptions) { activity in
                                     selectionChip(activity.label, isSelected: packingContext.activities.contains(activity)) {
                                         toggle(activity, in: &packingContext.activities)
-                                        packingContext.snowPlan = packingContext.activities.contains(.snow) ? .view : .unknown
                                     }
                                 }
                             }
@@ -349,7 +348,7 @@ struct TripCreationFlowView: View {
     }
 
     private func togglePersonalOption(_ id: String, devices: Bool) {
-        var values = devices ? (creationPreferences.devices ?? []) : (creationPreferences.needs ?? [])
+        var values = devices ? creationPreferences.devices : creationPreferences.needs
         if let index = values.firstIndex(of: id) { values.remove(at: index) }
         else { values.append(id) }
         if devices { creationPreferences.devices = values }

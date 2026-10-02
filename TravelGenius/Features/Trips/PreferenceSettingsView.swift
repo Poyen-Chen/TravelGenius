@@ -64,9 +64,9 @@ struct PreferenceSettingsView: View {
             Text(title).font(.headline)
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 145), spacing: 10)], spacing: 10) {
                 ForEach(options) { option in
-                    let selected = (devices ? preferences.devices : preferences.needs)?.contains(option.id) == true
+                    let selected = (devices ? preferences.devices : preferences.needs).contains(option.id)
                     Button {
-                        var values = (devices ? preferences.devices : preferences.needs) ?? []
+                        var values = devices ? preferences.devices : preferences.needs
                         if selected { values.removeAll { $0 == option.id } } else { values.append(option.id) }
                         if devices { preferences.devices = values } else { preferences.needs = values }
                     } label: {

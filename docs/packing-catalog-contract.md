@@ -1,6 +1,6 @@
 # 第 2 階段：打包目錄與規則契約
 
-> 歷史契約：本文件記錄階段 2 已驗收的穩定 ID 與相容機制。2026-09-26 已確認的新推薦內容與 active identity 以 [V1 最小充分物品目錄規格](packing-catalog-v1-spec.md)及 PD-050～PD-052 為準；新版 iOS／PWA 實作候選待人工驗收。
+> 歷史契約：本文件記錄階段 2 的 JSON 規則與相容機制，不是目前 iOS 執行契約。PD-057 已在上架前取消雙軌；目前以 [V1 最小充分物品目錄規格](packing-catalog-v1-spec.md)的 61 項目錄及單一 Swift 推薦引擎為準。
 
 ## 範圍
 
@@ -8,8 +8,8 @@
 
 ## 隨 App 發布的資料
 
-- 階段 2 驗收時的 `packing_items.json` 為 `version: 1`、38 種物品；V1 候選已升為 `version: 2`，保留及擴充到 95 筆定義，並以 61 個唯一的 `activeItemIDs` 限制新版推薦。ID 發布後不可更名、重用或依排序重新編號；改顯示名稱時保留舊名稱於 `legacyNames`。
-- `packing_rules.json`：每條規則有固定 `id`、既有 `layer`、`match`、`reasonZh`、`items`。每個項目改用 `itemId` 引用目錄，保留 `quantity`、`perDay`、`fullOnly`。陣列順序仍決定推薦優先順序及顯示排序。
+- 階段 2 驗收時的 `packing_items.json` 為 `version: 1`、38 種物品；後續雙軌候選曾擴充為 95 筆定義並以 61 個 `activeItemIDs` 限制新版推薦。這段相容設計已由 PD-057 取代；現行目錄直接收斂為 61 筆正式定義，不保留 active set 或 legacy aliases。
+- `packing_rules.json` 曾在階段 2 作為執行時規則來源：每條規則有固定 `id`、`layer`、`match`、`reasonZh`、`items`，並以 `itemId` 引用目錄。PD-057 已將現行推薦條件與數量政策收斂到單一 Swift 引擎，該檔案不再隨現行 App 載入。
 - `PackingCatalog.validate` 拒絕未知版本、重複物品／規則 ID、跨物品名稱別名衝突、不存在的引用、非正數數量及 perDay 同時指定固定數量。分類由 Codable enum 驗證。無遠端輸入，壞的隨附資料直接報錯，不以空推薦進行刪除合併。
 - 本階段保留既有 match 執行器，不引入全新 tag/need 語言；同一條件下推薦名稱、分類、數量、理由、排序與第 1 階段一致。保留既有月份備援，區域氣候問題留第 4 階段。
 
