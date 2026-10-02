@@ -23,3 +23,9 @@ TravelGenius/Resources/Secrets.plist
 
 # Local Codex workspace configuration
 .codex/
+
+# Local creative exports
+Claude outputs/
+
+# Separately versioned PWA checkout
+web/
