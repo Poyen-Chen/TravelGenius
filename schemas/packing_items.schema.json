@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "packing_items.json",
+  "description": "對應 StaticDataStore.swift 的 PackingCatalogItem；category 與 PackingCategory rawValue 一致。",
+  "type": "array",
+  "minItems": 1,
+  "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["id", "nameZh", "category"],
+    "properties": {
+      "id": { "type": "string", "minLength": 1 },
+      "nameZh": { "type": "string", "minLength": 1 },
+      "category": { "enum": ["clothing", "electronics", "documents", "toiletries", "health", "other"] },
+      "weightGrams": { "type": "integer", "minimum": 0 },
+      "tags": { "$ref": "#/$defs/uniqueStrings" },
+      "satisfies": { "$ref": "#/$defs/uniqueStrings" },
+      "priority": { "type": "integer" }
+    }
+  },
+  "$defs": {
+    "uniqueStrings": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    }
+  }
+}

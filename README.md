@@ -94,11 +94,13 @@
 
 | 步驟 | 工具 | 說明 |
 |---|---|---|
-| 產生國家／城市 | `scripts/fetch_reference.py` | 從 [mledoze/countries](https://github.com/mledoze/countries)（釘住 commit）與 GeoNames `cities15000` 重建 `countries.json`、`cities.json`，免 API key。英文名、貨幣、語言、座標與 `sourceUrl` 自動產生；中文名、緊急電話、插頭、電壓、預設城市維持人工。新增國家只填 `code` 與人工欄位、新增城市只填 `countryCode`／`cityZh`／`isDefault`，再跑腳本。`--check` 只比對不寫檔。 |
+| 產生國家／城市 | `scripts/fetch_reference.py` | 從 [mledoze/countries](https://github.com/mledoze/countries)（釘住 commit）與 GeoNames `cities15000` 重建 `countries.json`、`cities.json`，免 API key。英文名、貨幣、語言、座標與 `sourceUrl` 自動產生；中文名、緊急電話、插頭、電壓、預設城市維持人工。新增國家只填 `code` 與人工欄位、新增城市只填 `countryCode`／`cityZh`／`isDefault`，再跑腳本。`--check` 只比對不寫檔：實質資料差異會失敗；同一個可信上游檔案僅 commit 來源更新時只提示，一般更新仍會刷新 `sourceUrl`。 |
 | 人工策展 | 直接編輯 JSON | 禁帶物品、航空規則與禮儀沒有免費 API，每筆法規強制帶 `sourceName`、`sourceUrl`、`lastVerified`（`YYYY-MM`）。 |
-| 品質閘門 | `schemas/*.schema.json`＋`scripts/validate_seed.py` | 驗 schema（列舉值對應 Swift enum、禁止未知欄位）、id 不重複、國家代碼存在、每國一個預設城市，以及 `lastVerified` 逾期（預設 6 個月）。`pip install -r scripts/requirements.txt` 後執行。 |
-| CI | `.github/workflows/seed-data.yml` | 改 SeedData 的 push／PR 會驗證（逾期只警告）；每週一排程逾期視為失敗並檢查開放資料是否更新；合併到 main 後清除 jsDelivr 快取。 |
+| 品質閘門 | `schemas/*.schema.json`＋`scripts/validate_seed.py` | 驗七個檔案的 schema（列舉值對應 Swift enum、禁止未知欄位）、id 不重複、打包規則的 `itemId`／`need` 可解析、`country:`／`origin:` 國家代碼存在、每國最多一個預設城市，以及 `lastVerified` 逾期（預設 6 個月）。`pip install -r scripts/requirements.txt` 後執行。 |
+| CI | `.github/workflows/seed-data.yml` | 改 SeedData、schema、資料工具／測試或 Swift 打包契約的 push／PR 會跑回歸測試與驗證（逾期只警告）；每週一排程逾期視為失敗並檢查開放資料是否更新；合併到 main 後清除 jsDelivr 快取。 |
 | 發布 | jsDelivr | App 啟動時以 ETag 向 `cdn.jsdelivr.net/gh/Poyen-Chen/TravelGenius@main/…/SeedData/` 檢查更新（見上方「參考資料熱更新」）。推到 main 就等於發給所有使用者，建議為 main 開分支保護。 |
+
+資料工具的離線回歸測試：`python -m unittest discover -s scripts/tests -v`。
 
 ### 上架前待辦
 

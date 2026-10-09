@@ -4,8 +4,8 @@
 檢查項目：
   1. 每個 SeedData/*.json 符合 schemas/<name>.schema.json。
      schema 禁止未知欄位，因為 Swift 的 Codable 會靜默忽略拼錯的 key。
-  2. 跨檔一致性：id 不重複（對應 Swift 的 Identifiable.id）、國家代碼都存在於
-     countries.json、每國最多一個預設城市。
+  2. 跨檔一致性：id 不重複、國家代碼都存在於 countries.json、每國最多一個
+     預設城市，以及打包規則的 itemId / need 都能由物品目錄解析。
   3. 逾期：prohibited_items 與 aviation_rules 的 lastVerified 距今超過 N 個月。
      預設只警告；加 --fail-on-stale 時視為錯誤（排程 CI 用來報警）。
 
@@ -31,15 +31,17 @@ ROOT = Path(__file__).resolve().parent.parent
 SEED_DIR = ROOT / "TravelGenius" / "Resources" / "SeedData"
 SCHEMA_DIR = ROOT / "schemas"
 
-FILES = ("countries", "cities", "packing_rules", "prohibited_items", "aviation_rules", "etiquette")
+FILES = ("countries", "cities", "packing_items", "packing_rules", "prohibited_items", "aviation_rules", "etiquette")
 VERIFIED_FILES = {
     "prohibited_items": lambda r: f"{r['countryCode']}-{r['itemZh']}",
     "aviation_rules": lambda r: r["itemZh"],
 }
-# 與 StaticDataStore.swift 內各 struct 的 id 相同
+# 與 StaticDataStore.swift 內各 struct 的 id 相同（含打包規則的穩定識別鍵）
 ID_KEYS = {
     "countries": lambda r: r["code"],
     "cities": lambda r: f"{r['countryCode']}-{r['cityZh']}",
+    "packing_items": lambda r: r["id"],
+    "packing_rules": lambda r: r["id"],
     "prohibited_items": lambda r: f"{r['countryCode']}-{r['itemZh']}",
     "aviation_rules": lambda r: r["itemZh"],
     "etiquette": lambda r: f"{r['countryCode']}-{r.get('cityZh') or '全國'}-{r['titleZh']}",
@@ -86,7 +88,7 @@ def check_consistency(data: dict[str, list], report: Report) -> None:
         counts = collections.Counter(key(record) for record in data[name])
         for record_id, count in counts.items():
             if count > 1:
-                report.error(name, f"id「{record_id}」重複 {count} 次，SwiftUI 列表會顯示錯亂")
+                report.error(name, f"id「{record_id}」重複 {count} 次，識別鍵必須唯一")
 
     codes = {country["code"] for country in data["countries"]}
     references = {
@@ -94,11 +96,30 @@ def check_consistency(data: dict[str, list], report: Report) -> None:
         "prohibited_items": [r["countryCode"] for r in data["prohibited_items"]],
         "etiquette": [r["countryCode"] for r in data["etiquette"]],
         "aviation_rules": [c for r in data["aviation_rules"] for c in r.get("countries", [])],
-        "packing_rules": [c for r in data["packing_rules"] for c in r.get("match", {}).get("countries", [])],
     }
     for name, used in references.items():
         for code in sorted(set(used) - codes):
             report.error(name, f"國家代碼 {code} 不在 countries.json")
+
+    catalog_ids = {item["id"] for item in data["packing_items"]}
+    satisfied_needs = {need for item in data["packing_items"] for need in item.get("satisfies", [])}
+    for rule in data["packing_rules"]:
+        conditions = [(f"規則 {rule['id']}", rule.get("when", {}))]
+        for index, need in enumerate(rule["needs"]):
+            location = f"規則 {rule['id']} needs[{index}]"
+            if "itemId" in need and need["itemId"] not in catalog_ids:
+                report.error("packing_rules", f"{location} 的 itemId「{need['itemId']}」不在 packing_items.json")
+            if "need" in need and need["need"] not in satisfied_needs:
+                report.error("packing_rules", f"{location} 的 need「{need['need']}」沒有物品的 satisfies 能滿足")
+            conditions.append((location, need.get("when", {})))
+
+        # contextTags() 以 country: / origin: 表示目的地與出發地；也檢查單項條件。
+        for location, condition in conditions:
+            for operator in ("all", "any", "none"):
+                for tag in condition.get(operator, []):
+                    prefix, separator, code = tag.partition(":")
+                    if separator and prefix in ("country", "origin") and code not in codes:
+                        report.error("packing_rules", f"{location} when.{operator} 的 {tag} 不在 countries.json")
 
     defaults = collections.Counter(r["countryCode"] for r in data["cities"] if r["isDefault"])
     for code, count in sorted(defaults.items()):
@@ -153,7 +174,7 @@ def main() -> int:
         check_consistency(data, report)
         check_staleness(data, report, args.today, args.max_age_months, args.fail_on_stale)
 
-    total = sum(len(records) for records in data.values())
+    total = sum(len(records) for records in data.values() if isinstance(records, list))
     print(f"SeedData 檢查完成：{len(data)} 個檔案、{total} 筆，錯誤 {report.errors}、警告 {report.warnings}")
     return 1 if report.errors else 0
 

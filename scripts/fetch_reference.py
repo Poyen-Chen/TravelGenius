@@ -19,7 +19,7 @@
 
 用法：
   python3 scripts/fetch_reference.py            # 更新兩個檔案
-  python3 scripts/fetch_reference.py --check    # 只比對，有差異時 exit 1（供 CI）
+  python3 scripts/fetch_reference.py --check    # 只比對，實質差異 exit 1；僅國家來源 commit 更新則提示（供 CI）
   python3 scripts/fetch_reference.py --only cities
 """
 
@@ -40,6 +40,9 @@ ROOT = Path(__file__).resolve().parent.parent
 SEED_DIR = ROOT / "TravelGenius" / "Resources" / "SeedData"
 
 COUNTRIES_REPO = "mledoze/countries"
+COUNTRIES_SOURCE_PATTERN = re.compile(
+    rf"https://github\.com/{re.escape(COUNTRIES_REPO)}/blob/([0-9a-fA-F]{{40}})/countries\.json"
+)
 GEONAMES_DUMP_URL = "https://download.geonames.org/export/dump/cities15000.zip"
 USER_AGENT = "TravelGenius-fetch_reference/1.0"
 
@@ -194,6 +197,32 @@ def build_cities(existing: list[dict]) -> list[dict]:
 
 # MARK: - Output（維持現有檔案的排版，讓 git diff 好 review）
 
+def is_country_provenance_only_change(existing: list[dict], updated: list[dict]) -> bool:
+    """僅允許同一可信 countries.json 的 commit 更新，不忽略其他 sourceUrl 差異。"""
+    if len(existing) != len(updated):
+        return False
+
+    commit_changed = False
+    for old, new in zip(existing, updated):
+        old_url, new_url = old.get("sourceUrl"), new.get("sourceUrl")
+        if not isinstance(old_url, str) or not isinstance(new_url, str):
+            return False
+        old_source = COUNTRIES_SOURCE_PATTERN.fullmatch(old_url)
+        new_source = COUNTRIES_SOURCE_PATTERN.fullmatch(new_url)
+        if old_source is None or new_source is None:
+            return False
+
+        # 比對完整記錄（包括新增／刪除欄位與 JSON 型別），只排除已驗證的來源 URL。
+        old_data = {key: value for key, value in old.items() if key != "sourceUrl"}
+        new_data = {key: value for key, value in new.items() if key != "sourceUrl"}
+        if json.dumps(old_data, sort_keys=True) != json.dumps(new_data, sort_keys=True):
+            return False
+        if old_source.group(1).lower() != new_source.group(1).lower():
+            commit_changed = True
+
+    return commit_changed
+
+
 def compact(value) -> str:
     if isinstance(value, dict):
         inner = ", ".join(f"{json.dumps(k, ensure_ascii=False)}: {compact(v)}" for k, v in value.items())
@@ -217,7 +246,7 @@ def render_cities(records: list[dict]) -> str:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--check", action="store_true", help="只比對不寫檔，有差異時 exit 1")
+    parser.add_argument("--check", action="store_true", help="只比對不寫檔，實質差異 exit 1；僅國家來源 commit 更新則提示")
     parser.add_argument("--only", choices=("countries", "cities"), help="只處理其中一個檔案")
     parser.add_argument("--countries-ref", default="master", help="mledoze/countries 的 branch、tag 或 SHA")
     args = parser.parse_args()
@@ -233,9 +262,14 @@ def main() -> int:
                 continue
             path = SEED_DIR / f"{name}.json"
             current = path.read_text(encoding="utf-8")
-            updated = job(json.loads(current))
+            existing = json.loads(current)
+            updated = job(existing)
             if updated == current:
                 print(f"  {path.name}：無變更")
+                continue
+            if (args.check and name == "countries"
+                    and is_country_provenance_only_change(existing, json.loads(updated))):
+                print(f"  {path.name}：僅來源 commit 更新，資料內容未變（--check 不寫檔；一般更新仍會刷新來源）")
                 continue
             changed.append(path.name)
             diff = difflib.unified_diff(
