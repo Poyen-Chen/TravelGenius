@@ -479,3 +479,13 @@ This log records accepted product choices that affect behavior, navigation, scop
 - Decision: 將方向 B（warm editorial cut-paper／gouache）的 61 張最終 PNG 納入 iOS，且每一筆 canonical 61-item definition 直接持有唯一的 `artworkKey`。卡片只透過 stable catalog ID 或非自訂項目的精確現行名稱解析 definition，不保留第二份 artwork registry、不使用 fuzzy matching，也不恢復 95-item active／legacy catalog。
 - Context: 來源分支 `f09b2b2` 已完成 61/61 素材、contact sheet、provenance 與 PWA Site version 15 發布，但它建基於舊的 active/legacy catalog 並重複使用 PD-053～056。為符合 PD-057 的單一路徑架構，本次保留素材與 definition-owned 關係，捨棄舊 catalog 相容層，並以新的 canonical 編號記錄。
 - Consequences: 61 筆正式定義都必須有唯一、格式有效且實際存在的 1024×1024 透明 PNG；缺圖或重複 key 由自動測試阻擋。自訂或未知物品仍顯示具名稱的分類 fallback。PWA 已在來源工作完成並驗證為 Site version 15，本地整合不重新部署或改變其線上狀態；App 仍需通過 artwork regression、packing regression、完整 build 與人工 contact-sheet／Simulator 視覺檢查，才可視為整體驗收。
+
+## PD-060 — Integrate TravelGenius backend concepts without changing Structure C UI
+
+- Date: 2026-10-11
+- Status: User-authorized implementation; PR pending review
+- Decision: 將 Claude Code session 的 JSON 標籤／需求索引、個人行李庫、逐趟快照一致性與參考資料更新機制接入 PackSmart `dev`。保持現有 Structure C UI、61 項定義／素材、衣物數量、原因、排序、插座涵蓋與人工 review 語意。常備用品透過原 API 遷移至獨立 SwiftData store，保留原始 defaults；沒有快照的行程使用固定 normal／phone 偏好，避免讀取另一裝置的全域偏好。
+- Context: 使用者要求讀取 TravelGenius 後端設計的 Claude session、整合至 PackSmart、前端 UI 不改動並開 PR。來源設計早於 PackSmart 較新的活動／天氣／洗衣／通關與 artwork 政策，因此移植後端能力而非覆寫新功能。
+- Consequences: 推薦仍只有一條執行路徑，JSON 是條件與公式的唯一來源；用品身分與 artwork 維持 app 版本契約。九份參考資料整批通過 manifest hash 與交叉驗證才於下次啟動採用；發布端點未設定時使用 bundle。個人庫 CloudKit 是簽名 build 的 opt-in 配置，預設本地；主行程及舊健康模型明確保留本地，未執行 cloud migration，沒有宣稱兩裝置同步已完成。Release 排除 Secrets.plist 且不讀第三方 AI key；Debug 必須以引數明確開啟。沒有部署代理、新增同意 UI、變更 bundle/group ID 或刪除使用者資料。PWA 格式同步適合後續處理，但本次 App 範圍不變更或發布 PWA；詳見 `docs/backend-integration.md`。
+- Supersedes: PD-057／058 中推薦政策必須由固定 Swift 實作、packing_rules.json 不參與 runtime 的機制選擇；保留其單一路徑、61 項目錄與原有推薦政策。PD-059 的 definition-owned artwork 與 PD-041 的明確 review 安全仍有效。
+- Verification: 540 組既有推薦矩陣、2,916 組整合前 oracle、快照與選擇性採納、常備遷移／重開／損毀資料、整批更新／ETag／部分失敗／離線 bundle fallback、天氣／目的地／61 張素材及 Debug／Release App build。CloudKit provisioning 與真機跨裝置同步仍需團隊設定後驗收。

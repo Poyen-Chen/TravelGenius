@@ -59,7 +59,11 @@
       "id": "folding-umbrella",
       "nameZh": "摺疊傘",
       "category": "other",
-      "artworkKey": "folding-umbrella"
+      "artworkKey": "folding-umbrella",
+      "satisfies": [
+        "rain-cover"
+      ],
+      "priority": 10
     },
     {
       "id": "business-cards",
@@ -185,7 +189,11 @@
       "id": "rain-jacket",
       "nameZh": "防風防雨外套",
       "category": "clothing",
-      "artworkKey": "rain-jacket"
+      "artworkKey": "rain-jacket",
+      "satisfies": [
+        "rain-cover"
+      ],
+      "priority": 20
     },
     {
       "id": "warm-hat",

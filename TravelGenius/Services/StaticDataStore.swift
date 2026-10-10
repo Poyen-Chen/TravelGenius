@@ -310,11 +310,16 @@ final class StaticDataStore {
     private(set) lazy var countries: [Country] = load("countries")
     private(set) lazy var cities: [City] = load("cities")
     private(set) lazy var seasonalProfiles: [SeasonalProfile] = load("seasonal_weather")
+    private(set) lazy var packingRules: PackingRuleDocument = load("packing_rules")
     private(set) lazy var packingCatalog: PackingCatalog = {
         let catalog: PackingCatalog = load("packing_items")
         do { try catalog.validate(referencedItemIDs: PackingListGenerator.referencedItemIDs) }
         catch { fatalError("Invalid bundled packing contract: \(error)") }
         return catalog
+    }()
+    private(set) lazy var packingEngine: PackingRuleEngine = {
+        do { return try PackingRuleEngine(document: packingRules, catalog: packingCatalog) }
+        catch { fatalError("Invalid packing rule contract: \(error)") }
     }()
     private(set) lazy var prohibitedItems: [ProhibitedItem] = load("prohibited_items")
     private(set) lazy var borderRules: [BorderRule] = load("border_rules")
@@ -371,8 +376,7 @@ final class StaticDataStore {
     }
 
     private func load<T: Decodable>(_ name: String) -> T {
-        guard let url = Bundle.main.url(forResource: name, withExtension: "json"),
-              let data = try? Data(contentsOf: url),
+        guard let data = ReferenceDataCache.shared.data(for: name),
               let value = try? JSONDecoder().decode(T.self, from: data)
         else {
             fatalError("Missing or invalid seed data: \(name).json")

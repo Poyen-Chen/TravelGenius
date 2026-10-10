@@ -13,12 +13,16 @@ struct TravelGeniusApp: App {
     private let container: ModelContainer
 
     init() {
+        _ = ReferenceDataCache.shared // Promote a complete staged generation before any data access.
+        Task { await ReferenceDataUpdater.shared.refresh() }
         do {
+            PackingStaples.library = try PackingLibraryStore.open()
             // 聚焦版仍註冊全部模型，避免既有安裝的 schema migration 問題
             container = try ModelContainer(
                 for: Trip.self, Expense.self, PackingItem.self,
                 MedicalProfile.self, Medication.self, AllergyRecord.self,
-                VaccineRecord.self, EmergencyContact.self
+                VaccineRecord.self, EmergencyContact.self,
+                configurations: ModelConfiguration(cloudKitDatabase: .none)
             )
         } catch {
             fatalError("無法建立資料庫：\(error)")

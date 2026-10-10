@@ -1,6 +1,8 @@
 import Foundation
+import SwiftData
 
-/// Explicitly managed local defaults, copied into creation drafts; never read by trip sync.
+/// Backward-compatible UI facade over the independent personal packing library.
+/// Explicit defaults arguments remain isolated for previews and regression fixtures.
 enum PackingStaples {
     struct Item: Codable, Identifiable, Equatable {
         var id = UUID()
@@ -42,15 +44,21 @@ enum PackingStaples {
             if let id = catalogID(for: item.name), !catalogIDs.insert(id).inserted { throw ValidationError.duplicate }
         }
     }
+    @MainActor static var library: PackingLibraryStore?
+
+    @MainActor
     static func load(defaults: UserDefaults = .standard) throws -> [Item] {
+        if defaults === UserDefaults.standard, let library { return try library.essentials() }
         guard let data = defaults.data(forKey: storageKey) else { return [] }
         let document = try JSONDecoder().decode(Document.self, from: data)
         guard document.version == 1 else { throw ValidationError.invalid }
         try validate(document.items)
         return document.items
     }
+    @MainActor
     static func save(_ items: [Item], defaults: UserDefaults = .standard) throws {
         try validate(items)
+        if defaults === UserDefaults.standard, let library { try library.saveEssentials(items); return }
         let data = try JSONEncoder().encode(Document(version: 1, items: items))
         defaults.set(data, forKey: storageKey)
     }

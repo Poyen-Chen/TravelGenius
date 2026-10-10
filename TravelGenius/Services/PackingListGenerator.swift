@@ -6,7 +6,7 @@
 import Foundation
 import SwiftData
 
-/// 單一 Swift 推薦引擎。建立時產生候選；既有清單只透過唯讀 Review
+/// 單一 JSON 標籤推薦引擎。建立時產生候選；既有清單只透過唯讀 Review
 /// 提案，確認後才套用所選增、減、移除。
 enum PackingListGenerator {
     struct GeneratedItem: Identifiable {
@@ -74,21 +74,8 @@ enum PackingListGenerator {
     static let customReason = "自訂"
     static let customSortIndex = 1_000_000
 
-    /// Swift 規則可能產生的目錄 ID；啟動時由 PackingCatalog 驗證。
-    static let referencedItemIDs: Set<String> = [
-        "passport", "payment-card", "tops", "bottoms", "underwear", "socks", "walking-shoes",
-        "toothbrush", "toothpaste", "sleepwear", "phone", "laptop", "tablet", "camera",
-        "smartwatch", "headphones", "charging-kit", "laptop-charger", "camera-charger",
-        "memory-card", "watch-charger", "power-bank", "plug-adapter", "skincare",
-        "sanitary-products", "travel-document-backup", "driving-documents", "light-jacket",
-        "sweater-fleece", "warm-coat", "scarf", "warm-hat", "waterproof-gloves",
-        "folding-umbrella", "rain-jacket", "water-bottle", "sunscreen", "sun-hat",
-        "sunglasses", "hand-warmer", "swimsuit", "wet-item-bag", "outdoor-shoes", "daypack",
-        "waterproof-nonslip-shoes", "thermal-base-layer", "ski-socks", "ski-goggles",
-        "ski-jacket", "ski-pants", "workout-clothes", "business-clothes", "business-cards",
-        "formal-clothes", "formal-shoes", "locker-lock", "slippers", "quick-dry-towel",
-        "laundry-supplies", "laundry-bag"
-    ]
+    /// References come from the same JSON rule document used for generation.
+    static var referencedItemIDs: Set<String> { StaticDataStore.shared.packingRules.referencedItemIDs }
 
     static func generate(
         for trip: Trip,
@@ -101,7 +88,7 @@ enum PackingListGenerator {
         if let supplied = preferences {
             resolvedPreferences = supplied
         } else if trip.packingPreferencesRaw.isEmpty {
-            resolvedPreferences = .forNewTrips()
+            resolvedPreferences = UserPreferences(packingStyle: .normal, devices: ["phone"], needs: [])
         } else {
             guard let saved = trip.packingPreferences else { return [] }
             resolvedPreferences = saved
@@ -112,120 +99,31 @@ enum PackingListGenerator {
         let packingContext = packingContext ?? trip.packingContext ?? .empty
         guard packingContext.valid else { return [] }
         let month = Calendar.current.component(.month, from: trip.startDate)
-        var results: [GeneratedItem] = []
-        var seenIDs = Set<String>()
-        let catalog = StaticDataStore.shared.packingCatalog
-
-        func append(
-            _ id: String,
-            quantity: Int = 1,
-            reason: String,
-            sortIndex: Int? = nil
-        ) {
-            guard seenIDs.insert(id).inserted,
-                  let definition = catalog.item(id: id) else { return }
-            results.append(.init(catalogItemID: id, name: definition.nameZh, category: definition.category,
-                quantity: max(1, min(quantity, 99)), reason: reason,
-                sortIndex: sortIndex ?? (5_000 + results.count)))
-        }
-
-        let days = max(1, min(trip.totalDays, 99))
-        let topQuantityWithoutLaundry: Int
-        let bottomQuantityWithoutLaundry: Int
-        let laundryTopCap: Int
-        let laundryBottomCap: Int
-        let laundryUnderwearAndSocksCap: Int
-        switch resolvedPreferences.packingStyle {
-        case .light:
-            topQuantityWithoutLaundry = (days + 1) / 2
-            bottomQuantityWithoutLaundry = (days + 3) / 4
-            (laundryTopCap, laundryBottomCap, laundryUnderwearAndSocksCap) = (2, 2, 3)
-        case .normal:
-            topQuantityWithoutLaundry = (days * 2 + 2) / 3
-            bottomQuantityWithoutLaundry = (days + 2) / 3
-            (laundryTopCap, laundryBottomCap, laundryUnderwearAndSocksCap) = (3, 2, 4)
-        case .full:
-            topQuantityWithoutLaundry = days
-            bottomQuantityWithoutLaundry = (days + 1) / 2
-            (laundryTopCap, laundryBottomCap, laundryUnderwearAndSocksCap) = (4, 3, 5)
-        }
-        let hasLaundry = packingContext.laundry == .yes
-        let topQuantity = hasLaundry ? min(topQuantityWithoutLaundry, laundryTopCap) : topQuantityWithoutLaundry
-        let bottomQuantity = hasLaundry ? min(bottomQuantityWithoutLaundry, laundryBottomCap) : bottomQuantityWithoutLaundry
-        let underwearAndSocksQuantity = hasLaundry ? min(days, laundryUnderwearAndSocksCap) : days
-
-        func clothingReason(for item: String) -> String {
-            hasLaundry
-                ? "基本衣物・途中會洗衣，已依\(item)更換頻率與打包風格減量"
-                : "基本衣物・依\(item)更換頻率、旅行天數與打包風格估算"
-        }
-
-        append("passport", reason: "國際旅行基本必備", sortIndex: 0)
-        append("payment-card", reason: "基本付款工具", sortIndex: 1)
-        append("tops", quantity: topQuantity, reason: clothingReason(for: "上衣"), sortIndex: 2)
-        append("bottoms", quantity: bottomQuantity, reason: clothingReason(for: "下身衣物"), sortIndex: 3)
-        append("underwear", quantity: underwearAndSocksQuantity, reason: clothingReason(for: "內衣褲"), sortIndex: 4)
-        append("socks", quantity: underwearAndSocksQuantity, reason: clothingReason(for: "襪子"), sortIndex: 5)
-        append("walking-shoes", reason: "一般旅行步行需求", sortIndex: 6)
-        append("toothbrush", reason: "基本盥洗用品", sortIndex: 7)
-        append("toothpaste", reason: "基本盥洗用品", sortIndex: 8)
-        if resolvedPreferences.packingStyle == .full {
-            append("sleepwear", reason: "準備齊全模式", sortIndex: 9)
-        }
-
-        let selectedDevices = Set(PersonalPackingOptions.validDevices(resolvedPreferences.devices))
-        for option in PersonalPackingOptions.devices where selectedDevices.contains(option.id) {
-            for id in option.itemIDs { append(id, reason: "我的常用設備：\(option.label)") }
-        }
-        if !selectedDevices.isDisjoint(with: ["phone", "tablet", "headphones"]) {
-            append("charging-kit", reason: "常用設備共用充電用品・請確認接頭、功率與數量")
-        }
-        if !selectedDevices.isDisjoint(with: ["phone", "tablet"]) {
-            append("power-bank", reason: "手機或平板的外出供電")
-        }
-        let selectedNeeds = Set(PersonalPackingOptions.validNeeds(resolvedPreferences.needs))
-        for option in PersonalPackingOptions.needs where selectedNeeds.contains(option.id) {
-            for id in option.itemIDs { append(id, reason: "我的常備需求：\(option.label)") }
-        }
-
-        let resolvedWeatherTags = weatherTags ?? snapshot?.tags ?? seasonalWeatherTags(for: trip, month: month)
-        let weatherSource = snapshot?.reason(for: Array(resolvedWeatherTags)) ?? "依目的地月份的季節參考"
-        if resolvedWeatherTags.contains("mild") {
-            append("light-jacket", reason: "\(weatherSource)・方便增減外層")
-        }
-        if resolvedWeatherTags.contains("cold") {
-            for id in ["sweater-fleece", "warm-coat", "scarf", "warm-hat", "waterproof-gloves"] {
-                append(id, reason: "\(weatherSource)・寒冷天氣保暖")
-            }
-        }
-        if resolvedWeatherTags.contains("rain") {
-            append("folding-umbrella", reason: "\(weatherSource)・有雨時的一般雨具")
-        }
-        let hasSnowActivity = packingContext.activities.contains(.snow) || packingContext.activities.contains(.skiing)
-        if resolvedPreferences.packingStyle == .full && (resolvedWeatherTags.contains("cold") || hasSnowActivity) {
-            append("hand-warmer", quantity: min(5, days), reason: "寒冷或雪地・準備齊全模式")
-        }
-        appendContextItems(packingContext, weatherTags: resolvedWeatherTags) { id, quantity, reason, sortIndex in
-            append(id, quantity: quantity, reason: reason, sortIndex: sortIndex)
-        }
-
-        // 只有目的地完整涵蓋出發地插頭型式時才視為相容；共享其中一種插頭不足以保證相容。
         let store = StaticDataStore.shared
-        if let destination = store.country(code: trip.countryCode),
-           let origin = store.country(code: trip.originCountryCode) {
-            let destinationPlugTypes = Set(destination.plugTypes)
-            let originPlugTypes = Set(origin.plugTypes)
-            let needsAdapter = !originPlugTypes.isSubset(of: destinationPlugTypes)
-            if needsAdapter, seenIDs.insert("plug-adapter").inserted {
-                let types = destination.plugTypes.joined(separator: "/")
-                let originName = origin.nameZh
-                results.append(.init(catalogItemID: "plug-adapter", name: "插座轉接頭（當地 Type-\(types)）",
-                    category: .electronics, quantity: 1,
-                    reason: "目的地不保證支援\(originName)常見的所有插頭型式", sortIndex: 90))
-            }
+        let weather = weatherTags ?? snapshot?.tags ?? seasonalWeatherTags(for: trip, month: month)
+        let days = max(1, min(trip.totalDays, 99))
+        var tags: Set<String> = ["country:\(trip.countryCode)", "origin:\(trip.originCountryCode)",
+            "month:\(month)", "days:\(days)", "duration:\(days <= 3 ? "short" : days <= 7 ? "medium" : "long")",
+            "style:\(resolvedPreferences.packingStyle.rawValue)", "laundry:\(packingContext.laundry.rawValue)",
+            snapshot?.days.isEmpty == false ? "forecast:live" : "forecast:estimated"]
+        tags.formUnion(weather.map { "weather:\($0)" })
+        tags.formUnion(PersonalPackingOptions.validDevices(resolvedPreferences.devices).map { "device:\($0)" })
+        tags.formUnion(PersonalPackingOptions.validNeeds(resolvedPreferences.needs).map { "need:\($0)" })
+        let orderedActivities = packingContext.activities.map { "activity:\($0.rawValue)" }
+        tags.formUnion(orderedActivities)
+        tags.formUnion(packingContext.stays.map { "stay:\($0.rawValue)" })
+        let destination = store.country(code: trip.countryCode)
+        let origin = store.country(code: trip.originCountryCode)
+        if let destination, let origin {
+            tags.insert(Set(origin.plugTypes).isSubset(of: Set(destination.plugTypes)) ? "plug:compatible" : "plug:incompatible")
         }
-
-        return results
+        return store.packingEngine.generate(tags: tags, orderedTags: orderedActivities, days: days,
+            style: resolvedPreferences.packingStyle,
+            replacements: ["originCountry": origin?.nameZh ?? trip.originCountryCode,
+                "destinationCountry": destination?.nameZh ?? trip.countryCode,
+                "plugTypes": destination?.plugTypes.joined(separator: "/") ?? "",
+                "days": String(days),
+                "weatherSource": snapshot?.reason(for: Array(weather)) ?? "依目的地月份的季節參考"])
     }
 
     private static func seasonalWeatherTags(for trip: Trip, month: Int) -> Set<String> {
@@ -239,57 +137,7 @@ enum PackingListGenerator {
         return profile.tags(month: month)
     }
 
-    private static func appendContextItems(
-        _ context: TripPackingContext,
-        weatherTags: Set<String>,
-        append: (String, Int, String, Int?) -> Void
-    ) {
-        var sequence = 0
-        func add(_ id: String, reason: String) {
-            append(id, 1, reason, 6_000 + sequence)
-            sequence += 1
-        }
-        for activity in context.activities {
-            let reason = "因為有\(activity.label)安排"
-            switch activity {
-            case .water:
-                ["swimsuit", "wet-item-bag", "sunscreen", "sun-hat", "sunglasses"]
-                    .forEach { add($0, reason: reason) }
-            case .outdoors:
-                ["outdoor-shoes", "daypack", "water-bottle", "sunscreen", "sun-hat", "sunglasses"]
-                    .forEach { add($0, reason: reason) }
-                if weatherTags.contains("rain") { add("rain-jacket", reason: "有雨且安排健行／登山・與摺疊傘並列") }
-            case .snow:
-                ["waterproof-nonslip-shoes", "warm-hat", "waterproof-gloves", "sunscreen", "sun-hat", "sunglasses"]
-                    .forEach { add($0, reason: reason) }
-            case .skiing:
-                ["thermal-base-layer", "ski-socks", "ski-goggles", "ski-jacket", "ski-pants",
-                 "waterproof-gloves", "sunscreen", "sun-hat", "sunglasses"]
-                    .forEach { add($0, reason: $0 == "waterproof-gloves" ? "滑雪／單板需要防水保暖手套" : reason) }
-            case .exercise:
-                ["workout-clothes", "water-bottle"].forEach { add($0, reason: reason) }
-            case .business:
-                ["business-clothes", "business-cards"].forEach { add($0, reason: reason) }
-            case .formal:
-                ["formal-clothes", "formal-shoes"].forEach { add($0, reason: reason) }
-            case .driving:
-                add("driving-documents", reason: reason)
-            }
-        }
-
-        if context.laundry == .yes {
-            add("laundry-supplies", reason: "因為途中會洗衣")
-            add("laundry-bag", reason: "因為途中會洗衣・分開收納待洗衣物")
-        }
-
-        if context.stays.contains(.hostel) {
-            add("locker-lock", reason: "青旅／共用住宿的置物櫃收納")
-            add("slippers", reason: "青旅／共用住宿的淋浴空間")
-            add("quick-dry-towel", reason: "青旅／共用住宿自備毛巾")
-        }
-    }
-
-    /// Read-only comparison between the current checklist and the single Swift rule set.
+    /// Read-only comparison between the current checklist and the validated JSON rule set.
     static func review(
         for trip: Trip,
         preferences: UserPreferences? = nil,

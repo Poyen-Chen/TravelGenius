@@ -1,7 +1,6 @@
 import Foundation
 
-/// Bundled V1 catalog. Recommendation behavior lives in Swift; this file only
-/// provides item identity, display name and category.
+/// Canonical catalog: identity, artwork and candidate capabilities. Rules live in JSON.
 struct PackingCatalog: Decodable {
     struct Item: Decodable {
         let id: String
@@ -9,6 +8,9 @@ struct PackingCatalog: Decodable {
         let category: PackingCategory
         /// Bundled artwork owned by this canonical item definition.
         let artworkKey: String?
+        let satisfies: [String]?
+        let priority: Int?
+        let when: PackingTagCondition?
     }
 
     let version: Int
@@ -45,6 +47,9 @@ struct PackingCatalog: Decodable {
         var names = Set<String>()
         for item in items {
             guard !item.id.isEmpty, !item.nameZh.isEmpty,
+                  item.when?.valid != false,
+                  item.satisfies == nil || (!item.satisfies!.contains(where: { $0.isEmpty })
+                    && Set(item.satisfies!).count == item.satisfies!.count),
                   ids.insert(item.id).inserted,
                   names.insert(item.nameZh).inserted else {
                 throw ContractError.duplicateIdentity
