@@ -8,15 +8,16 @@ struct PackingItemCard: View {
     let onQuantity: () -> Void
     let onStaple: () -> Void
     let onRemove: () -> Void
+    /// 這件物品為何被調整（天氣、這趟安排、你的設定…）；空集合代表基本必備或自訂。
+    var kinds: Set<PackingReasonKind> = []
+    /// 篩選其他原因時淡出，但仍可操作。
+    var dimmed = false
     @Environment(\.packmonTheme) private var theme
 
-    private var artwork: UIImage? {
-        guard let definition = StaticDataStore.shared.packingCatalog.definition(
-            catalogID: item.catalogItemID,
-            name: item.name,
-            isCustom: item.isCustom
-        ), let artworkKey = definition.artworkKey else { return nil }
-        return UIImage(named: "packing-\(artworkKey)")
+    private var artwork: UIImage? { PackingItemArtwork.image(for: item) }
+
+    private var badgeKinds: [PackingReasonKind] {
+        Array(PackingReasonKind.allCases.filter(kinds.contains).prefix(2))
     }
 
     var body: some View {
@@ -33,6 +34,15 @@ struct PackingItemCard: View {
             }
             .frame(maxWidth: .infinity).frame(height: 128).padding(.top, 36)
             .accessibilityHidden(true)
+            .overlay(alignment: .bottomLeading) {
+                if !badgeKinds.isEmpty {
+                    HStack(spacing: -4) {
+                        ForEach(badgeKinds) { PackingReasonBadge(kind: $0) }
+                    }
+                    .accessibilityElement()
+                    .accessibilityLabel("調整原因：\(badgeKinds.map(\.label).joined(separator: "、"))")
+                }
+            }
             .overlay(alignment: .top) {
             HStack {
                 Button(action: onToggle) {
@@ -67,6 +77,8 @@ struct PackingItemCard: View {
         .padding(10)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(theme.colors.elevatedSurface, in: RoundedRectangle(cornerRadius: 18))
+        .opacity(dimmed ? 0.3 : 1)
+        .scaleEffect(dimmed ? 0.96 : 1)
         .accessibilityElement(children: .contain)
     }
 }

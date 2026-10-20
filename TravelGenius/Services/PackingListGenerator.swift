@@ -16,6 +16,8 @@ enum PackingListGenerator {
         let quantity: Int
         let reason: String
         let sortIndex: Int
+        /// Display-only provenance; never persisted and never part of review comparisons.
+        var kinds: Set<PackingReasonKind> = []
 
         var id: String { catalogItemID }
     }

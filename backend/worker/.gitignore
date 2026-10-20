@@ -1,0 +1,5 @@
+node_modules/
+.wrangler/
+.dev.vars
+# 部署前由 scripts/sync-reference.mjs 從 SeedData 產生
+public/

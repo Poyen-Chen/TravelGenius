@@ -489,3 +489,13 @@ This log records accepted product choices that affect behavior, navigation, scop
 - Consequences: 推薦仍只有一條執行路徑，JSON 是條件與公式的唯一來源；用品身分與 artwork 維持 app 版本契約。九份參考資料整批通過 manifest hash 與交叉驗證才於下次啟動採用；發布端點未設定時使用 bundle。個人庫 CloudKit 是簽名 build 的 opt-in 配置，預設本地；主行程及舊健康模型明確保留本地，未執行 cloud migration，沒有宣稱兩裝置同步已完成。Release 排除 Secrets.plist 且不讀第三方 AI key；Debug 必須以引數明確開啟。沒有部署代理、新增同意 UI、變更 bundle/group ID 或刪除使用者資料。PWA 格式同步適合後續處理，但本次 App 範圍不變更或發布 PWA；詳見 `docs/backend-integration.md`。
 - Supersedes: PD-057／058 中推薦政策必須由固定 Swift 實作、packing_rules.json 不參與 runtime 的機制選擇；保留其單一路徑、61 項目錄與原有推薦政策。PD-059 的 definition-owned artwork 與 PD-041 的明確 review 安全仍有效。
 - Verification: 540 組既有推薦矩陣、2,916 組整合前 oracle、快照與選擇性採納、常備遷移／重開／損毀資料、整批更新／ETag／部分失敗／離線 bundle fallback、天氣／目的地／61 張素材及 Debug／Release App build。CloudKit provisioning 與真機跨裝置同步仍需團隊設定後驗收。
+
+## PD-061 — Visual packing page: suitcase progress and reason badges
+
+- Date: 2026-10-19
+- Status: User-selected direction (「先做概念 2 和概念 1」); local candidate pending human acceptance
+- Decision: 打包頁圖片模式以「行李箱」取代文字進度：已打包物品的插圖依序放進打開的行李箱，空位以虛線格表示，箱蓋顯示出發倒數與 N / M；物品超過 12 件時依比例換算格數。每張物品卡在插圖左下顯示最多兩個原因徽章（天氣、這趟安排、你的設定、目的地、常備），清單上方「這趟為你調整了 N 件」可依原因篩選，非相關物品淡出但仍可操作。圖片模式成為新安裝的預設；已選過文字模式的使用者維持原選擇。
+- Context: 使用者指出現有版面文字過多，看過五個視覺化概念的可操作原型（personalization-design-spec.md「視覺呈現」）後，選擇先做原因徽章與行李箱進度。
+- Consequences: 徽章來源由推薦引擎依規則與需求所測試的標籤類別推導（weather → 天氣；activity／stay／laundry → 這趟安排；device／need／style → 你的設定；plug／country → 目的地），常備由既有常備比對判斷；只用於顯示，不寫入 PackingItem、不影響推薦輸出、review 比較或 2,916 組 oracle。以這趟保存的快照重新計算，快照無效時不顯示徽章；自訂且非常備的物品沒有徽章。文字模式、review、回程模式與分享不變。天氣與常備徽章使用元件內固定色，其餘沿用主題 token，沒有新增設計系統 token。
+- App / PWA: 只實作 iOS。PWA 已有自己的圖卡與 3D，原因徽章與行李箱進度適合同步，但需另行決定 PWA 範圍與部署，本次未變更或發布 PWA。
+- Verification: 新增引擎原因類別測試（基本品無類別、天氣、活動、設備、插座），既有 backend／packing（540 組）／compatibility（2,916 組）／weather 回歸、目的地資料與 manifest 檢查通過；Debug App build 通過，模擬器以示範行程確認行李箱、徽章與篩選畫面。尚未做 VoiceOver 與動態字級的人工驗收。

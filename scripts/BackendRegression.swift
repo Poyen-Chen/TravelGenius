@@ -100,8 +100,24 @@ final class FixtureProtocol: URLProtocol, @unchecked Sendable {
         let first = PackingListGenerator.generate(for: trip, weatherTags: []).map(\.id)
         UserDefaults.standard.set(["laptop"], forKey: "pref.devices")
         check(PackingListGenerator.generate(for: trip, weatherTags: []).map(\.id) == first, "legacy trip depended on device defaults")
+        reasonKinds()
         try library(root: root)
         print("backend contracts, atomic cache, ETag/partial failure, bundle fallback, library migration and weight retention: PASS")
+    }
+    /// Badge provenance follows the tag families a rule tests; base rules carry none.
+    @MainActor static func reasonKinds() {
+        let trip = Trip(name: "kinds", countryCode: "JP", startDate: .now, endDate: .now.addingTimeInterval(4 * 86_400),
+            homeCurrencyCode: "TWD", localCurrencyCode: "JPY", totalBudget: 0, tripType: .leisure)
+        trip.originCountryCode = "GB"
+        let kinds = Dictionary(uniqueKeysWithValues: PackingListGenerator.generate(for: trip,
+            preferences: UserPreferences(packingStyle: .normal, devices: ["laptop"], needs: []),
+            packingContext: TripPackingContext(activities: [.outdoors], stays: [], laundry: .unknown),
+            weatherTags: ["cold"]).map { ($0.catalogItemID, $0.kinds) })
+        check(kinds["passport"] == [], "base item must carry no reason kind")
+        check(kinds["warm-coat"] == [.weather], "weather item kind")
+        check(kinds["outdoor-shoes"] == [.trip], "activity item kind")
+        check(kinds["laptop"] == [.personal], "device item kind")
+        check(kinds["plug-adapter"] == [.destination], "plug item kind")
     }
     @MainActor static func library(root: URL) throws {
         let suite = "backend-regression-\(UUID().uuidString)"

@@ -39,9 +39,31 @@ struct PackingListView: View {
     @State private var selectedRemovals: Set<UUID> = []
     @State private var suggestionError: String?
     @State private var suggestionMessage: String?
-    @AppStorage("packmon.packing.images") private var showImages = false
+    @AppStorage("packmon.packing.images") private var showImages = true
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var quantityEditor: PackingItem?
+    @State private var reasonKinds: [String: Set<PackingReasonKind>] = [:]
+    @State private var reasonFilter: PackingReasonKind?
+
+    /// 推薦輸入改變時才重新計算徽章來源。
+    private var reasonSignature: String {
+        [trip.packingPreferencesRaw, trip.packingContextRaw, trip.packingWeatherRaw, trip.countryCode,
+         trip.originCountryCode, trip.city, "\(trip.startDate)", "\(trip.endDate)"].joined(separator: "|")
+    }
+
+    private func kinds(for item: PackingItem) -> Set<PackingReasonKind> {
+        var result = item.catalogItemID.flatMap { reasonKinds[$0] } ?? []
+        if PackingStaples.matchingItem(item, in: staples) != nil { result.insert(.staple) }
+        return result
+    }
+
+    private var reasonCounts: [(kind: PackingReasonKind, count: Int)] {
+        let all = items.map(kinds(for:))
+        return PackingReasonKind.allCases.compactMap { kind in
+            let count = all.filter { $0.contains(kind) }.count
+            return count > 0 ? (kind, count) : nil
+        }
+    }
 
     private var suggestionRequest: WeatherRequest? {
         StaticDataStore.shared.cities.first { $0.countryCode == trip.countryCode && $0.cityZh == trip.city }
@@ -106,6 +128,7 @@ struct PackingListView: View {
             do { staples = try PackingStaples.load() }
             catch { stapleError = error.localizedDescription }
         }
+        .task(id: reasonSignature) { reasonKinds = PackingListGenerator.reasonKinds(for: trip) }
         .sheet(item: $pendingRemoval) { item in
             PackmonRemovalSheet(title: "從這趟行程移除？", name: item.name,
                 message: "只移除這趟行程的物品，不會更改你的常備用品或其他行程。",
@@ -198,11 +221,7 @@ struct PackingListView: View {
             }
             if !reviewingSuggestions {
             if showImages {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("\(items.filter(\.isPacked).count) / \(items.count) 項已打包").font(.subheadline.bold())
-                    ProgressView(value: Double(items.filter(\.isPacked).count), total: Double(max(1, items.count)))
-                        .tint(theme.colors.accent).accessibilityLabel("打包進度")
-                }
+                SuitcaseProgressView(items: items, startDate: trip.startDate)
                 if let weather {
                     DisclosureGroup("建立時天氣") { PackingWeatherCard(weather: weather, saved: true) }
                         .font(.subheadline).tint(theme.colors.accent)
@@ -242,15 +261,27 @@ struct PackingListView: View {
                 }
             }
             if showImages && !reviewingSuggestions {
+                let counts = reasonCounts
+                if !counts.isEmpty {
+                    PackingCustomizationStrip(counts: counts,
+                        tailoredCount: items.filter { !kinds(for: $0).isEmpty }.count,
+                        selection: $reasonFilter)
+                }
                 LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12),
                                         count: dynamicTypeSize.isAccessibilitySize ? 1 : 2), spacing: 12) {
                     ForEach(items) { item in
+                        let itemKinds = kinds(for: item)
                         PackingItemCard(item: item,
-                            isStaple: PackingStaples.matchingItem(item, in: staples) != nil,
-                            onToggle: { item.isPacked.toggle(); packToggle.toggle() },
+                            isStaple: itemKinds.contains(.staple),
+                            onToggle: {
+                                withAnimation(.spring(response: 0.35, dampingFraction: 0.62)) { item.isPacked.toggle() }
+                                packToggle.toggle()
+                            },
                             onQuantity: { quantityEditor = item },
                             onStaple: { editStaple(item) },
-                            onRemove: { pendingRemoval = item })
+                            onRemove: { pendingRemoval = item },
+                            kinds: itemKinds,
+                            dimmed: reasonFilter.map { !itemKinds.contains($0) } ?? false)
                     }
                 }
             } else {

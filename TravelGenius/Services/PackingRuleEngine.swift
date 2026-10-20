@@ -103,6 +103,52 @@ struct PackingRuleDocument: Codable {
     }
 }
 
+/// Why an item was tailored to this trip, derived from the tag families its rule and need test.
+/// Base rules test no tags and therefore carry no kind. Staple is assigned by the UI, not the engine.
+enum PackingReasonKind: String, CaseIterable, Identifiable {
+    case weather
+    case trip
+    case personal
+    case destination
+    case staple
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .weather: "天氣"
+        case .trip: "這趟安排"
+        case .personal: "你的設定"
+        case .destination: "目的地"
+        case .staple: "常備"
+        }
+    }
+
+    var symbolName: String {
+        switch self {
+        case .weather: "cloud.sun.fill"
+        case .trip: "figure.hiking"
+        case .personal: "person.fill"
+        case .destination: "globe.asia.australia.fill"
+        case .staple: "star.fill"
+        }
+    }
+
+    static func kinds(testing conditions: [PackingTagCondition?]) -> Set<PackingReasonKind> {
+        var tags: [String] = []
+        for condition in conditions.compactMap({ $0 }) { tags += (condition.all ?? []) + (condition.any ?? []) }
+        return Set(tags.compactMap { tag -> PackingReasonKind? in
+            switch tag.split(separator: ":").first.map(String.init) {
+            case "weather": .weather
+            case "activity", "stay", "laundry": .trip
+            case "device", "need", "style": .personal
+            case "plug", "country": .destination
+            default: nil
+            }
+        })
+    }
+}
+
 /// One index over the canonical catalog; ID identity and artwork stay owned by the item.
 struct PackingRuleEngine {
     let document: PackingRuleDocument
@@ -154,7 +200,8 @@ struct PackingRuleEngine {
                 let quantity = need.quantityByStyle?[style.rawValue] ?? need.quantity
                 results.append(.init(catalogItemID: item.id, name: expand(need.nameZh ?? item.nameZh),
                     category: item.category, quantity: quantity?.resolve(days: days, laundry: tags.contains("laundry:yes")) ?? 1,
-                    reason: expand(need.reasonZh ?? rule.reasonZh), sortIndex: sortIndex))
+                    reason: expand(need.reasonZh ?? rule.reasonZh), sortIndex: sortIndex,
+                    kinds: PackingReasonKind.kinds(testing: [rule.when, need.when])))
             }
         }
         return results
