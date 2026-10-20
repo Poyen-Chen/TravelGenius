@@ -27,11 +27,22 @@ struct TravelGeniusApp: App {
         } catch {
             fatalError("無法建立資料庫：\(error)")
         }
+        configurePackingImageDefault() // 在 demo 種資料前判斷，demo 行程不算既有安裝
         if ProcessInfo.processInfo.arguments.contains("-seedDemo") {
             DemoSeeder.seedIfNeeded(into: container.mainContext)
         }
         configureOnboardingGate()
         logCheckerDebugQuery()
+    }
+
+    /// 圖片模式只是新安裝的預設（PD-061）；升級用戶沒選過時維持原本的文字模式。
+    /// 必須在 onboarding gate 與 demo 種資料之前判斷，才分得出是否為既有安裝。
+    private func configurePackingImageDefault() {
+        let defaults = UserDefaults.standard
+        guard defaults.object(forKey: "packmon.packing.images") == nil else { return }
+        let tripCount = (try? container.mainContext.fetchCount(FetchDescriptor<Trip>())) ?? 0
+        let existingInstall = defaults.bool(forKey: "hasOnboarded") || tripCount > 0
+        defaults.set(!existingInstall, forKey: "packmon.packing.images")
     }
 
     /// 開發驗證用：`-checkItem 肉鬆` 直接在 log 印出「能帶嗎」判定

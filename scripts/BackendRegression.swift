@@ -118,6 +118,13 @@ final class FixtureProtocol: URLProtocol, @unchecked Sendable {
         check(kinds["outdoor-shoes"] == [.trip], "activity item kind")
         check(kinds["laptop"] == [.personal], "device item kind")
         check(kinds["plug-adapter"] == [.destination], "plug item kind")
+        // `none` only marks the default branch: clothing is tailored when laundry cuts the count, not otherwise.
+        check(kinds["socks"] == [], "default clothing must carry no reason kind")
+        let laundry = Dictionary(uniqueKeysWithValues: PackingListGenerator.generate(for: trip,
+            preferences: UserPreferences(packingStyle: .normal, devices: [], needs: []),
+            packingContext: TripPackingContext(activities: [], stays: [], laundry: .yes),
+            weatherTags: []).map { ($0.catalogItemID, $0.kinds) })
+        check(laundry["socks"] == [.trip], "laundry clothing kind")
     }
     @MainActor static func library(root: URL) throws {
         let suite = "backend-regression-\(UUID().uuidString)"

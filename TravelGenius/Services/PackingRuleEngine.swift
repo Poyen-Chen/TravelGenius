@@ -104,7 +104,8 @@ struct PackingRuleDocument: Codable {
 }
 
 /// Why an item was tailored to this trip, derived from the tag families its rule and need test.
-/// Base rules test no tags and therefore carry no kind. Staple is assigned by the UI, not the engine.
+/// Base rules test no tags and therefore carry no kind. `none` tags are ignored on purpose: a rule that fires
+/// because a tag is absent (e.g. clothing without laundry) is the untailored default. Staple is assigned by the UI.
 enum PackingReasonKind: String, CaseIterable, Identifiable {
     case weather
     case trip
