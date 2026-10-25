@@ -10,7 +10,27 @@ import { execSync } from 'node:child_process';
 import { createHmac, randomUUID } from 'node:crypto';
 
 // --- 連線設定：預設從 `supabase status -o env` 讀取 ---
+// 雲端「測試」專案：SMOKE_PROJECT_REF=<ref> npm run smoke。key 由 CLI 取得、只留在記憶體，不會印出。
+function projectSettings(ref) {
+  if (!/^[a-z]{20}$/.test(ref)) { console.error('SMOKE_PROJECT_REF 格式不對。'); process.exit(1); }
+  let keys;
+  try {
+    keys = JSON.parse(execSync(`supabase projects api-keys --project-ref ${ref} --reveal -o json`, { stdio: ['ignore', 'pipe', 'ignore'] }).toString());
+  } catch {
+    console.error('讀不到專案的 API key。請先 `supabase login`，並確認 ref 正確。');
+    process.exit(1);
+  }
+  const key = type => keys.find(k => k.type === type)?.api_key;
+  return {
+    url: `https://${ref}.supabase.co`,
+    publicKey: key('publishable') ?? keys.find(k => k.name === 'anon')?.api_key,
+    secretKey: key('secret') ?? keys.find(k => k.name === 'service_role')?.api_key,
+    studio: `https://supabase.com/dashboard/project/${ref}`,
+    remote: true,
+  };
+}
 function localSettings() {
+  if (process.env.SMOKE_PROJECT_REF) return projectSettings(process.env.SMOKE_PROJECT_REF);
   let output = '';
   try {
     output = execSync('supabase status -o env', { cwd: new URL('../..', import.meta.url), stdio: ['ignore', 'pipe', 'ignore'] }).toString();
@@ -28,10 +48,11 @@ function localSettings() {
 }
 const settings = localSettings();
 const host = new URL(settings.url).hostname;
-if (!['127.0.0.1', 'localhost', '::1'].includes(host)) {
-  console.error(`拒絕執行：${settings.url} 不是本機。這個腳本會刪除測試帳號，只能對 supabase start 的本機環境使用。`);
+if (!settings.remote && !['127.0.0.1', 'localhost', '::1'].includes(host)) {
+  console.error(`拒絕執行：${settings.url} 不是本機。雲端測試專案請用 SMOKE_PROJECT_REF 明確指定。`);
   process.exit(1);
 }
+if (settings.remote) console.log(`對雲端測試專案執行：${settings.url}（只會建立／刪除 @smoke.packsmart.test 的帳號）\n`);
 const options = { auth: { persistSession: false, autoRefreshToken: false } };
 const service = createClient(settings.url, settings.secretKey, options); // 只在本機測試用，用來建立帳號與管理員名單
 

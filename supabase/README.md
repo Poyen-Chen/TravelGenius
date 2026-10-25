@@ -50,6 +50,14 @@ cd supabase/tests && npm install && npm run smoke
 - **Table Editor → `admin_audit_log`**：support 每次查詢、查看、修改的紀錄。
 - **Authentication**：測試帳號；support 有一個 TOTP 因子。
 
+**對雲端測試專案跑同一套測試**（先 `supabase login`）：
+
+```sh
+SMOKE_PROJECT_REF=<測試專案的 ref> npm run smoke
+```
+
+key 由 CLI 取得、只留在記憶體，不會印出或寫進檔案。只對**測試**專案使用：腳本會建立、刪除 `@smoke.packsmart.test` 的帳號。
+
 Studio 的 SQL Editor 以最高權限執行，會繞過 RLS 與管理員檢查；權限要用 `npm run smoke` 這種「以使用者 token 呼叫 API」的方式驗證。
 
 結束：`supabase stop`（資料保留）或 `supabase stop --no-backup`（清空）。
