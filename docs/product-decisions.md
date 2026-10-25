@@ -499,3 +499,14 @@ This log records accepted product choices that affect behavior, navigation, scop
 - Consequences: 徽章來源由推薦引擎依規則與需求所測試的標籤類別推導（weather → 天氣；activity／stay／laundry → 這趟安排；device／need／style → 你的設定；plug／country → 目的地）；`none` 條件不產生徽章，因為因「沒有某標籤」而觸發的規則是未調整的預設（例：沒有洗衣時的衣物無徽章，有洗衣而減量時才標「這趟安排」），常備由既有常備比對判斷；只用於顯示，不寫入 PackingItem、不影響推薦輸出、review 比較或 2,916 組 oracle。以這趟保存的快照重新計算，快照無效時不顯示徽章；自訂且非常備的物品沒有徽章。文字模式、review、回程模式與分享不變。天氣與常備徽章使用元件內固定色，其餘沿用主題 token，沒有新增設計系統 token。
 - App / PWA: 只實作 iOS。PWA 已有自己的圖卡與 3D，原因徽章與行李箱進度適合同步，但需另行決定 PWA 範圍與部署，本次未變更或發布 PWA。
 - Verification: 新增引擎原因類別測試（基本品無類別、天氣、活動、設備、插座、無洗衣衣物無類別、洗衣衣物為這趟安排），既有 backend／packing（540 組）／compatibility（2,916 組）／weather 回歸、目的地資料與 manifest 檢查通過；Debug App build 通過，模擬器以示範行程確認行李箱、徽章與篩選畫面。尚未做 VoiceOver 與動態字級的人工驗收。
+
+## PD-062 — Supabase for accounts, cloud sync and admin backend
+
+- Date: 2026-10-26
+- Status: Proposed; awaiting team decisions, not implemented（新的狀態類別：只記錄提案，不授權實作）
+- Decision: PackSmart 以 Supabase（Auth + PostgreSQL + Edge Functions）作為唯一雲端使用者資料來源；SwiftData 保留為本機副本，推薦引擎仍在手機上計算，未登入或未同意同步時行為不變。`health` 分類的用品預設不上傳，下載雲端版本時保留本機的這些物品；使用者另外同意才同步。日常管理透過驗證 `admin_users` 與 MFA 的 Edge Function，並寫入稽核紀錄；Dashboard 擁有者限 1～2 人。service_role key 只存在伺服器端。不使用雲端 AI。`feature/cloudflare-worker` 暫停、不合併。
+- Supersedes: PD-060 中「沒有帳號系統、外部資料庫與部署代理」的邊界（`backend-integration.md`：「No REST service, account system, external database or PWA deployment is introduced.」「No proxy is deployed.」），以及個人庫以 CloudKit 選配同步的機制（實作時移除 CloudKit 選項，避免雙寫）；個人化規格原則 6「**資料留在本機**，不需要帳號、不使用雲端 AI」改為「未登入時資料留在本機；不使用雲端 AI」。PD-060 的單一推薦引擎、參考資料整包驗證與退回內建、常備用品遷移仍有效。
+- Context: 團隊確認需要帳號與雲端同步、管理後台，且私密物品需遵守隱私法規。Cloudflare Worker 沒有帳號與資料庫，CloudKit 私有資料無法集中管理。TravelGenius 個人測試專案有一版未 commit 的 Supabase 同步實作，實作時搬進本 repo 一併 review。
+- Consequences: 需要隱私權政策、使用者同意、匯出與刪除帳號功能；個資法要求須另請人確認。其他裝置看不到未同意同步的健康類物品。第一版不支援切換帳號。免費方案限制與營運方式見 `docs/supabase-plan.md`。
+- App / PWA: 本提案先涵蓋 iOS；PWA 之後共用同一個 Auth 與資料表，範圍另行決定。
+- Verification: 尚未實作。驗收條件見 `docs/supabase-plan.md`。
