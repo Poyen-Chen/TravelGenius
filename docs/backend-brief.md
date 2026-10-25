@@ -2,7 +2,7 @@
 
 日期：2026-10-20。
 
-Cloudflare Worker 已拆到另一個 branch `feature/cloudflare-worker`，不在這個 PR 裡；它需要先補一筆 PD 才能合併，待決事項寫在該 branch 的 `backend/worker/README.md`。
+Cloudflare Worker 已拆到另一個 branch `feature/cloudflare-worker`，不在這個 PR 裡，目前暫停、不合併：帳號、同步與管理後台改用 Supabase（PD-062，提案中，見 `docs/supabase-plan.md`）。
 
 ## 架構圖
 
