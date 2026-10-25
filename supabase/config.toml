@@ -1,0 +1,8 @@
+project_id = "packsmart"
+
+# 兩個函式都在程式內自行驗證 token（getUser／以呼叫者身分呼叫 RPC），支援新版簽章金鑰。
+[functions.delete-account]
+verify_jwt = false
+
+[functions.admin-delete-user]
+verify_jwt = false

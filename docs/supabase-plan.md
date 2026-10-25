@@ -33,7 +33,8 @@ flowchart LR
         Auth["Auth<br/>Email 驗證碼"]
         DB["PostgreSQL<br/>user_documents（RLS）"]
         RPC["sync_document<br/>版本檢查後寫入"]
-        Fn["Edge Functions<br/>delete-account、admin-*"]
+        AdminRPC["管理員函式<br/>admin_find_user、admin_list_documents…"]
+        Fn["Edge Functions<br/>delete-account、admin-delete-user"]
         Audit["admin_audit_log"]
     end
 
@@ -46,9 +47,11 @@ flowchart LR
     iOS -->|寫入| RPC
     RPC --> DB
     iOS -->|刪除帳號| Fn
-    Support -->|管理員帳號登入後呼叫| Fn
+    Support -->|管理員帳號＋MFA 登入後呼叫| AdminRPC
+    Support -->|刪除帳號| Fn
+    AdminRPC --> DB
+    AdminRPC --> Audit
     Fn --> DB
-    Fn --> Audit
     Owner -.->|只做結構變更與緊急處理| DB
 
     style PWA stroke-dasharray: 5 5
@@ -78,26 +81,26 @@ flowchart LR
 
 **`admin_audit_log`**：管理員每次操作的紀錄（誰、何時、哪個使用者、哪份資料、動作、原因）。
 
-三張表都開啟並強制 RLS。一般使用者只能讀自己的 `user_documents`，不能直接寫；`admin_users` 和 `admin_audit_log` 對 App 完全不開放，只有 Edge Function 能讀寫。
+三張表都開啟 RLS。一般使用者只能讀自己的 `user_documents`，不能直接寫；`admin_users` 和 `admin_audit_log` 對 App 完全不開放，只有資料庫裡的函式能讀寫。
 
-## 沿用 TravelGenius 的實作
+## 實作狀態
 
-之前在 TravelGenius（個人測試專案）做過一版 Supabase 同步。**這份程式還沒 commit，團隊目前看不到**，實作第 1 步會把它搬進 PackSmart repo，並連同測試一起 review。以下設計已在本機測試過：
+**伺服器端已在 `supabase/` 實作，並在本機測試通過**（未部署、App 尚未串接，用法見 `supabase/README.md`）：
 
-| 項目 | 做法 |
+| 檔案 | 內容 |
 |---|---|
-| 資料表 | 上面的 `user_documents`，主鍵 `(owner_id, kind, id)` |
-| 權限 | 強制 RLS；**不允許直接寫表**，只能透過 `sync_document` |
-| 衝突處理 | `sync_document` 比對 `revision`（compare-and-swap），版本不同就回傳衝突讓使用者選擇，不會靜默覆蓋；`mutation_id` 讓重試冪等 |
-| 帳號綁定 | 本機資料綁定第一次同步時的「Supabase 專案＋帳號」；登出不清除綁定，避免傳到別人的帳號 |
-| 刪除帳號 | `delete-account` Edge Function：驗證 token 後刪除 Auth user，資料以外鍵 cascade 一起刪除 |
-| 測試 | Swift 同步回歸測試，以及用 PGlite 在本機跑真的 migration，驗證 RLS、拒絕直接寫入、冪等、cascade |
+| `migrations/202610260001_user_documents.sql` | `user_documents`、RLS、`sync_document`（版本檢查＋冪等重試）、payload 驗證、健康類物品需同意 |
+| `migrations/202610260002_admin.sql` | `admin_users`、`admin_audit_log`、管理員函式（查詢、查看、修改、刪除授權） |
+| `functions/delete-account` | 使用者刪除自己的帳號 |
+| `functions/admin-delete-user` | 管理員刪除使用者帳號（先經資料庫授權與紀錄） |
+| `tests/` | PGlite 在本機跑真正的 PostgreSQL；Edge Function 以模擬環境執行 |
 
-**不能直接複製，要改的地方**：
+**iOS 端還要做的**（實作步驟 2、3）：
 
-- 行程多了偏好、天氣、這趟安排三個快照（`packingPreferencesRaw`、`packingWeatherRaw`、`packingContextRaw`），以及 `excludedPackingIDsRaw`、`packingReviewPending`。快照**原樣上傳**，讓另一台裝置看到同樣的推薦依據。
-- 打包項目改用 `catalogItemID`（可為空）和 `unitWeightKg`，不是 `weightGrams`。
-- 常備用品改存在 `PackingLibraryStore`（獨立 SwiftData）。
+- 行程 payload 包含三個快照（`packingPreferencesRaw`、`packingWeatherRaw`、`packingContextRaw`），以及 `excludedPackingIDsRaw`、`packingReviewPending`。快照**原樣上傳**，讓另一台裝置看到同樣的推薦依據。
+- 打包項目包含 `catalogItemID`（可為空）、`categoryRaw`、`unitWeightKg`、`isPacked`、`isCustom`、`sortIndex`。
+- 常備用品來自 `PackingLibraryStore`（獨立 SwiftData）。
+- 本機資料綁定第一次同步時的「Supabase 專案＋帳號」；登出不清除綁定，避免傳到別人的帳號。
 
 ## 同步規則
 
@@ -123,8 +126,8 @@ flowchart LR
 **限制**：Supabase Dashboard 的成員可以直接看、改所有資料表，系統擋不住，Dashboard 也不會逐筆記錄誰看了什麼。因此：
 
 1. **Dashboard 擁有者只有 1～2 人**，全部開啟 MFA，只做資料庫結構變更和緊急處理。
-2. **日常支援走管理員函式**：其他負責支援的組員不加入 Dashboard。他們用自己的 PackSmart 帳號登入，呼叫 `admin-find-user`、`admin-update-document`、`admin-delete-user` 等 Edge Function。
-3. **函式驗證管理員身分**：確認呼叫者在 `admin_users` 名單裡，而且登入時通過 MFA；不符合就回 403。每次操作都寫入 `admin_audit_log`，必須填寫原因。
+2. **日常支援走管理員函式**：其他負責支援的組員不加入 Dashboard。他們用自己的 PackSmart 帳號登入，呼叫資料庫函式 `admin_find_user`、`admin_list_documents`、`admin_update_document`；刪除帳號用 `admin-delete-user` Edge Function。這些都不需要 service_role key。
+3. **函式驗證管理員身分**：確認呼叫者在 `admin_users` 名單裡，而且登入時通過 MFA（`aal2`）；不符合就拒絕。每次操作（**包含查看**）都在同一個交易裡寫入 `admin_audit_log`，必須填寫原因。
 4. **查看要有理由**：只在處理使用者回報的問題時查看內容，並在隱私權政策裡告知。
 
 第一版沒有管理網頁，用函式加簡單的指令或工具呼叫即可；之後需要的話，再做一個只呼叫這些函式的管理頁面。
@@ -169,10 +172,10 @@ flowchart LR
 
 ## 實作步驟（建議順序）
 
-1. **資料庫**：把 TravelGenius 的 migration、`sync_document`、`delete-account` 搬進 PackSmart repo，加上 PackSmart 的 payload 驗證、`admin_users`、`admin_audit_log`；PGlite 測試先通過。
+1. **資料庫**（已完成，見「實作狀態」）：`user_documents`、`sync_document`、payload 驗證、健康類同意、`delete-account`；PGlite 測試通過。
 2. **iOS 同步**：登入、同意畫面、同步引擎，改寫成 PackSmart 的模型；移除 CloudKit 選項；同步回歸測試通過。
 3. **隱私**：私密物品剔除與保留、匯出、刪除帳號；新增隱私權政策和 `PrivacyInfo.xcprivacy`（PackSmart 目前還沒有）。
-4. **管理員函式**：`admin-*` 函式、管理員身分與 MFA 檢查、稽核紀錄。
+4. **管理員函式**（已完成）：管理員名單、MFA 檢查、稽核紀錄、`admin-delete-user`。
 5. **連上 Supabase 測試專案**：兩個帳號、兩台裝置實測。
 6. **PWA**：之後另外規劃，共用同一個 Auth 和資料表。
 
