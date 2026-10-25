@@ -39,11 +39,10 @@ brew install --cask docker        # 或 brew install --cask orbstack
 
 ```sh
 supabase start                    # 第一次要下載映像檔，約需幾分鐘；會自動套用 migrations
-supabase functions serve          # 另開一個終端機；要測刪除帳號的 Edge Function 才需要
 cd supabase/tests && npm install && npm run smoke
 ```
 
-`npm run smoke` 會建立 alice、bob、support 三個 `@smoke.packsmart.test` 測試帳號，用各自的 token 走一遍同步、使用者隔離、健康類同意、管理員 MFA 與稽核、刪除帳號，逐項顯示 ✔／✘。腳本只允許連到本機，每次執行會先刪除上一次的測試帳號。
+`supabase start` 會一併啟動 Edge Functions。`npm run smoke` 會建立 alice、bob、support 三個 `@smoke.packsmart.test` 測試帳號，用各自的 token 走一遍同步、使用者隔離、健康類同意、管理員 MFA 與稽核、刪除帳號，逐項顯示 ✔／✘。腳本只允許連到本機，每次執行會先刪除上一次的測試帳號。
 
 跑完打開 Studio（`supabase start` 會顯示網址，通常是 http://127.0.0.1:54323）：
 
