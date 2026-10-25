@@ -7,5 +7,7 @@
 	<string>https://YOUR_PROJECT_REF.supabase.co</string>
 	<key>PublishableKey</key>
 	<string>sb_publishable_...</string>
+	<key>Region</key>
+	<string>新加坡</string>
 </dict>
 </plist>

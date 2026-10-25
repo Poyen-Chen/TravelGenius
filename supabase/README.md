@@ -90,6 +90,19 @@ Studio 的 SQL Editor 以最高權限執行，會繞過 RLS 與管理員檢查�
 3. Auth 開啟 Email 登入與 MFA（TOTP）。內建寄信每小時只能寄 2 封，給一般使用者測試前要設定自訂 SMTP。
 4. App 只放 Project URL 和 **publishable key**。**service_role／secret key 不能放進 App、PWA 或 repo**；Edge Function 由平台自動提供。
 
+## 讓 App 連上 Supabase
+
+1. 複製 `Config/Supabase.example.plist` 到 `TravelGenius/Resources/Supabase.plist`（已 gitignore），填入：
+   - `URL`：專案網址，例如 `https://<ref>.supabase.co`；本機測試用 `http://127.0.0.1:54321`。
+   - `PublishableKey`：**publishable key**（`sb_publishable_…`）。App 會拒絕 secret／service_role key。
+   - `Region`：顯示在同意說明的資料地區，例如「新加坡」。
+2. **登入信要有 6 位數驗證碼**：App 用驗證碼登入，不處理登入連結。
+   - 本機：`config.toml` 已指定 `supabase/templates/login-code.html`。
+   - 雲端：Dashboard → Authentication → Emails → Templates，把 **Magic link** 和 **Confirm signup** 的內容換成 `supabase/templates/login-code.html`（主旨「PackSmart 登入驗證碼」）。
+3. 雲端內建寄信只能寄給專案成員、每小時 2 封；給其他人測試前要設定自訂 SMTP。
+
+沒有 `Supabase.plist` 時，「我的 → 帳號與同步」會顯示「這個版本尚未設定雲端服務」，App 照舊只用本機資料。
+
 ## 新增管理員
 
 管理員本人先在 App 註冊並設定 MFA，再由 Dashboard 擁有者在 SQL Editor 執行：

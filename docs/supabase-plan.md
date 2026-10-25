@@ -95,12 +95,16 @@ flowchart LR
 | `functions/admin-delete-user` | 管理員刪除使用者帳號（先經資料庫授權與紀錄） |
 | `tests/` | PGlite 在本機跑真正的 PostgreSQL；Edge Function 以模擬環境執行 |
 
-**iOS 端還要做的**（實作步驟 2、3）：
+**iOS 端已實作**（`TravelGenius/Services/Cloud/`、`Features/Account/`）：
 
-- 行程 payload 包含三個快照（`packingPreferencesRaw`、`packingWeatherRaw`、`packingContextRaw`），以及 `excludedPackingIDsRaw`、`packingReviewPending`。快照**原樣上傳**，讓另一台裝置看到同樣的推薦依據。
-- 打包項目包含 `catalogItemID`（可為空）、`categoryRaw`、`unitWeightKg`、`isPacked`、`isCustom`、`sortIndex`。
-- 常備用品來自 `PackingLibraryStore`（獨立 SwiftData）。
-- 本機資料綁定第一次同步時的「Supabase 專案＋帳號」；登出不清除綁定，避免傳到別人的帳號。
+- Email 驗證碼登入（URLSession 直接呼叫 Supabase REST，不另加套件）；登入狀態存在 Keychain，重新安裝後的第一次啟動會清除。
+- 「我的 → 帳號與同步」：開啟同步、同步健康類物品都要先看說明並同意；衝突讓使用者選版本；可以刪除雲端帳號。
+- 同步引擎比對「本機／雲端／上次同步」三者，處理上傳、下載、刪除、衝突、離線重試與帳號綁定；啟動與回到前景時自動同步。
+- 行程 payload 包含三個快照、`excludedPackingIDsRaw`、`packingReviewPending` 與完整清單；預算、支出不上傳。
+- **健康類物品的同意存在帳號上**（Supabase user metadata），每台裝置讀同一個值。若各台裝置分開設定，沒同意的裝置上傳時會剔除藥品，同意的裝置收到後就會被刪掉。
+- 移除 `PackingLibraryStore` 的 CloudKit 選項。
+
+**還沒做**：資料匯出、隱私權政策與 `PrivacyInfo.xcprivacy`、自訂用品標記私密、PWA。
 
 ## 同步規則
 

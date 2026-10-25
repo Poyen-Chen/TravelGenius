@@ -6,19 +6,22 @@ import Security
 struct SupabaseConfiguration: Equatable {
     let url: URL
     let publishableKey: String
+    /// 顯示在同意說明裡的資料地區，例如「新加坡」；沒填時顯示主機名稱。
+    let region: String
 
     static func load(bundle: Bundle = .main) -> SupabaseConfiguration? {
         guard let file = bundle.url(forResource: "Supabase", withExtension: "plist"),
               let values = NSDictionary(contentsOf: file) as? [String: String],
               let raw = values["URL"], let url = URL(string: raw), let key = values["PublishableKey"] else { return nil }
-        return SupabaseConfiguration(url: url, publishableKey: key)
+        return SupabaseConfiguration(url: url, publishableKey: key, region: values["Region"])
     }
 
-    init?(url: URL, publishableKey: String) {
+    init?(url: URL, publishableKey: String, region: String? = nil) {
         guard ["https", "http"].contains(url.scheme ?? ""), !publishableKey.isEmpty,
               !Self.isServerKey(publishableKey) else { return nil }
         self.url = url
         self.publishableKey = publishableKey
+        self.region = region ?? url.host ?? url.absoluteString
     }
 
     static func isServerKey(_ key: String) -> Bool {

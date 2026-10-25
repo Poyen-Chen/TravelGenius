@@ -26,6 +26,7 @@ final class CloudAccount {
     }
 
     private static let syncKey = "cloud.sync.enabled"
+    private static let installedKey = "cloud.installed"
     private let container: ModelContainer
     private let defaults: UserDefaults
     private let client: SupabaseClient?
@@ -33,12 +34,17 @@ final class CloudAccount {
     init(container: ModelContainer, configuration: SupabaseConfiguration? = .load(), defaults: UserDefaults = .standard) {
         self.container = container
         self.defaults = defaults
+        // iOS 移除 App 後 Keychain 仍會保留；重新安裝後的第一次啟動清掉舊的登入，避免「刪了 App 還是登入中」。
+        if let configuration, !defaults.bool(forKey: Self.installedKey) {
+            SupabaseSessionStore(account: configuration.url.host ?? "supabase").save(nil)
+        }
+        defaults.set(true, forKey: Self.installedKey)
         client = configuration.map { SupabaseClient(configuration: $0) }
         lastSyncedAt = defaults.object(forKey: "cloud.sync.lastSyncedAt") as? Date
         refreshPhase()
     }
 
-    var dataRegionNote: String { "資料存放在 Supabase（\(client?.configuration.url.host ?? "未設定")）" }
+    var dataRegionNote: String { "資料存放在 Supabase（\(client?.configuration.region ?? "未設定")）" }
 
     private func refreshPhase() {
         guard let client else { phase = .unconfigured; return }

@@ -5,6 +5,16 @@ project_id = "packsmart"
 enroll_enabled = true
 verify_enabled = true
 
+# App 以 6 位數驗證碼登入（不處理登入連結），信件必須包含 {{ .Token }}。
+# 雲端專案要在 Dashboard → Authentication → Email Templates 套用同一份內容（supabase/README.md）。
+[auth.email.template.magic_link]
+subject = "PackSmart 登入驗證碼"
+content_path = "./supabase/templates/login-code.html"
+
+[auth.email.template.confirmation]
+subject = "PackSmart 登入驗證碼"
+content_path = "./supabase/templates/login-code.html"
+
 # 兩個函式都在程式內自行驗證 token（getUser／以呼叫者身分呼叫 RPC），支援新版簽章金鑰。
 [functions.delete-account]
 verify_jwt = false
