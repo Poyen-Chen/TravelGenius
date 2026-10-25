@@ -26,6 +26,35 @@ npm test
 
 不需要 Docker 或 Supabase 帳號。資料庫測試用 PGlite 在記憶體裡跑真正的 PostgreSQL 並載入兩個 migration；Edge Function 測試用模擬的 Supabase 執行真正的函式程式碼。
 
+## 在本機跑完整的 Supabase（看得到後台畫面）
+
+需要 Docker（或 OrbStack）與 Supabase CLI：
+
+```sh
+brew install supabase/tap/supabase
+brew install --cask docker        # 或 brew install --cask orbstack
+```
+
+打開 Docker 後，在 repo 根目錄：
+
+```sh
+supabase start                    # 第一次要下載映像檔，約需幾分鐘；會自動套用 migrations
+supabase functions serve          # 另開一個終端機；要測刪除帳號的 Edge Function 才需要
+cd supabase/tests && npm install && npm run smoke
+```
+
+`npm run smoke` 會建立 alice、bob、support 三個 `@smoke.packsmart.test` 測試帳號，用各自的 token 走一遍同步、使用者隔離、健康類同意、管理員 MFA 與稽核、刪除帳號，逐項顯示 ✔／✘。腳本只允許連到本機，每次執行會先刪除上一次的測試帳號。
+
+跑完打開 Studio（`supabase start` 會顯示網址，通常是 http://127.0.0.1:54323）：
+
+- **Table Editor → `user_documents`**：Alice 的行程與常備用品。
+- **Table Editor → `admin_audit_log`**：support 每次查詢、查看、修改的紀錄。
+- **Authentication**：測試帳號；support 有一個 TOTP 因子。
+
+Studio 的 SQL Editor 以最高權限執行，會繞過 RLS 與管理員檢查；權限要用 `npm run smoke` 這種「以使用者 token 呼叫 API」的方式驗證。
+
+結束：`supabase stop`（資料保留）或 `supabase stop --no-backup`（清空）。
+
 ## 權限一覽
 
 | 誰 | 可以做 | 不能做 |

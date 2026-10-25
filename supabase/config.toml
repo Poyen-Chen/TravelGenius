@@ -1,5 +1,10 @@
 project_id = "packsmart"
 
+# 管理員函式要求 MFA（aal2）；本機與雲端都要開啟 TOTP。
+[auth.mfa.totp]
+enroll_enabled = true
+verify_enabled = true
+
 # 兩個函式都在程式內自行驗證 token（getUser／以呼叫者身分呼叫 RPC），支援新版簽章金鑰。
 [functions.delete-account]
 verify_jwt = false
