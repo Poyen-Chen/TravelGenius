@@ -47,10 +47,8 @@ final class PackingLibraryStore {
     }
     static func open() throws -> PackingLibraryStore {
         let schema = Schema([PackingLibraryItem.self, PackingLibraryMigration.self])
-        // CloudKit stays opt-in through signed build configuration; no team/container is assumed.
-        let identifier = Bundle.main.object(forInfoDictionaryKey: "PackSmartLibraryCloudContainer") as? String
-        let configuration = ModelConfiguration("PackingLibrary", schema: schema,
-            cloudKitDatabase: identifier.map { .private($0) } ?? .none)
+        // Cloud sync goes through Supabase only (PD-062); CloudKit is never enabled, so nothing is written twice.
+        let configuration = ModelConfiguration("PackingLibrary", schema: schema, cloudKitDatabase: .none)
         return try PackingLibraryStore(container: ModelContainer(for: schema, configurations: [configuration]))
     }
     private func migratedContext() throws -> ModelContext {

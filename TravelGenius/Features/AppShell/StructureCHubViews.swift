@@ -165,10 +165,11 @@ struct KnowledgeLibraryView: View {
 
 struct ProfileHubView: View {
     private enum Destination: String, Identifiable {
-        case staples, preferences, appearance
+        case staples, preferences, appearance, account
         var id: String { rawValue }
     }
     @Environment(\.packmonTheme) private var theme
+    @Environment(CloudAccount.self) private var account
     @Query private var trips: [Trip]
     @State private var destination: Destination?
     @State private var preferences = UserPreferences.forNewTrips()
@@ -201,7 +202,9 @@ struct ProfileHubView: View {
                     settingsRow(.staples, "常備清單", "每次新行程，都幫你一起帶上", "backpack")
                     settingsRow(.preferences, "個人打包需求", "常用設備、用品與打包習慣", "slider.horizontal.3")
                     settingsRow(.appearance, "外觀設定", "\((PackmonThemeID(rawValue: themeRaw) ?? .structureC).label)・\((AppAppearance(rawValue: appearanceRaw) ?? .system).label)", "paintpalette")
-                    Label("行程與設定保存在這台裝置", systemImage: "iphone")
+                    settingsRow(.account, "帳號與同步", accountSummary, "icloud")
+                    Label(account.syncEnabled ? "行程與常備用品會同步到雲端" : "行程與設定保存在這台裝置",
+                          systemImage: account.syncEnabled ? "icloud" : "iphone")
                         .font(.footnote).foregroundStyle(theme.colors.secondaryText)
                 }.padding(theme.spacing.medium).padding(.bottom, 32)
             }.background(theme.colors.canvas.ignoresSafeArea()).toolbar(.hidden, for: .navigationBar)
@@ -212,7 +215,16 @@ struct ProfileHubView: View {
             case .staples: PackingStaplesView()
             case .preferences: PreferenceSettingsView()
             case .appearance: AppearanceSettingsView()
+            case .account: AccountSyncView()
             }
+        }
+    }
+
+    private var accountSummary: String {
+        switch account.phase {
+        case .unconfigured: "這個版本尚未提供"
+        case .signedOut, .awaitingCode: "登入後可以換手機繼續使用"
+        case .signedIn(let email): account.syncEnabled ? "\(email)・同步中" : "\(email)・同步未開啟"
         }
     }
 

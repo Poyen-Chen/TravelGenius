@@ -10,6 +10,8 @@ import SwiftData
 struct TravelGeniusApp: App {
     @State private var appState = AppState()
     @State private var mascotState = MascotState()
+    @State private var cloudAccount: CloudAccount
+    @Environment(\.scenePhase) private var scenePhase
     private let container: ModelContainer
 
     init() {
@@ -27,6 +29,7 @@ struct TravelGeniusApp: App {
         } catch {
             fatalError("無法建立資料庫：\(error)")
         }
+        _cloudAccount = State(initialValue: CloudAccount(container: container))
         configurePackingImageDefault() // 在 demo 種資料前判斷，demo 行程不算既有安裝
         if ProcessInfo.processInfo.arguments.contains("-seedDemo") {
             DemoSeeder.seedIfNeeded(into: container.mainContext)
@@ -76,7 +79,12 @@ struct TravelGeniusApp: App {
             RootGateView()
                 .environment(appState)
                 .environment(mascotState)
+                .environment(cloudAccount)
         }
         .modelContainer(container)
+        // 未登入或未開啟同步時不做任何事（PD-062）。
+        .onChange(of: scenePhase, initial: true) { _, phase in
+            if phase == .active { Task { await cloudAccount.synchronizeIfEnabled() } }
+        }
     }
 }

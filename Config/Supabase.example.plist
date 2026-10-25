@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- 複製成 TravelGenius/Resources/Supabase.plist（已 gitignore）。只能填 publishable key，不能填 secret／service_role key。 -->
+<plist version="1.0">
+<dict>
+	<key>URL</key>
+	<string>https://YOUR_PROJECT_REF.supabase.co</string>
+	<key>PublishableKey</key>
+	<string>sb_publishable_...</string>
+</dict>
+</plist>
