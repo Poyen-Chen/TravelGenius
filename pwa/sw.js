@@ -1,6 +1,6 @@
 // 離線快取：安裝時預先快取整個 App（清單由 scripts/build_pwa_assets.sh 產生）。
 // 雲端（Supabase）與天氣（Open-Meteo）是其他網域，一律直接走網路，不快取。
-const CACHE = 'packsmart-pwa-v3';
+const CACHE = 'packsmart-pwa-v4';
 self.addEventListener('install', event => event.waitUntil((async () => {
   const cache = await caches.open(CACHE);
   const files = await (await fetch('precache.json', { cache: 'no-store' })).json();
@@ -18,11 +18,16 @@ self.addEventListener('fetch', event => {
     event.respondWith(fetch(event.request).catch(() => caches.match('index.html')));
     return;
   }
-  // 先用快取，背景再向網路更新，下次開啟就是新版。
+  // 版本化的網址（?v=）完全比對才用快取，避免舊版樣式蓋過新版；沒網路時才退回同檔名的快取。
   event.respondWith(caches.open(CACHE).then(async cache => {
-    // index.html 以 ?v= 指定版本，讓舊版快取不會蓋過新版；比對時忽略查詢字串。
-    const cached = await cache.match(event.request, { ignoreSearch: true });
-    const network = fetch(event.request).then(response => { if (response.ok) cache.put(event.request, response.clone()); return response; }).catch(() => cached);
-    return cached || network;
+    const cached = await cache.match(event.request);
+    if (cached) return cached;
+    try {
+      const response = await fetch(event.request);
+      if (response.ok) cache.put(event.request, response.clone());
+      return response;
+    } catch {
+      return (await cache.match(event.request, { ignoreSearch: true })) || Response.error();
+    }
   }));
 });

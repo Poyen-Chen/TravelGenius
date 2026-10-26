@@ -27,7 +27,7 @@ cd pwa && python3 -m http.server 8766                 # 本機預覽：http://12
 { "name": "packsmart-app", "compatibility_date": "2026-10-01", "assets": { "directory": "<repo>/pwa" } }
 ```
 
-`pwa/.assetsignore` 排除測試與範本檔。每次更新請把 `sw.js` 的 `CACHE` 版本加一，並同步更新 `index.html` 裡 `styles.css`、`js/app.js` 的 `?v=`，否則已安裝的人會先拿到舊快取的樣式。
+`pwa/.assetsignore` 排除測試與範本檔。每次更新請把 `sw.js` 的 `CACHE` 版本加一，並同步更新 `index.html` 裡 `styles.css`、`js/app.js` 的 `?v=`。service worker 只在網址完全相同時用快取（沒網路才退回同檔名），新版接手時頁面會自動重新載入一次。
 
 ## 與 iOS 的差異
 

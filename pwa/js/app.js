@@ -512,4 +512,9 @@ parse();
 render();
 account.health = cloud.session ? await cloud.healthConsent().catch(() => null) : null;
 synchronize(true);
-if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js');
+if ('serviceWorker' in navigator && location.protocol === 'https:') {
+  // 新版 service worker 接手時重新載入一次，畫面才會用到新版的樣式與程式。
+  const hadController = Boolean(navigator.serviceWorker.controller);
+  navigator.serviceWorker.addEventListener('controllerchange', () => { if (hadController) location.reload(); }, { once: true });
+  navigator.serviceWorker.register('sw.js');
+}
