@@ -20,7 +20,8 @@ self.addEventListener('fetch', event => {
   }
   // 先用快取，背景再向網路更新，下次開啟就是新版。
   event.respondWith(caches.open(CACHE).then(async cache => {
-    const cached = await cache.match(event.request);
+    // index.html 以 ?v= 指定版本，讓舊版快取不會蓋過新版；比對時忽略查詢字串。
+    const cached = await cache.match(event.request, { ignoreSearch: true });
     const network = fetch(event.request).then(response => { if (response.ok) cache.put(event.request, response.clone()); return response; }).catch(() => cached);
     return cached || network;
   }));
