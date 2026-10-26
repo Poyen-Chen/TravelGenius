@@ -1,0 +1,14 @@
+{
+  "contractVersion": 1,
+  "files": {
+    "countries": "c9ef13fd898018f1de34f45aaa1f7eae4637afcd0ef5cac4bf523a45aaf30ef4",
+    "cities": "6a3657151f6a37bd26fc2b3ebf049d9938a610860f2cd2192063b3cb5ba82116",
+    "packing_items": "2d6874481e1b6185ee6d5ee96e6decf942065aa04eb01f292a5f1a89230f2555",
+    "packing_rules": "31ec6a29a7f304397d48b6bbd07f1d92cbd34de6508f426ac4eacafc91eb1ff1",
+    "prohibited_items": "1369ab0d4a79e48e900052d541d3c5433c5f8806bfdc8a21d62d503adad3f752",
+    "aviation_rules": "e9c503c63d30ef80e427648f9a018afa91d33303dcd597907cc3889c53294786",
+    "etiquette": "e8123ac382c97c2623459c36d445fc06584c557315eaa75022d2dbcaa0db853a",
+    "border_rules": "f8442e04c41b9c5f3b8ba8af4978fab59d80a12fed32712710beeb55fec23ae5",
+    "seasonal_weather": "fefd8ee0876aff76fed95bd0f37b030a9720e0f5c7b720d665667b944802c2f2"
+  }
+}

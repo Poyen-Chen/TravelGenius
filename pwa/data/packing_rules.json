@@ -1,0 +1,884 @@
+{
+  "version": 1,
+  "rules": [
+    {
+      "id": "passport",
+      "phase": 0,
+      "reasonZh": "國際旅行基本必備",
+      "needs": [
+        {
+          "itemId": "passport",
+          "sortIndex": 0
+        }
+      ]
+    },
+    {
+      "id": "payment",
+      "phase": 0,
+      "reasonZh": "基本付款工具",
+      "needs": [
+        {
+          "itemId": "payment-card",
+          "sortIndex": 1
+        }
+      ]
+    },
+    {
+      "id": "tops",
+      "phase": 0,
+      "reasonZh": "基本衣物・依上衣更換頻率、旅行天數與打包風格估算",
+      "needs": [
+        {
+          "itemId": "tops",
+          "quantityByStyle": {
+            "light": {
+              "multiplier": 1,
+              "perDays": 2,
+              "laundryMaximum": 2
+            },
+            "normal": {
+              "multiplier": 2,
+              "perDays": 3,
+              "laundryMaximum": 3
+            },
+            "full": {
+              "multiplier": 1,
+              "perDays": 1,
+              "laundryMaximum": 4
+            }
+          },
+          "sortIndex": 2
+        }
+      ],
+      "when": {
+        "none": [
+          "laundry:yes"
+        ]
+      }
+    },
+    {
+      "id": "tops-laundry",
+      "phase": 0,
+      "reasonZh": "基本衣物・途中會洗衣，已依上衣更換頻率與打包風格減量",
+      "needs": [
+        {
+          "itemId": "tops",
+          "quantityByStyle": {
+            "light": {
+              "multiplier": 1,
+              "perDays": 2,
+              "laundryMaximum": 2
+            },
+            "normal": {
+              "multiplier": 2,
+              "perDays": 3,
+              "laundryMaximum": 3
+            },
+            "full": {
+              "multiplier": 1,
+              "perDays": 1,
+              "laundryMaximum": 4
+            }
+          },
+          "sortIndex": 2
+        }
+      ],
+      "when": {
+        "all": [
+          "laundry:yes"
+        ]
+      }
+    },
+    {
+      "id": "bottoms",
+      "phase": 0,
+      "reasonZh": "基本衣物・依下身衣物更換頻率、旅行天數與打包風格估算",
+      "needs": [
+        {
+          "itemId": "bottoms",
+          "quantityByStyle": {
+            "light": {
+              "multiplier": 1,
+              "perDays": 4,
+              "laundryMaximum": 2
+            },
+            "normal": {
+              "multiplier": 1,
+              "perDays": 3,
+              "laundryMaximum": 2
+            },
+            "full": {
+              "multiplier": 1,
+              "perDays": 2,
+              "laundryMaximum": 3
+            }
+          },
+          "sortIndex": 3
+        }
+      ],
+      "when": {
+        "none": [
+          "laundry:yes"
+        ]
+      }
+    },
+    {
+      "id": "bottoms-laundry",
+      "phase": 0,
+      "reasonZh": "基本衣物・途中會洗衣，已依下身衣物更換頻率與打包風格減量",
+      "needs": [
+        {
+          "itemId": "bottoms",
+          "quantityByStyle": {
+            "light": {
+              "multiplier": 1,
+              "perDays": 4,
+              "laundryMaximum": 2
+            },
+            "normal": {
+              "multiplier": 1,
+              "perDays": 3,
+              "laundryMaximum": 2
+            },
+            "full": {
+              "multiplier": 1,
+              "perDays": 2,
+              "laundryMaximum": 3
+            }
+          },
+          "sortIndex": 3
+        }
+      ],
+      "when": {
+        "all": [
+          "laundry:yes"
+        ]
+      }
+    },
+    {
+      "id": "underwear",
+      "phase": 0,
+      "reasonZh": "基本衣物・依內衣褲更換頻率、旅行天數與打包風格估算",
+      "needs": [
+        {
+          "itemId": "underwear",
+          "quantityByStyle": {
+            "light": {
+              "multiplier": 1,
+              "perDays": 1,
+              "laundryMaximum": 3
+            },
+            "normal": {
+              "multiplier": 1,
+              "perDays": 1,
+              "laundryMaximum": 4
+            },
+            "full": {
+              "multiplier": 1,
+              "perDays": 1,
+              "laundryMaximum": 5
+            }
+          },
+          "sortIndex": 4
+        }
+      ],
+      "when": {
+        "none": [
+          "laundry:yes"
+        ]
+      }
+    },
+    {
+      "id": "underwear-laundry",
+      "phase": 0,
+      "reasonZh": "基本衣物・途中會洗衣，已依內衣褲更換頻率與打包風格減量",
+      "needs": [
+        {
+          "itemId": "underwear",
+          "quantityByStyle": {
+            "light": {
+              "multiplier": 1,
+              "perDays": 1,
+              "laundryMaximum": 3
+            },
+            "normal": {
+              "multiplier": 1,
+              "perDays": 1,
+              "laundryMaximum": 4
+            },
+            "full": {
+              "multiplier": 1,
+              "perDays": 1,
+              "laundryMaximum": 5
+            }
+          },
+          "sortIndex": 4
+        }
+      ],
+      "when": {
+        "all": [
+          "laundry:yes"
+        ]
+      }
+    },
+    {
+      "id": "socks",
+      "phase": 0,
+      "reasonZh": "基本衣物・依襪子更換頻率、旅行天數與打包風格估算",
+      "needs": [
+        {
+          "itemId": "socks",
+          "quantityByStyle": {
+            "light": {
+              "multiplier": 1,
+              "perDays": 1,
+              "laundryMaximum": 3
+            },
+            "normal": {
+              "multiplier": 1,
+              "perDays": 1,
+              "laundryMaximum": 4
+            },
+            "full": {
+              "multiplier": 1,
+              "perDays": 1,
+              "laundryMaximum": 5
+            }
+          },
+          "sortIndex": 5
+        }
+      ],
+      "when": {
+        "none": [
+          "laundry:yes"
+        ]
+      }
+    },
+    {
+      "id": "socks-laundry",
+      "phase": 0,
+      "reasonZh": "基本衣物・途中會洗衣，已依襪子更換頻率與打包風格減量",
+      "needs": [
+        {
+          "itemId": "socks",
+          "quantityByStyle": {
+            "light": {
+              "multiplier": 1,
+              "perDays": 1,
+              "laundryMaximum": 3
+            },
+            "normal": {
+              "multiplier": 1,
+              "perDays": 1,
+              "laundryMaximum": 4
+            },
+            "full": {
+              "multiplier": 1,
+              "perDays": 1,
+              "laundryMaximum": 5
+            }
+          },
+          "sortIndex": 5
+        }
+      ],
+      "when": {
+        "all": [
+          "laundry:yes"
+        ]
+      }
+    },
+    {
+      "id": "shoes",
+      "phase": 0,
+      "reasonZh": "一般旅行步行需求",
+      "needs": [
+        {
+          "itemId": "walking-shoes",
+          "sortIndex": 6
+        }
+      ]
+    },
+    {
+      "id": "toothbrush",
+      "phase": 0,
+      "reasonZh": "基本盥洗用品",
+      "needs": [
+        {
+          "itemId": "toothbrush",
+          "sortIndex": 7
+        }
+      ]
+    },
+    {
+      "id": "toothpaste",
+      "phase": 0,
+      "reasonZh": "基本盥洗用品",
+      "needs": [
+        {
+          "itemId": "toothpaste",
+          "sortIndex": 8
+        }
+      ]
+    },
+    {
+      "id": "sleepwear",
+      "phase": 0,
+      "reasonZh": "準備齊全模式",
+      "needs": [
+        {
+          "itemId": "sleepwear",
+          "sortIndex": 9
+        }
+      ],
+      "when": {
+        "all": [
+          "style:full"
+        ]
+      }
+    },
+    {
+      "id": "device-phone",
+      "phase": 1,
+      "reasonZh": "我的常用設備：手機",
+      "needs": [
+        {
+          "itemId": "phone"
+        }
+      ],
+      "when": {
+        "all": [
+          "device:phone"
+        ]
+      }
+    },
+    {
+      "id": "device-laptop",
+      "phase": 1,
+      "reasonZh": "我的常用設備：筆電",
+      "needs": [
+        {
+          "itemId": "laptop"
+        },
+        {
+          "itemId": "laptop-charger"
+        }
+      ],
+      "when": {
+        "all": [
+          "device:laptop"
+        ]
+      }
+    },
+    {
+      "id": "device-tablet",
+      "phase": 1,
+      "reasonZh": "我的常用設備：平板／電子閱讀器",
+      "needs": [
+        {
+          "itemId": "tablet"
+        }
+      ],
+      "when": {
+        "all": [
+          "device:tablet"
+        ]
+      }
+    },
+    {
+      "id": "device-camera",
+      "phase": 1,
+      "reasonZh": "我的常用設備：相機",
+      "needs": [
+        {
+          "itemId": "camera"
+        },
+        {
+          "itemId": "camera-charger"
+        },
+        {
+          "itemId": "memory-card"
+        }
+      ],
+      "when": {
+        "all": [
+          "device:camera"
+        ]
+      }
+    },
+    {
+      "id": "device-watch",
+      "phase": 1,
+      "reasonZh": "我的常用設備：智慧手錶",
+      "needs": [
+        {
+          "itemId": "smartwatch"
+        },
+        {
+          "itemId": "watch-charger"
+        }
+      ],
+      "when": {
+        "all": [
+          "device:watch"
+        ]
+      }
+    },
+    {
+      "id": "device-headphones",
+      "phase": 1,
+      "reasonZh": "我的常用設備：耳機",
+      "needs": [
+        {
+          "itemId": "headphones"
+        }
+      ],
+      "when": {
+        "all": [
+          "device:headphones"
+        ]
+      }
+    },
+    {
+      "id": "charging",
+      "phase": 1,
+      "reasonZh": "常用設備共用充電用品・請確認接頭、功率與數量",
+      "needs": [
+        {
+          "itemId": "charging-kit"
+        }
+      ],
+      "when": {
+        "any": [
+          "device:phone",
+          "device:tablet",
+          "device:headphones"
+        ]
+      }
+    },
+    {
+      "id": "power-bank",
+      "phase": 1,
+      "reasonZh": "手機或平板的外出供電",
+      "needs": [
+        {
+          "itemId": "power-bank"
+        }
+      ],
+      "when": {
+        "any": [
+          "device:phone",
+          "device:tablet"
+        ]
+      }
+    },
+    {
+      "id": "personal-skincare",
+      "phase": 2,
+      "reasonZh": "我的常備需求：保養用品",
+      "needs": [
+        {
+          "itemId": "skincare"
+        }
+      ],
+      "when": {
+        "all": [
+          "need:skincare"
+        ]
+      }
+    },
+    {
+      "id": "personal-period",
+      "phase": 2,
+      "reasonZh": "我的常備需求：生理用品",
+      "needs": [
+        {
+          "itemId": "sanitary-products"
+        }
+      ],
+      "when": {
+        "all": [
+          "need:period"
+        ]
+      }
+    },
+    {
+      "id": "personal-document-backup",
+      "phase": 2,
+      "reasonZh": "我的常備需求：旅行文件備份",
+      "needs": [
+        {
+          "itemId": "travel-document-backup"
+        }
+      ],
+      "when": {
+        "all": [
+          "need:document-backup"
+        ]
+      }
+    },
+    {
+      "id": "mild",
+      "phase": 3,
+      "reasonZh": "{weatherSource}・方便增減外層",
+      "needs": [
+        {
+          "itemId": "light-jacket"
+        }
+      ],
+      "when": {
+        "all": [
+          "weather:mild"
+        ]
+      }
+    },
+    {
+      "id": "cold",
+      "phase": 3,
+      "reasonZh": "{weatherSource}・寒冷天氣保暖",
+      "needs": [
+        {
+          "itemId": "sweater-fleece"
+        },
+        {
+          "itemId": "warm-coat"
+        },
+        {
+          "itemId": "scarf"
+        },
+        {
+          "itemId": "warm-hat"
+        },
+        {
+          "itemId": "waterproof-gloves"
+        }
+      ],
+      "when": {
+        "all": [
+          "weather:cold"
+        ]
+      }
+    },
+    {
+      "id": "rain",
+      "phase": 3,
+      "reasonZh": "{weatherSource}・有雨時的一般雨具",
+      "needs": [
+        {
+          "need": "rain-cover"
+        }
+      ],
+      "when": {
+        "all": [
+          "weather:rain"
+        ]
+      }
+    },
+    {
+      "id": "hand-warmer",
+      "phase": 3,
+      "reasonZh": "寒冷或雪地・準備齊全模式",
+      "needs": [
+        {
+          "itemId": "hand-warmer",
+          "quantity": {
+            "perDays": 1,
+            "multiplier": 1,
+            "maximum": 5
+          }
+        }
+      ],
+      "when": {
+        "all": [
+          "style:full"
+        ],
+        "any": [
+          "weather:cold",
+          "activity:snow",
+          "activity:skiing"
+        ]
+      }
+    },
+    {
+      "id": "activity-water",
+      "phase": 4,
+      "reasonZh": "因為有玩水／游泳安排",
+      "needs": [
+        {
+          "itemId": "swimsuit"
+        },
+        {
+          "itemId": "wet-item-bag"
+        },
+        {
+          "itemId": "sunscreen"
+        },
+        {
+          "itemId": "sun-hat"
+        },
+        {
+          "itemId": "sunglasses"
+        }
+      ],
+      "when": {
+        "all": [
+          "activity:water"
+        ]
+      },
+      "orderTag": "activity:water",
+      "sortBase": 6000
+    },
+    {
+      "id": "activity-outdoors",
+      "phase": 4,
+      "reasonZh": "因為有健行／登山安排",
+      "needs": [
+        {
+          "itemId": "outdoor-shoes"
+        },
+        {
+          "itemId": "daypack"
+        },
+        {
+          "itemId": "water-bottle"
+        },
+        {
+          "itemId": "sunscreen"
+        },
+        {
+          "itemId": "sun-hat"
+        },
+        {
+          "itemId": "sunglasses"
+        },
+        {
+          "itemId": "rain-jacket",
+          "when": {
+            "all": [
+              "weather:rain"
+            ]
+          },
+          "reasonZh": "有雨且安排健行／登山・與摺疊傘並列"
+        }
+      ],
+      "when": {
+        "all": [
+          "activity:outdoors"
+        ]
+      },
+      "orderTag": "activity:outdoors",
+      "sortBase": 6000
+    },
+    {
+      "id": "activity-snow",
+      "phase": 4,
+      "reasonZh": "因為有賞雪安排",
+      "needs": [
+        {
+          "itemId": "waterproof-nonslip-shoes"
+        },
+        {
+          "itemId": "warm-hat"
+        },
+        {
+          "itemId": "waterproof-gloves"
+        },
+        {
+          "itemId": "sunscreen"
+        },
+        {
+          "itemId": "sun-hat"
+        },
+        {
+          "itemId": "sunglasses"
+        }
+      ],
+      "when": {
+        "all": [
+          "activity:snow"
+        ]
+      },
+      "orderTag": "activity:snow",
+      "sortBase": 6000
+    },
+    {
+      "id": "activity-skiing",
+      "phase": 4,
+      "reasonZh": "因為有滑雪／單板安排",
+      "needs": [
+        {
+          "itemId": "thermal-base-layer"
+        },
+        {
+          "itemId": "ski-socks"
+        },
+        {
+          "itemId": "ski-goggles"
+        },
+        {
+          "itemId": "ski-jacket"
+        },
+        {
+          "itemId": "ski-pants"
+        },
+        {
+          "itemId": "waterproof-gloves",
+          "reasonZh": "滑雪／單板需要防水保暖手套"
+        },
+        {
+          "itemId": "sunscreen"
+        },
+        {
+          "itemId": "sun-hat"
+        },
+        {
+          "itemId": "sunglasses"
+        }
+      ],
+      "when": {
+        "all": [
+          "activity:skiing"
+        ]
+      },
+      "orderTag": "activity:skiing",
+      "sortBase": 6000
+    },
+    {
+      "id": "activity-exercise",
+      "phase": 4,
+      "reasonZh": "因為有運動／健身安排",
+      "needs": [
+        {
+          "itemId": "workout-clothes"
+        },
+        {
+          "itemId": "water-bottle"
+        }
+      ],
+      "when": {
+        "all": [
+          "activity:exercise"
+        ]
+      },
+      "orderTag": "activity:exercise",
+      "sortBase": 6000
+    },
+    {
+      "id": "activity-business",
+      "phase": 4,
+      "reasonZh": "因為有工作／商務安排",
+      "needs": [
+        {
+          "itemId": "business-clothes"
+        },
+        {
+          "itemId": "business-cards"
+        }
+      ],
+      "when": {
+        "all": [
+          "activity:business"
+        ]
+      },
+      "orderTag": "activity:business",
+      "sortBase": 6000
+    },
+    {
+      "id": "activity-formal",
+      "phase": 4,
+      "reasonZh": "因為有正式場合安排",
+      "needs": [
+        {
+          "itemId": "formal-clothes"
+        },
+        {
+          "itemId": "formal-shoes"
+        }
+      ],
+      "when": {
+        "all": [
+          "activity:formal"
+        ]
+      },
+      "orderTag": "activity:formal",
+      "sortBase": 6000
+    },
+    {
+      "id": "activity-driving",
+      "phase": 4,
+      "reasonZh": "因為有自駕安排",
+      "needs": [
+        {
+          "itemId": "driving-documents"
+        }
+      ],
+      "when": {
+        "all": [
+          "activity:driving"
+        ]
+      },
+      "orderTag": "activity:driving",
+      "sortBase": 6000
+    },
+    {
+      "id": "laundry",
+      "phase": 5,
+      "reasonZh": "因為途中會洗衣",
+      "needs": [
+        {
+          "itemId": "laundry-supplies"
+        },
+        {
+          "itemId": "laundry-bag",
+          "reasonZh": "因為途中會洗衣・分開收納待洗衣物"
+        }
+      ],
+      "when": {
+        "all": [
+          "laundry:yes"
+        ]
+      },
+      "sortBase": 6000
+    },
+    {
+      "id": "hostel",
+      "phase": 5,
+      "reasonZh": "青旅／共用住宿的置物櫃收納",
+      "needs": [
+        {
+          "itemId": "locker-lock"
+        },
+        {
+          "itemId": "slippers",
+          "reasonZh": "青旅／共用住宿的淋浴空間"
+        },
+        {
+          "itemId": "quick-dry-towel",
+          "reasonZh": "青旅／共用住宿自備毛巾"
+        }
+      ],
+      "when": {
+        "all": [
+          "stay:hostel"
+        ]
+      },
+      "sortBase": 6000
+    },
+    {
+      "id": "adapter",
+      "phase": 6,
+      "reasonZh": "目的地不保證支援{originCountry}常見的所有插頭型式",
+      "needs": [
+        {
+          "itemId": "plug-adapter",
+          "nameZh": "插座轉接頭（當地 Type-{plugTypes}）",
+          "sortIndex": 90
+        }
+      ],
+      "when": {
+        "all": [
+          "plug:incompatible"
+        ]
+      }
+    }
+  ]
+}

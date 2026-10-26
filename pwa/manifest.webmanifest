@@ -1,0 +1,15 @@
+{
+  "name": "PackSmart",
+  "short_name": "PackSmart",
+  "description": "依目的地、天氣和你的習慣，推薦這趟真正要帶的東西。",
+  "lang": "zh-Hant",
+  "start_url": "./#trips",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F5EAD8",
+  "theme_color": "#F5EAD8",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

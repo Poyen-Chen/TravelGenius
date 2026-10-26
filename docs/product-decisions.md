@@ -520,3 +520,13 @@ This log records accepted product choices that affect behavior, navigation, scop
 - Consequences: 取代 PD-057 中「更新 PWA ＝發布到既有 Packmon Site」的發布位置；chatgpt.site 版本保留不動，兩個網址的瀏覽器資料不互通。`web/.assetsignore` 排除 `.git`。Cloudflare 免費方案下靜態檔案請求不收費。帳號登入與雲端同步尚未接到 PWA。
 - App / PWA: 只變更 PWA。
 - Verification: 本機建立東京行程，勾選 2 件後行李箱顯示 2 張插圖、「天氣」篩選淡出其餘 12 件，無 console 錯誤；正式網址主要檔案 200、`/.git/HEAD` 404、新 service worker 與樣式載入。
+
+## PD-064 — PackSmart PWA ported from the iOS app
+
+- Date: 2026-10-26
+- Status: Accepted by user（「把手機版 packsmart App 做成 PWA」「上述＋帳號與同步」）
+- Decision: 在 repo 的 `pwa/` 建立 iOS App 的網頁版：推薦引擎由 Swift 移植成 JavaScript，直接讀 App 的 SeedData；建立行程（目的地、日期、偏好、活動、住宿、洗衣、Open-Meteo 天氣）、打包頁（行李箱、原因徽章與篩選、文字／圖片、數量、常備、移除）、通關四關卡、能不能帶、禮儀、常備清單、個人打包需求、帳號與同步。行程與常備用品直接使用雲端 payload version 1 的形狀，天氣快照與 iOS 的 PackingWeather 相同格式，與 iOS 透過同一個 Supabase 同步。部署為 Cloudflare Workers 靜態網站 `packsmart-app`，與 PD-063 的 Packmon PWA（朋友的版本）分開。
+- Context: 使用者要把自己的 iOS App（含新的圖形介面）做成 PWA，另外放一個 Cloudflare 網址給朋友使用。
+- Consequences: 推薦規則只有一份來源（SeedData），iOS 改規則後重跑 `scripts/build_pwa_assets.sh` 並重新部署即可同步。網頁版登入狀態存在瀏覽器；健康類同意存在帳號，與 iOS 共用。雲端登入要等 Supabase 自訂 SMTP 與含驗證碼的信件範本設定好才能使用。尚未做：建立後的推薦 review、行李估重、PWA 專屬的資料匯出。
+- App / PWA: 新增 PWA；iOS 不變。
+- Verification: `pwa/tests/engine-parity.mjs` 與 iOS 的 2,916 組情境逐項相同：PASS。瀏覽器實測：建立東京行程（即時 5 天預報、20 件推薦、11 件調整）、勾選後行李箱放入插圖、無 console 錯誤。對本機 Supabase 實測：網頁版以 Email 驗證碼登入、同意後同步，下載 iOS 模擬器建立的行程並上傳自己的行程；iOS 程式碼解碼網頁版行程，天氣快照有效、重新推薦的 20 件與網頁版清單相同。
