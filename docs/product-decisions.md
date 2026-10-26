@@ -530,3 +530,13 @@ This log records accepted product choices that affect behavior, navigation, scop
 - Consequences: 推薦規則只有一份來源（SeedData），iOS 改規則後重跑 `scripts/build_pwa_assets.sh` 並重新部署即可同步。網頁版登入狀態存在瀏覽器；健康類同意存在帳號，與 iOS 共用。雲端登入要等 Supabase 自訂 SMTP 與含驗證碼的信件範本設定好才能使用。尚未做：建立後的推薦 review、行李估重、PWA 專屬的資料匯出。
 - App / PWA: 新增 PWA；iOS 不變。
 - Verification: `pwa/tests/engine-parity.mjs` 與 iOS 的 2,916 組情境逐項相同：PASS。瀏覽器實測：建立東京行程（即時 5 天預報、20 件推薦、11 件調整）、勾選後行李箱放入插圖、無 console 錯誤。對本機 Supabase 實測：網頁版以 Email 驗證碼登入、同意後同步，下載 iOS 模擬器建立的行程並上傳自己的行程；iOS 程式碼解碼網頁版行程，天氣快照有效、重新推薦的 20 件與網頁版清單相同。
+
+## PD-065 — Suitcase shows the item just packed; PWA uses a website layout
+
+- Date: 2026-10-26
+- Status: Accepted by user（回報「勾選的時候有時候不會出現在行李箱」，並要求「設計和我朋友一樣，把 App 改成適合網站的 UI，但是我的功能都要在」）
+- Decision: 行李箱改為依勾選時間排列、最新的在最後：物品不超過 12 件時一件一格；超過 12 件時打包 11 件以內一件一格，之後放最近勾的 11 件並以最後一格顯示「+K」，全部打包完才 12 格全滿。iOS（`SuitcaseProgressView.layout`，順序只存在記憶體）與 PWA（`pwa/js/suitcase.js`，勾選時間存在瀏覽器、不同步）同一套規則。PWA 改為網站版面：電腦上左側欄導覽＋最寬 980px 的內容區、頁首、兩欄卡片、三欄物品卡、置中對話框；手機上改頂部品牌列＋底部分頁。右下角加入 Packmon 吉祥物，依目前行程提示未打包件數、天氣或下一關通關事項。PackSmart 的功能全部保留，不加入 Packmon 的 3D、分包與估重。
+- Supersedes: PD-061 中「物品超過 12 件時依比例換算格數」的行李箱規則。
+- Consequences: 剛勾的物品一定出現在行李箱；格數不會因比例換算而沒有變化。iOS 重新開啟打包頁時順序回到清單順序。PWA 的推薦引擎、天氣、資料與同步不變。
+- App / PWA: 兩邊都改行李箱規則；網站版面只改 PWA。
+- Verification: `node pwa/tests/suitcase.mjs`（20 件亂序逐一勾選、8 件、全滿）與 iOS `layout` 函式獨立執行相同情境：PASS。瀏覽器 26 件行程依序勾 15 件，每件都出現在最後一格，第 12 件起顯示 +1～+4；390／1024／1920 寬度無水平捲動，八個頁面皆正常；模擬器 13 件示範行程勾選護照與信用卡，依序出現在第 6、7 格。backend、packing、cloud sync 回歸與 2,916 組引擎比對：PASS。

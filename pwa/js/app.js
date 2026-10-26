@@ -1,8 +1,10 @@
-// PackSmart PWA：iOS App 的網頁版（同一份規則、資料與雲端同步）。
+// PackSmart PWA：iOS App 的網頁版（同一份規則、資料與雲端同步），網站版面。
 import { DATA, loadData, generate, reasonKindsFor, weatherSummary, country, citiesOf, defaultCity, artwork, itemByName, datesBetween,
   CATEGORIES, STYLES, DEVICES, NEEDS, ACTIVITIES, STAYS, LAUNDRY, REASON_KINDS, CUSTOM_REASON, STAPLE_REASON, CUSTOM_SORT } from './engine.js';
 import { weatherRequest, fetchWeather, FAILURE } from './weather.js';
 import { store, save, uuid, essentials, normalized, trip as findTrip, sortedItems, progress, compact } from './store.js';
+import { suitcaseSlots } from './suitcase.js';
+import { CONFIG } from './config.js';
 import * as cloud from './cloud.js';
 
 // ---------- 小工具 ----------
@@ -20,7 +22,8 @@ const PATHS = {
   shirt: '<path d="m8 3-5 3 2 4 2-1v12h10V9l2 1 2-4-5-3a4 4 0 0 1-8 0z"/>', plug: '<path d="M9 2v6M15 2v6M6 8h12v4a6 6 0 0 1-12 0zM12 18v4"/>',
   'id-card': '<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="12" r="2"/><path d="M14 10h4M14 14h4"/>', droplet: '<path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/>',
   'heart-pulse': '<path d="M20.8 6.6a5 5 0 0 0-8.8-2.8 5 5 0 0 0-8.8 2.8C3 13 12 20 12 20s9-7 8.8-13.4z"/><path d="M3.5 12H8l2-3 3 6 2-3h5.5"/>', package: '<path d="m3 7 9-4 9 4v10l-9 4-9-4z"/><path d="m3 7 9 4 9-4M12 11v10"/>',
-  umbrella: '<path d="M3 12a9 9 0 0 1 18 0zM12 12v6a2 2 0 0 0 4 0"/>', refresh: '<path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/>', x: '<path d="M6 6l12 12M18 6 6 18"/>',
+  umbrella: '<path d="M3 12a9 9 0 0 1 18 0zM12 12v6a2 2 0 0 0 4 0"/>', x: '<path d="M6 6l12 12M18 6 6 18"/>', shield: '<path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z"/><path d="m9 12 2 2 4-4"/>',
+  disk: '<rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 14h.01M11 14h6"/>',
 };
 const icon = (name, cls = 'icon') => `<svg class="${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${PATHS[name] || PATHS.package}</svg>`;
 const CHECK = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5 9.5 17 19 7"/></svg>`;
@@ -33,17 +36,21 @@ const md = iso => { const d = new Date(iso); return `${d.getMonth() + 1}/${d.get
 const daysUntil = iso => Math.round((new Date(dayOf(iso) + 'T00:00:00') - new Date(today() + 'T00:00:00')) / 86400000);
 const tripDays = t => datesBetween(dayOf(t.startDate), dayOf(t.endDate)).length;
 const status = t => { if (t.completedAt || t.isClosed) return '已完成'; const d = daysUntil(t.startDate); if (d > 0) return `還有 ${d} 天`; if (daysUntil(t.endDate) < 0) return '已結束'; return d === 0 ? '今天出發' : '旅途中'; };
+const pressed = v => `aria-pressed="${!!v}"`;
+const pageHead = (eyebrow, title, subtitle = '', actions = '') => `<header class="page-head"><div class="grow">${eyebrow ? `<div class="eyebrow">${eyebrow}</div>` : ''}<h1>${title}</h1>${subtitle ? `<p class="subtitle">${subtitle}</p>` : ''}</div>${actions ? `<div class="actions">${actions}</div>` : ''}</header>`;
+const tile = (href, ic, t, s) => `<a class="tile" href="${href}"><span class="ico">${icon(ic)}</span><span class="grow"><div class="t">${esc(t)}</div><div class="s">${esc(s)}</div></span><span class="chev">${icon('chev')}</span></a>`;
 
 let toastTimer;
 function toast(text) { $('#toast')?.remove(); const el = document.createElement('div'); el.id = 'toast'; el.className = 'toast'; el.setAttribute('role', 'status'); el.textContent = text; document.body.append(el); clearTimeout(toastTimer); toastTimer = setTimeout(() => el.remove(), 2600); }
-function sheet(html) { closeSheet(); const el = document.createElement('div'); el.className = 'overlay'; el.id = 'overlay'; el.innerHTML = `<div class="sheet" role="dialog" aria-modal="true">${html}</div>`; el.addEventListener('click', e => { if (e.target === el) closeSheet(); }); document.body.append(el); el.querySelector('button, input')?.focus(); }
-const closeSheet = () => $('#overlay')?.remove();
+const dialog = () => $('#dialog');
+function sheet(html) { const d = dialog(); d.innerHTML = `<div class="dialog-body">${html}</div>`; if (!d.open) d.showModal(); d.querySelector('input, button:not([data-act="close"])')?.focus(); }
+const closeSheet = () => { if (dialog().open) dialog().close(); };
 const confirmSheet = (title, message, ok, action, danger = false) => sheet(`<h3>${esc(title)}</h3><p>${esc(message)}</p><div class="row" style="justify-content:flex-end"><button class="btn ghost" data-act="close">取消</button><button class="btn${danger ? ' danger' : ''}" data-act="${action}">${esc(ok)}</button></div>`);
 const commit = () => { save(); render(); scheduleSync(); };
 
 // ---------- 路由 ----------
 let route = { page: 'trips' };
-let ui = { seg: 'pack', filter: null, step: 'destinationArrival', query: '', queryDest: 'JP', lastPacked: null, knowledgeCountry: 'JP' };
+let ui = { seg: 'pack', filter: null, step: 'destinationArrival', query: '', queryDest: 'JP', lastPacked: null, knowledgeCountry: 'JP', bubble: false };
 function parse() {
   const [page = 'trips', a, b] = location.hash.slice(1).split('/');
   if (page === 'trip' && findTrip(a)) { if (route.id !== a) ui.filter = null; route = { page, id: a }; ui.seg = b || ui.seg; }
@@ -51,32 +58,29 @@ function parse() {
   else route = { page: 'trips' };
 }
 const go = hash => { if (location.hash === '#' + hash) render(); else location.hash = hash; };
-window.addEventListener('hashchange', () => { parse(); render(); window.scrollTo(0, 0); });
+window.addEventListener('hashchange', () => { parse(); ui.bubble = false; render(); window.scrollTo(0, 0); });
 
 // ---------- 首頁 ----------
+const activeTrip = () => { const trips = [...store.trips].sort((a, b) => a.startDate.localeCompare(b.startDate)); return trips.find(t => !t.completedAt && daysUntil(t.endDate) >= 0) || trips.at(-1); };
 function homeView() {
-  const trips = [...store.trips].sort((a, b) => a.startDate.localeCompare(b.startDate));
-  const active = trips.find(t => !t.completedAt && daysUntil(t.endDate) >= 0) || trips.at(-1);
-  const others = trips.filter(t => t !== active);
-  const quick = `<h2>不用建立行程也能用</h2><div class="stack">
-    ${row('#search', 'search', '能不能帶？', '查海關與航空限制')}${row('#knowledge', 'book', '禮儀圖鑑', '先看當地眉角')}${row('#me/staples', 'luggage', '常備用品', '設定每次旅行都會帶的用品')}</div>`;
-  const onboard = !store.onboarded ? `<a class="listrow" href="#me/prefs" style="margin-bottom:12px"><img class="mascot" src="art/mascot.png" alt=""><span><div class="t">先認識你的打包習慣</div><div class="s">選平常會帶的設備與用品，每趟不必重填</div></span><span class="chev">${icon('chev')}</span></a>` : '';
-  if (!active) return `<div class="row between"><h1>我的行程</h1><a class="btn" href="#new">${icon('plus')}新行程</a></div>${onboard}
-    <div class="card empty"><img class="mascot" src="art/mascot.png" alt=""><h2 style="margin:6px 0">還沒有行程</h2><p class="sub">查詢與圖鑑照樣能用，建立行程後我才開始準備清單。</p><a class="btn block" href="#new">建立第一個行程</a></div>${quick}`;
+  const active = activeTrip(), others = [...store.trips].filter(t => t !== active).sort((a, b) => b.startDate.localeCompare(a.startDate));
+  const tools = `<section><h2>不用建立行程也能用</h2><div class="stack">
+    ${tile('#search', 'search', '能不能帶？', '查海關、檢疫與航空限制')}${tile('#knowledge', 'book', '禮儀圖鑑', '出發前先看當地眉角')}${tile('#me/staples', 'luggage', '常備清單', '設定每次旅行都會帶的用品')}</div></section>`;
+  const onboard = !store.onboarded ? `<a class="tile" href="#me/prefs"><img class="mascot" src="art/mascot.png" alt=""><span class="grow"><div class="t">先認識你的打包習慣</div><div class="s">選平常會帶的設備與用品，之後每趟不必重填</div></span><span class="chev">${icon('chev')}</span></a>` : '';
+  const head = pageHead('MY TRIPS', '我的行程', '依目的地、天氣和你的習慣，推薦這趟真正要帶的東西。', `<a class="btn" href="#new">${icon('plus')}新行程</a>`);
+  if (!active) return `${head}<div class="home"><div class="stack"><div class="card empty"><img class="mascot" src="art/mascot.png" alt=""><h2 style="margin:4px 0 6px">還沒有行程</h2><p class="sub">查詢與圖鑑照樣能用，建立行程後我才開始準備清單。</p><a class="btn" href="#new">${icon('plus')}建立第一個行程</a></div></div><div class="stack">${onboard}${tools}</div></div>`;
   const p = progress(active);
-  return `<div class="row between"><h1>我的行程</h1><a class="btn" href="#new">${icon('plus')}新行程</a></div>${onboard}
-  <a class="hero" href="#trip/${active.id}/overview" style="display:block;color:inherit;text-decoration:none">
-    <div class="row between"><span class="chip">${status(active)}</span><span class="eyebrow">${p.remaining} 項待確認</span></div>
-    <div style="font-size:30px;font-weight:900;margin:12px 0 4px">${esc(active.name)}</div>
-    <div class="sub" style="margin:0 0 12px">${md(active.startDate)}–${md(active.endDate)}・${tripDays(active)} 天</div>
-    <div class="bar"><i style="width:${p.total ? p.packed / p.total * 100 : 0}%"></i></div>
-    <div class="row between muted" style="margin-top:10px;font-weight:700"><span>打包進度 ${p.packed}/${p.total}</span>${icon('chev')}</div>
-    <div class="card row" style="margin-top:12px"><img class="mascot" src="art/mascot.png" alt=""><b style="line-height:1.5">${p.remaining ? `還有 ${p.remaining} 件待確認，點進去繼續打包` : '全部裝好了！出發吧'}</b></div>
-  </a>
-  ${others.length ? `<h2>最近行程</h2><div class="stack">${others.map(t => row(`#trip/${t.id}/overview`, 'luggage', `${country(t.countryCode)?.nameZh ?? ''}・${t.name}`, `${md(t.startDate)}–${md(t.endDate)}・${tripDays(t)} 天・${status(t)}`)).join('')}</div>` : ''}
-  ${quick}`;
+  return `${head}<div class="home"><div class="stack">
+    <a class="trip-card" href="#trip/${active.id}/overview">
+      <div class="row between"><span class="pill">${status(active)}</span><span class="eyebrow">${p.remaining ? `${p.remaining} 項待確認` : '全部裝好了'}</span></div>
+      <h2>${esc(active.name)}</h2><div class="meta">${esc(country(active.countryCode)?.nameZh ?? '')}・${md(active.startDate)}–${md(active.endDate)}・${tripDays(active)} 天</div>
+      <div class="bar"><i style="width:${p.total ? p.packed / p.total * 100 : 0}%"></i></div>
+      <div class="row between muted" style="margin-top:10px;font-weight:800"><span>打包進度 ${p.packed}/${p.total}</span>${icon('chev')}</div>
+      <div class="hint"><img class="mascot" src="art/mascot.png" alt="" style="width:48px;height:48px">${p.remaining ? `還有 ${p.remaining} 件待確認，點進去繼續打包` : '全部裝好了！出發吧'}</div>
+    </a>
+    ${others.length ? `<section class="section"><h2>其他行程</h2><div class="stack">${others.map(t => tile(`#trip/${t.id}/overview`, 'luggage', `${country(t.countryCode)?.nameZh ?? ''}・${t.name}`, `${md(t.startDate)}–${md(t.endDate)}・${tripDays(t)} 天・${status(t)}`)).join('')}</div></section>` : ''}
+  </div><div class="stack">${onboard}${tools}</div></div>`;
 }
-const row = (href, ic, t, s) => `<a class="listrow" href="${href}"><span class="ico">${icon(ic)}</span><span class="grow"><div class="t">${esc(t)}</div><div class="s">${esc(s)}</div></span><span class="chev">${icon('chev')}</span></a>`;
 
 // ---------- 建立行程 ----------
 let draft = null;
@@ -105,38 +109,42 @@ function recommendations() {
   const staples = new Set(draft.custom.filter(c => c.include).map(c => normalized(c.name)));
   return generate(draftTrip()).filter(g => !staples.has(normalized(g.name)));
 }
-const pressed = v => `aria-pressed="${!!v}"`;
 function newView() {
   if (!draft) newDraft();
   const ready = draft.country && draft.city && draft.start && draft.end >= draft.start;
-  const head = `<div class="row between"><button class="icon-btn" data-act="cancel-new" aria-label="關閉">${icon('x')}</button><b>新行程</b><span style="width:42px"></span></div>
-    <div class="steps">步驟 ${draft.step} / 2・${draft.step === 1 ? '基本資訊' : '確認推薦清單'}</div><div class="stepbar"><i style="width:${draft.step * 50}%"></i></div>`;
+  const head = pageHead(`NEW TRIP・步驟 ${draft.step} / 2`, draft.step === 1 ? '想去哪裡？' : '確認推薦清單',
+    draft.step === 1 ? '選目的地與日期，再告訴我這趟怎麼準備。' : `${esc(draft.name || draft.city)}・${esc(country(draft.country)?.nameZh)}・${md(localISO(draft.start))}–${md(localISO(draft.end))}。關掉不需要的項目。`,
+    `<button class="btn ghost" data-act="cancel-new">取消</button>`) + `<div class="stepbar"><i style="width:${draft.step * 50}%"></i></div><div style="height:18px"></div>`;
   if (draft.step === 1) {
     const w = weatherSummary(draft.weather);
-    return `${head}<h1 style="font-size:24px">想去哪裡？</h1><p class="sub">先選國家／地區，再選一個城市</p>
-    <span class="label">1. 國家／地區</span><div class="chips">${destinations().map(c => `<button class="opt" data-country="${c.code}" ${pressed(draft.country === c.code)}>${esc(c.nameZh)}</button>`).join('')}</div>
-    ${draft.country ? `<span class="label">2. 城市</span><div class="chips">${citiesOf(draft.country).map(c => `<button class="opt" data-city="${esc(c.cityZh)}" ${pressed(draft.city === c.cityZh)}>${esc(c.cityZh)}</button>`).join('')}</div>` : ''}
-    <span class="label">什麼時候出發？</span><div class="dates"><label>出發<input class="field" type="date" id="d-start" value="${draft.start}"></label><label>回程<input class="field" type="date" id="d-end" value="${draft.end}" min="${draft.start}"></label></div>
-    <p class="sub" style="margin-top:8px">共 ${draft.end >= draft.start ? datesBetween(draft.start, draft.end).length : 0} 天</p>
-    ${draft.city ? `<div class="card">${draft.loadingWeather ? '<b>查詢天氣預報中…</b>' : w ? `<b>${icon('umbrella')} ${esc(w.reminder)}</b><div class="sub" style="margin:6px 0 0">${w.low != null ? `${w.low}–${w.high}°C・${w.rainDays} 天降雨機率較高・` : ''}${esc(w.coverage)}${draft.weather.failure && draft.weather.failure !== 'incomplete' ? `<br>${esc(FAILURE[draft.weather.failure] || '')}` : ''}</div><div class="src">天氣資料：Open-Meteo・CC BY 4.0</div>` : '<span class="muted">這個城市沒有天氣資料，會依季節推薦。</span>'}</div>` : ''}
-    <h2>這趟怎麼準備？</h2><p class="sub">先沿用你的打包需求；這裡的調整只影響這趟行程</p>
-    <span class="label">出發地</span><select class="field" id="d-origin">${DATA.countries.map(c => `<option value="${c.code}" ${c.code === draft.origin ? 'selected' : ''}>${esc(c.nameZh)}</option>`).join('')}</select>
-    <span class="label">行程名稱</span><input class="field" id="d-name" placeholder="留空使用城市名" value="${esc(draft.name)}" maxlength="40">
-    <span class="label">打包風格</span><div class="seg">${Object.entries(STYLES).map(([k, [l]]) => `<button data-style="${k}" ${pressed(draft.prefs.packingStyle === k)}>${l}</button>`).join('')}</div>
-    <span class="label">這趟會帶的設備</span><div class="chips">${Object.entries(DEVICES).map(([k, l]) => `<button class="opt" data-device="${k}" ${pressed(draft.prefs.devices.includes(k))}>${l}</button>`).join('')}</div>
-    <span class="label">常備需求</span><div class="chips">${Object.entries(NEEDS).map(([k, l]) => `<button class="opt" data-need="${k}" ${pressed(draft.prefs.needs.includes(k))}>${l}</button>`).join('')}</div>
-    <span class="label">這趟的活動</span><div class="chips">${Object.entries(ACTIVITIES).map(([k, l]) => `<button class="opt" data-activity="${k}" ${pressed(draft.context.activities.includes(k))}>${l}</button>`).join('')}</div>
-    <span class="label">住宿</span><div class="chips">${Object.entries(STAYS).map(([k, l]) => `<button class="opt" data-stay="${k}" ${pressed(draft.context.stays.includes(k))}>${l}</button>`).join('')}</div>
-    <span class="label">洗衣</span><div class="seg">${Object.entries(LAUNDRY).map(([k, l]) => `<button data-laundry="${k}" ${pressed(draft.context.laundry === k)}>${l}</button>`).join('')}</div>
-    <div style="height:18px"></div><button class="btn block" data-act="next-step" ${ready && !draft.loadingWeather ? '' : 'disabled'}>下一步：確認清單</button>`;
+    return `${head}<div class="form-cols">
+    <section class="card">
+      <span class="label">國家／地區</span><div class="chips">${destinations().map(c => `<button class="opt" data-country="${c.code}" ${pressed(draft.country === c.code)}>${esc(c.nameZh)}</button>`).join('')}</div>
+      ${draft.country ? `<span class="label">城市</span><div class="chips">${citiesOf(draft.country).map(c => `<button class="opt" data-city="${esc(c.cityZh)}" ${pressed(draft.city === c.cityZh)}>${esc(c.cityZh)}</button>`).join('')}</div>` : ''}
+      <span class="label">日期</span><div class="dates"><label>出發<input class="field" type="date" id="d-start" value="${draft.start}"></label><label>回程<input class="field" type="date" id="d-end" value="${draft.end}" min="${draft.start}"></label></div>
+      <p class="sub" style="margin:8px 0 0">共 ${draft.end >= draft.start ? datesBetween(draft.start, draft.end).length : 0} 天</p>
+      <span class="label">出發地</span><select class="field" id="d-origin">${DATA.countries.map(c => `<option value="${c.code}" ${c.code === draft.origin ? 'selected' : ''}>${esc(c.nameZh)}</option>`).join('')}</select>
+      <span class="label">行程名稱</span><input class="field" id="d-name" placeholder="留空使用城市名" value="${esc(draft.name)}" maxlength="40">
+      ${draft.city ? `<div class="card" style="margin-top:16px;box-shadow:none;background:var(--canvas)">${draft.loadingWeather ? '<b>查詢天氣預報中…</b>' : w ? `<b>${icon('umbrella')} ${esc(w.reminder)}</b><div class="sub" style="margin:6px 0 0">${w.low != null ? `${w.low}–${w.high}°C・${w.rainDays} 天降雨機率較高・` : ''}${esc(w.coverage)}${draft.weather.failure && draft.weather.failure !== 'incomplete' ? `<br>${esc(FAILURE[draft.weather.failure] || '')}` : ''}</div><div class="src">天氣資料：Open-Meteo・CC BY 4.0</div>` : '<span class="muted">這個城市沒有天氣資料，會依季節推薦。</span>'}</div>` : ''}
+    </section>
+    <section class="card">
+      <span class="label">打包風格</span><div class="seg">${Object.entries(STYLES).map(([k, [l]]) => `<button data-style="${k}" ${pressed(draft.prefs.packingStyle === k)}>${l}</button>`).join('')}</div>
+      <span class="label">這趟會帶的設備</span><div class="chips">${Object.entries(DEVICES).map(([k, l]) => `<button class="opt" data-device="${k}" ${pressed(draft.prefs.devices.includes(k))}>${l}</button>`).join('')}</div>
+      <span class="label">常備需求</span><div class="chips">${Object.entries(NEEDS).map(([k, l]) => `<button class="opt" data-need="${k}" ${pressed(draft.prefs.needs.includes(k))}>${l}</button>`).join('')}</div>
+      <span class="label">這趟的活動</span><div class="chips">${Object.entries(ACTIVITIES).map(([k, l]) => `<button class="opt" data-activity="${k}" ${pressed(draft.context.activities.includes(k))}>${l}</button>`).join('')}</div>
+      <span class="label">住宿</span><div class="chips">${Object.entries(STAYS).map(([k, l]) => `<button class="opt" data-stay="${k}" ${pressed(draft.context.stays.includes(k))}>${l}</button>`).join('')}</div>
+      <span class="label">洗衣</span><div class="seg">${Object.entries(LAUNDRY).map(([k, l]) => `<button data-laundry="${k}" ${pressed(draft.context.laundry === k)}>${l}</button>`).join('')}</div>
+      <p class="sub" style="margin:12px 0 0">先沿用你的個人打包需求；這裡的調整只影響這趟行程。</p>
+    </section></div>
+    <div class="action-bar"><button class="btn" data-act="next-step" ${ready && !draft.loadingWeather ? '' : 'disabled'}>下一步：確認清單 ${icon('chev')}</button></div>`;
   }
-  const recs = recommendations();
-  return `${head}<h1 style="font-size:24px">${esc(draft.name || draft.city)}</h1><p class="sub">${esc(country(draft.country)?.nameZh)}・${md(localISO(draft.start))}–${md(localISO(draft.end))}・依目的地、天氣與你的設定推薦。關掉不需要的項目。</p>
-    <div class="group">${recs.map(g => `<div class="toggle-row"><div class="grow"><b>${esc(g.name)} ×${g.quantity}</b><div class="sub" style="margin:2px 0 0;font-size:12px">${esc(g.reason)}</div></div><div class="row" style="gap:2px">${g.kinds.slice(0, 2).map(badge).join('')}</div><button class="switch" role="switch" aria-checked="${!draft.excluded.has(g.id)}" aria-label="${esc(g.name)}" data-rec="${g.id}"></button></div>`).join('')}</div>
-    <h2>常備與自訂用品</h2><p class="sub">常備用品只複製到這趟行程；在這裡移除不會更改常備清單。</p>
-    ${draft.custom.length ? `<div class="group">${draft.custom.map((c, n) => `<div class="toggle-row"><div class="grow"><b>${esc(c.name)} ×${c.quantity}</b><div class="sub" style="margin:2px 0 0;font-size:12px">${c.staple ? '我的常備用品' : '自訂'}</div></div><button class="switch" role="switch" aria-checked="${c.include}" aria-label="${esc(c.name)}" data-custom="${n}"></button></div>`).join('')}</div>` : ''}
-    <button class="btn soft" style="margin-top:10px" data-act="draft-add">${icon('plus')}新增自訂用品</button>
-    <div style="height:18px"></div><div class="row"><button class="btn ghost" data-act="prev-step">上一步</button><button class="btn block grow" data-act="create">建立行程</button></div>`;
+  const recs = recommendations(), on = recs.filter(g => !draft.excluded.has(g.id)).length + draft.custom.filter(c => c.include).length;
+  return `${head}<h2>依目的地、天氣與你的設定推薦（${recs.length} 項）</h2>
+    <div class="cols-2">${recs.map(g => `<div class="toggle-card${draft.excluded.has(g.id) ? ' off' : ''}">${artwork(g.id) ? `<img src="${artwork(g.id)}" alt="" style="width:44px;height:44px;object-fit:contain">` : ''}<div class="grow"><b>${esc(g.name)} ×${g.quantity}</b><div class="sub" style="margin:2px 0 0;font-size:12px">${esc(g.reason)}</div></div><div class="row" style="gap:0">${g.kinds.slice(0, 2).map(badge).join('')}</div><button class="switch" role="switch" aria-checked="${!draft.excluded.has(g.id)}" aria-label="${esc(g.name)}" data-rec="${g.id}"></button></div>`).join('')}</div>
+    <section class="section"><h2>常備與自訂用品</h2><p class="sub">常備用品只複製到這趟行程；在這裡移除不會更改常備清單。</p>
+    ${draft.custom.length ? `<div class="cols-2">${draft.custom.map((c, n) => `<div class="toggle-card${c.include ? '' : ' off'}"><div class="grow"><b>${esc(c.name)} ×${c.quantity}</b><div class="sub" style="margin:2px 0 0;font-size:12px">${c.staple ? '我的常備用品' : '自訂'}</div></div><button class="switch" role="switch" aria-checked="${c.include}" aria-label="${esc(c.name)}" data-custom="${n}"></button></div>`).join('')}</div>` : ''}
+    <button class="btn soft" style="margin-top:12px" data-act="draft-add">${icon('plus')}新增自訂用品</button></section>
+    <div class="action-bar"><button class="btn ghost" data-act="prev-step">${icon('back')}上一步</button><button class="btn" data-act="create">建立行程（${on} 件）</button></div>`;
 }
 function createTrip() {
   const recs = recommendations(), dest = country(draft.country), now = new Date().toISOString();
@@ -159,52 +167,60 @@ function createTrip() {
 function tripView(t) {
   const segs = [['overview', '總覽'], ['pack', '打包'], ['customs', '通關'], ['knowledge', '知識']];
   const prefs = t.packingPreferencesRaw ? JSON.parse(t.packingPreferencesRaw) : { packingStyle: 'normal', devices: ['phone'], needs: [] };
-  return `<div class="row between"><a class="icon-btn" href="#trips" aria-label="返回">${icon('back')}</a><b>我的行程</b><button class="icon-btn" data-act="trip-menu" aria-label="行程操作">${icon('more')}</button></div>
-  <div class="eyebrow" style="margin-top:12px">${status(t)}・${new Date(t.startDate).getMonth() + 1} 月 ${new Date(t.startDate).getDate()} 日出發</div>
-  <h1>${esc(t.name)}</h1><p class="sub">此行程設定：${prefs.devices.length} 項設備・${prefs.needs.length} 項需求・${STYLES[prefs.packingStyle]?.[0] ?? '一般'}</p>
+  return `<a class="link" href="#trips" style="display:inline-flex;align-items:center;gap:4px;margin-bottom:14px">${icon('back')}我的行程</a>
+  ${pageHead(`<span class="pill">${status(t)}</span>`, esc(t.name), `${esc(country(t.countryCode)?.nameZh ?? '')}・${md(t.startDate)}–${md(t.endDate)}・${tripDays(t)} 天・此行程設定：${prefs.devices.length} 項設備・${prefs.needs.length} 項需求・${STYLES[prefs.packingStyle]?.[0] ?? '一般'}`,
+    `<button class="icon-btn" data-act="trip-menu" aria-label="行程操作">${icon('more')}</button>`)}
   <div class="seg tabs-seg" role="group" aria-label="行程內容">${segs.map(([k, l]) => `<button data-seg="${k}" ${pressed(ui.seg === k)}>${l}</button>`).join('')}</div>
   ${ui.seg === 'overview' ? overviewView(t) : ui.seg === 'customs' ? customsView(t) : ui.seg === 'knowledge' ? etiquetteList(t.countryCode, t.city) : packView(t)}`;
 }
 
+function nextCheckpoint(t) {
+  const checks = store.checks[t.id] || {};
+  for (const [cp] of CHECKPOINTS) { const open = checkpointEntries(t.originCountryCode, t.countryCode, cp, cpDay(t, cp)).filter(e => !checks[e.id]); if (open.length) return { cp, open }; }
+  return null;
+}
 function overviewView(t) {
-  const p = progress(t), weather = t.packingWeatherRaw ? JSON.parse(t.packingWeatherRaw) : null, w = weatherSummary(weather);
-  return `<div class="card"><div class="row between"><b style="font-size:18px">打包進度</b><b style="font-size:26px;color:var(--olive);font-variant-numeric:tabular-nums">${p.packed}/${p.total}</b></div>
-    <div class="bar" style="margin:12px 0 8px"><i style="width:${p.total ? p.packed / p.total * 100 : 0}%"></i></div><div class="sub" style="margin:0">還有 ${p.remaining} 件要確認</div></div>
-  ${w ? `<div class="card" style="margin-top:12px"><b style="font-size:17px">${icon('umbrella')} ${esc(w.reminder)}</b>
-    <div class="sub" style="margin:8px 0 0">${w.low != null ? `${w.low}–${w.high}°C・${w.rainDays} 天降雨機率較高・` : ''}建立時參考・${esc(w.coverage)}</div>
-    ${weather.days.length ? `<div class="wx">${weather.days.map(d => `<div>${+d.date.slice(5, 7)}/${+d.date.slice(8)}<b>${Math.round(d.high)}°</b>${Math.round(d.low)}°<br><span class="rain">${Math.round(d.rainChance * 100)}%</span></div>`).join('')}</div>` : ''}
-    <div class="src">天氣資料：${weather.days.length ? 'Open-Meteo・CC BY 4.0' : esc(weather.seasonal?.sourceName ?? '季節參考')}</div></div>` : ''}
-  <button class="btn block" style="margin-top:14px" data-seg="pack">繼續打包</button>`;
+  const p = progress(t), weather = t.packingWeatherRaw ? JSON.parse(t.packingWeatherRaw) : null, w = weatherSummary(weather), next = nextCheckpoint(t);
+  const pct = p.total ? Math.round(p.packed / p.total * 100) : 0;
+  return `<div class="overview-grid">
+    <section class="card progress-card"><div class="ring" style="--p:${pct}%"><span>${pct}%</span></div><div><h2 style="margin:0">${p.remaining ? '慢慢收，一項一項來' : '都收好了！'}</h2><p class="sub" style="margin:6px 0 10px">${p.packed} / ${p.total} 項已打包・還有 ${p.remaining} 件</p><button class="link" data-seg="pack">繼續打包 →</button></div></section>
+    <section class="card"><div class="eyebrow">需要再確認</div>${next ? `<div class="metric">${next.open.length} <small>件・${esc(cpName(t, next.cp))}</small></div><p class="sub">${esc(next.open[0].title)}</p><button class="link" data-seg="customs" data-cp-go="${next.cp}">查看通關規定 →</button>` : '<div class="metric">0 <small>件</small></div><p class="sub">四個關卡都確認好了。</p>'}</section>
+    ${w ? `<section class="card full"><div class="row between" style="align-items:flex-start"><div><b style="font-size:17px">${icon('umbrella')} ${esc(w.reminder)}</b><div class="sub" style="margin:6px 0 0">${w.low != null ? `${w.low}–${w.high}°C・${w.rainDays} 天降雨機率較高・` : ''}建立時參考・${esc(w.coverage)}</div></div></div>
+      ${weather.days.length ? `<div class="wx">${weather.days.map(d => `<div>${+d.date.slice(5, 7)}/${+d.date.slice(8)}<b>${Math.round(d.high)}°</b>${Math.round(d.low)}°<br><span class="rain">${Math.round(d.rainChance * 100)}%</span></div>`).join('')}</div>` : ''}
+      <div class="src">天氣資料：${weather.days.length ? 'Open-Meteo・CC BY 4.0' : esc(weather.seasonal?.sourceName ?? '季節參考')}</div></section>` : ''}
+  </div>`;
 }
 
 function packView(t) {
   const p = progress(t), items = sortedItems(t), kindsOf = reasonKindsFor(t, store.library);
   const kinds = new Map(items.map(i => [i.id, kindsOf(i)]));
-  const slots = 12, filled = p.total ? Math.round(p.packed / p.total * slots) : 0, shown = items.filter(i => i.isPacked).slice(-filled);
+  const { slots, shown, overflow } = suitcaseSlots(items, store.packedAt?.[t.id] || {});
   const d = daysUntil(t.startDate), lid = !p.remaining && p.total ? '全部裝好了！' : d > 0 ? `還有 ${d} 天出發` : d === 0 ? '今天出發' : '旅途中';
   const counts = Object.keys(REASON_KINDS).map(k => [k, items.filter(i => kinds.get(i.id).includes(k)).length]).filter(([, n]) => n);
   const tailored = items.filter(i => kinds.get(i.id).length).length;
   const dim = i => ui.filter && !kinds.get(i.id).includes(ui.filter);
   const badges = i => kinds.get(i.id).slice(0, 2).map(badge).join('');
   const label = i => `aria-label="${esc(i.name)}，${i.isPacked ? '已打包，取消' : '標記已打包'}"`;
-  const fallback = i => `<span class="fallback">${icon(CATEGORIES[i.categoryRaw]?.[1])}分類示意</span>`;
-  const art = i => { const src = i.catalogItemID && artwork(i.catalogItemID); return src ? `<img src="${src}" alt="" loading="lazy">` : fallback(i); };
+  const art = i => { const src = i.catalogItemID && artwork(i.catalogItemID); return src ? `<img src="${src}" alt="" loading="lazy">` : `<span class="fallback">${icon(CATEGORIES[i.categoryRaw]?.[1])}分類示意</span>`; };
+  const slotArt = i => { const src = i.catalogItemID && artwork(i.catalogItemID); return src ? `<img src="${src}" alt="">` : icon(CATEGORIES[i.categoryRaw]?.[1]); };
+  const suitcase = `<div class="suitcase" role="img" aria-label="行李箱：已打包 ${p.packed} / ${p.total} 件，${lid}"><div class="handle"></div><div class="lid"><span>${lid}</span><b>${p.packed} / ${p.total}</b></div>
+    <div class="base"><div class="slots" style="${slots < 6 ? `grid-template-columns:repeat(${slots},1fr)` : ''}">${Array.from({ length: slots }, (_, n) => {
+      if (n < shown.length) return `<div class="slot full${shown[n].id === ui.lastPacked ? ' pop' : ''}">${slotArt(shown[n])}</div>`;
+      if (overflow && n === slots - 1) return `<div class="slot more" title="還有 ${overflow} 件已裝">+${overflow}</div>`;
+      return '<div class="slot"></div>'; }).join('')}</div></div></div>`;
   const card = i => `<article class="item${i.isPacked ? ' packed' : ''}${dim(i) ? ' dim' : ''}">
-      <div class="top"><button class="check" data-pack="${i.id}" ${pressed(i.isPacked)} ${label(i)}>${i.isPacked ? CHECK : ''}</button><button class="more" data-item="${i.id}" aria-label="${esc(i.name)}的操作">${icon('more')}</button></div>
-      <div class="art">${art(i)}<div class="badges" ${kinds.get(i.id).length ? `role="img" aria-label="調整原因：${kinds.get(i.id).slice(0, 2).map(k => REASON_KINDS[k][0]).join('、')}"` : ''}>${badges(i)}</div></div>
+      <div class="art">${art(i)}<button class="check" data-pack="${i.id}" ${pressed(i.isPacked)} ${label(i)}>${i.isPacked ? CHECK : ''}</button><button class="more" data-item="${i.id}" aria-label="${esc(i.name)}的操作">${icon('more')}</button>
+        <div class="badges" ${kinds.get(i.id).length ? `role="img" aria-label="調整原因：${kinds.get(i.id).slice(0, 2).map(k => REASON_KINDS[k][0]).join('、')}"` : ''}>${badges(i)}</div></div>
       <div class="name"><span>${esc(i.name)}</span><button class="qty" data-qty="${i.id}" aria-label="${esc(i.name)}數量，${i.quantity} 件，修改">×${i.quantity}</button></div></article>`;
   const rowText = i => `<div class="trow${dim(i) ? ' dim' : ''}"><button class="check" data-pack="${i.id}" ${pressed(i.isPacked)} ${label(i)}>${i.isPacked ? CHECK : ''}</button>
       <div class="grow"><div class="tt${i.isPacked ? ' done' : ''}">${esc(i.name)}</div></div><div class="tb">${badges(i)}<button class="qty" data-qty="${i.id}">×${i.quantity}</button><button class="more" data-item="${i.id}" aria-label="${esc(i.name)}的操作">${icon('more')}</button></div></div>`;
   const groups = items.reduce((g, i) => ((g[i.reasonKey] ??= []).push(i), g), {});
-  return `${store.mode === 'image' ? `<div class="suitcase" role="img" aria-label="行李箱：已打包 ${p.packed} / ${p.total} 件，${lid}"><div class="handle"></div><div class="lid"><span>${lid}</span><b>${p.packed} / ${p.total}</b></div>
-    <div class="base"><div class="slots">${Array.from({ length: slots }, (_, n) => { const i = shown[n]; if (!i) return '<div class="slot"></div>'; const src = i.catalogItemID && artwork(i.catalogItemID);
-      return `<div class="slot full${i.id === ui.lastPacked ? ' pop' : ''}">${src ? `<img src="${src}" alt="">` : icon(CATEGORIES[i.categoryRaw]?.[1])}</div>`; }).join('')}</div></div></div>`
-    : `<div class="card" style="margin-bottom:12px"><b>${p.packed} / ${p.total} 項已打包</b><div class="bar" style="margin-top:10px"><i style="width:${p.total ? p.packed / p.total * 100 : 0}%"></i></div></div>`}
-  <div class="row"><div class="seg grow" role="group" aria-label="顯示方式"><button data-mode="text" ${pressed(store.mode === 'text')}>文字</button><button data-mode="image" ${pressed(store.mode === 'image')}>圖片</button></div>
-    <button class="btn soft" data-act="add-item">${icon('plus')}新增</button></div>
-  ${counts.length ? `<h2 style="font-size:16px;margin:16px 0 0">這趟為你調整了 ${tailored} 件</h2><div class="filters">${counts.map(([k, n]) => `<button class="filter" data-filter="${k}" ${pressed(ui.filter === k)}>${badge(k)}${REASON_KINDS[k][0]}<small>${n}</small></button>`).join('')}</div>` : '<div style="height:12px"></div>'}
-  ${!items.length ? '<div class="card empty"><p class="sub">還沒有物品，按「新增」加入吧。</p></div>'
-    : store.mode === 'image' ? `<div class="grid">${items.map(card).join('')}</div>`
+  const tailor = `<section class="tailor">${counts.length ? `<h2>這趟為你調整了 ${tailored} 件</h2><p class="sub" style="margin:0">點分類只看那些物品，其他會淡出但仍可操作。</p><div class="filters">${counts.map(([k, n]) => `<button class="filter" data-filter="${k}" ${pressed(ui.filter === k)}>${badge(k)}${REASON_KINDS[k][0]}<small>${n}</small></button>`).join('')}</div>` : `<h2>${p.packed} / ${p.total} 項已打包</h2><p class="sub">這趟的清單都是基本必備。</p>`}</section>`;
+  return `${store.mode === 'image' ? `<div class="pack-top">${suitcase}${tailor}</div>` : `<div class="card" style="margin-bottom:16px"><b>${p.packed} / ${p.total} 項已打包</b><div class="bar" style="margin-top:10px"><i style="width:${p.total ? p.packed / p.total * 100 : 0}%"></i></div></div>${tailor}<div style="height:12px"></div>`}
+  <div class="packing-tools"><div class="seg" role="group" aria-label="顯示方式" style="min-width:200px"><button data-mode="text" ${pressed(store.mode === 'text')}>文字</button><button data-mode="image" ${pressed(store.mode === 'image')}>圖片</button></div>
+    <button class="btn soft" data-act="add-item">${icon('plus')}新增物品</button></div>
+  ${!items.length ? '<div class="card empty"><p class="sub">還沒有物品，按「新增物品」加入吧。</p></div>'
+    : store.mode === 'image' ? `<div class="card-grid">${items.map(card).join('')}</div>`
     : Object.entries(groups).map(([reason, list]) => `<div class="group-title">${esc(reason)}・${list.length} 項</div><div class="tlist">${list.map(rowText).join('')}</div>`).join('')}`;
 }
 
@@ -213,6 +229,8 @@ const CHECKPOINTS = [['originDeparture', '去程', '出境'], ['destinationArriv
 const AUTH = { customs: '海關', quarantine: '檢疫', aviation: '航空安檢', immigration: '移民' };
 const STATUS = { prepare: '待完成', declare: '需申報', review: '需確認', banned: '禁止', permit: '需許可', limited: '有限制', carryOnOnly: '僅限隨身', checkedOnly: '僅限託運' };
 const applies = (r, day) => (!r.effectiveFrom || day >= r.effectiveFrom) && (!r.effectiveUntil || day <= r.effectiveUntil);
+const cpDay = (t, cp) => cp === 'destinationDeparture' || cp === 'originArrival' ? dayOf(t.endDate) : dayOf(t.startDate);
+const cpName = (t, cp) => `${country(cp.startsWith('origin') ? t.originCountryCode : t.countryCode)?.nameZh ?? ''}${CHECKPOINTS.find(c => c[0] === cp)[2]}`;
 function checkpointEntries(origin, dest, cp, day) {
   const code = cp.startsWith('origin') ? origin : dest;
   const border = DATA.border_rules.filter(r => r.countryCode === code && r.checkpoint === cp && applies(r, day))
@@ -224,21 +242,18 @@ function checkpointEntries(origin, dest, cp, day) {
 }
 function customsView(t) {
   const checks = store.checks[t.id] ||= {};
-  const day = ui.step.startsWith('destinationDeparture') || ui.step === 'originArrival' ? dayOf(t.endDate) : dayOf(t.startDate);
-  const entries = checkpointEntries(t.originCountryCode, t.countryCode, ui.step, day), open = entries.filter(e => !checks[e.id]).length;
-  const name = cp => `${country(cp.startsWith('origin') ? t.originCountryCode : t.countryCode)?.nameZh ?? ''}${CHECKPOINTS.find(c => c[0] === cp)[2]}`;
-  return `<div class="row" style="align-items:baseline"><b style="font-size:22px;font-weight:900">通關檢查</b><span class="chip">官方資料</span></div>
-  <p class="sub" style="margin-top:4px">依照旅程順序，只顯示這一關要做的事。</p>
-  <div class="card"><div class="checkpoints"><div class="grp">去程</div><div class="grp">回程</div>
-    ${CHECKPOINTS.map(([cp], n) => `<button class="cp" data-cp="${cp}" ${pressed(ui.step === cp)}><div class="dot">${n + 1}</div><div class="l">${esc(name(cp))}</div></button>`).join('')}</div></div>
-  <div class="hero" style="margin-top:12px"><b style="font-size:24px;font-weight:900">${esc(name(ui.step))}</b>
-    <div class="eyebrow" style="margin:8px 0 6px;font-size:16px">${!entries.length ? '這一關目前沒有特別要確認的事' : open ? `有 ${open} 件事需要確認` : '這一關都確認好了'}</div>
-    ${entries.length ? `<div class="card" style="padding:4px 14px">${entries.map(e => `<div class="rule"><button class="check" data-rule="${esc(e.id)}" ${pressed(checks[e.id])} aria-label="${esc(e.title)}">${checks[e.id] ? CHECK : ''}</button>
+  const entries = checkpointEntries(t.originCountryCode, t.countryCode, ui.step, cpDay(t, ui.step)), open = entries.filter(e => !checks[e.id]).length;
+  return `<div class="customs"><nav class="cp-list" aria-label="通關關卡">${CHECKPOINTS.map(([cp, leg], n) => { const left = checkpointEntries(t.originCountryCode, t.countryCode, cp, cpDay(t, cp)).filter(e => !checks[e.id]).length;
+      return `<button class="cp" data-cp="${cp}" ${pressed(ui.step === cp)}><span class="dot">${n + 1}</span><span><small>${leg}</small><b>${esc(cpName(t, cp))}</b></span><span class="count">${left ? `${left} 件` : '✓'}</span></button>`; }).join('')}
+    <p class="src">依照旅程順序，只顯示這一關要做的事。資料附官方來源與查證日期。</p></nav>
+  <section class="card"><div class="row between"><h2 style="margin:0">${esc(cpName(t, ui.step))}</h2><span class="pill">官方資料</span></div>
+    <p class="eyebrow" style="margin:10px 0 6px;font-size:14px;letter-spacing:0">${!entries.length ? '這一關目前沒有特別要確認的事' : open ? `有 ${open} 件事需要確認` : '這一關都確認好了'}</p>
+    ${entries.map(e => `<div class="rule"><button class="check" data-rule="${esc(e.id)}" ${pressed(checks[e.id])} aria-label="${esc(e.title)}">${checks[e.id] ? CHECK : ''}</button>
       <div class="grow"><div class="rt${checks[e.id] ? ' done' : ''}">${esc(e.title)}</div><div class="rd"><span class="sev sev-${e.status}">${AUTH[e.authority] || '規定'}・${STATUS[e.status] || '需確認'}</span><br>${esc(e.detail)}</div>
-      <div class="src">來源：${esc(e.source)}・查證 ${esc(e.verified)}</div></div></div>`).join('')}</div>` : ''}</div>`;
+      <div class="src">來源：${esc(e.source)}・查證 ${esc(e.verified)}</div></div></div>`).join('')}</section></div>`;
 }
 const etiquetteList = (code, city) => { const cards = DATA.etiquette.filter(e => e.countryCode === code && (!e.cityZh || !city || e.cityZh === city));
-  return cards.length ? `<div class="stack">${cards.map(e => `<div class="card"><b style="font-size:16px">${esc(e.titleZh)}${e.cityZh ? `<span class="chip" style="margin-left:6px">${esc(e.cityZh)}</span>` : ''}</b><div class="sub" style="margin:6px 0 0">${esc(e.bodyZh)}</div></div>`).join('')}</div>` : '<p class="sub">這個地區還沒有禮儀資料。</p>'; };
+  return cards.length ? `<div class="cols-2">${cards.map(e => `<div class="card"><b style="font-size:16px">${esc(e.titleZh)}${e.cityZh ? `<span class="pill" style="margin-left:6px">${esc(e.cityZh)}</span>` : ''}</b><div class="sub" style="margin:8px 0 0">${esc(e.bodyZh)}</div></div>`).join('')}</div>` : '<p class="sub">這個地區還沒有禮儀資料。</p>'; };
 
 // ---------- 查詢與知識 ----------
 const canon = s => String(s).toLowerCase().replaceAll('菸', '煙').replaceAll('臺', '台').trim();
@@ -250,18 +265,18 @@ function searchView() {
       if ((raw.exclusions || []).some(x => q.includes(canon(x)))) return false;
       return [e.name, e.title, ...(raw.aliases || []), ...(raw.keywords || [])].some(x => canon(x).includes(q) || (q.length >= 2 && q.includes(canon(x)))); }) : [];
   const where = cp => `${country(cp.startsWith('origin') ? 'TW' : ui.queryDest)?.nameZh}${CHECKPOINTS.find(c => c[0] === cp)[2]}`;
-  return `<h1>能不能帶？</h1><p class="sub">輸入物品名稱，查台灣出入境與目的地的海關、檢疫與航空規定。</p>
-  <div class="row"><select class="field" id="q-dest" style="width:auto">${dests.map(c => `<option value="${c.code}" ${c.code === ui.queryDest ? 'selected' : ''}>台灣 ⇄ ${esc(c.nameZh)}</option>`).join('')}</select></div>
-  <input class="field" id="q" type="search" style="margin-top:10px" placeholder="例如：肉鬆、行動電源、藥品" value="${esc(ui.query)}" aria-label="物品名稱">
-  <div class="chips" style="margin:10px 0">${['肉鬆', '行動電源', '藥品', '水果', '現金'].map(s => `<button class="opt" data-q="${s}">${s}</button>`).join('')}</div>
-  ${q ? (hits.length ? `<div class="card" style="padding:4px 14px">${hits.map(e => `<div class="rule"><div class="grow"><div class="row between" style="align-items:flex-start"><div class="rt">${esc(e.name)}</div><span class="sev sev-${e.status}">${STATUS[e.status] || '需確認'}</span></div>
-    <div class="rd">${esc(where(e.cp))}・${AUTH[e.authority] || '規定'}<br>${esc(e.detail)}</div><div class="src">來源：${esc(e.source)}・查證 ${esc(e.verified)}</div></div></div>`).join('')}</div>`
-    : '<div class="card"><p class="sub" style="margin:0">找不到相符的規定。試試更短的關鍵字，或查詢官方網站；沒有列出不代表可以攜帶。</p></div>') : ''}`;
+  return `${pageHead('CAN I BRING IT', '能不能帶？', '輸入物品名稱，查台灣出入境與目的地的海關、檢疫與航空規定。')}
+  <div class="card"><div class="search-bar"><input class="field" id="q" type="search" placeholder="例如：肉鬆、行動電源、藥品" value="${esc(ui.query)}" aria-label="物品名稱">
+    <select class="field" id="q-dest" aria-label="目的地">${dests.map(c => `<option value="${c.code}" ${c.code === ui.queryDest ? 'selected' : ''}>台灣 ⇄ ${esc(c.nameZh)}</option>`).join('')}</select></div>
+  <div class="chips" style="margin-top:12px">${['肉鬆', '行動電源', '藥品', '水果', '現金'].map(s => `<button class="opt" data-q="${s}">${s}</button>`).join('')}</div></div>
+  ${q ? (hits.length ? `<div class="result-grid">${hits.map(e => `<div class="card"><div class="row between" style="align-items:flex-start"><b style="line-height:1.4">${esc(e.name)}</b><span class="sev sev-${e.status}">${STATUS[e.status] || '需確認'}</span></div>
+    <div class="sub" style="margin:8px 0 0">${esc(where(e.cp))}・${AUTH[e.authority] || '規定'}<br>${esc(e.detail)}</div><div class="src">來源：${esc(e.source)}・查證 ${esc(e.verified)}</div></div>`).join('')}</div>`
+    : '<div class="card section"><p class="sub" style="margin:0">找不到相符的規定。試試更短的關鍵字，或查詢官方網站；沒有列出不代表可以攜帶。</p></div>') : ''}`;
 }
 function knowledgeView() {
   const codes = [...new Set(DATA.etiquette.map(e => e.countryCode))];
-  return `<h1>禮儀圖鑑</h1><p class="sub">出發前看一眼當地的眉角。</p>
-  <div class="chips" style="margin-bottom:14px">${codes.map(c => `<button class="opt" data-kc="${c}" ${pressed(ui.knowledgeCountry === c)}>${esc(country(c)?.nameZh ?? c)}</button>`).join('')}</div>${etiquetteList(ui.knowledgeCountry, '')}`;
+  return `${pageHead('KNOWLEDGE', '禮儀圖鑑', '出發前看一眼當地的眉角。')}
+  <div class="chips" style="margin-bottom:18px">${codes.map(c => `<button class="opt" data-kc="${c}" ${pressed(ui.knowledgeCountry === c)}>${esc(country(c)?.nameZh ?? c)}</button>`).join('')}</div>${etiquetteList(ui.knowledgeCountry, '')}`;
 }
 
 // ---------- 我的 ----------
@@ -270,34 +285,35 @@ function meView() {
   if (route.sub === 'prefs') return prefsView();
   if (route.sub === 'account') return accountView();
   const signed = cloud.session, sync = signed && cloud.syncEnabled();
-  return `<h1>我的</h1><p class="sub">讓清單，更懂你的旅行習慣。</p>
-  <div class="row" style="margin:6px 0 16px"><img class="mascot" src="art/mascot.png" alt=""><div><b style="font-size:17px">和 Packmon 一起出發</b><div class="sub" style="margin:4px 0 0">${store.trips.length} 趟行程・${essentials().length} 項常備用品</div></div></div>
-  <div class="stack">${row('#me/staples', 'luggage', '常備清單', '每次新行程，都幫你一起帶上')}${row('#me/prefs', 'user', '個人打包需求', `${store.prefs.devices.length} 項設備・${store.prefs.needs.length} 項需求・${STYLES[store.prefs.packingStyle][0]}`)}
-  ${row('#me/account', 'cloud', '帳號與同步', !cloud.configured() ? '這個版本尚未提供' : signed ? `${signed.email}・${sync ? '同步中' : '同步未開啟'}` : '登入後可以和 iPhone 共用行程')}</div>
-  <p class="sub" style="margin-top:14px">${sync ? '行程與常備用品會同步到雲端' : '行程與設定保存在這個瀏覽器'}</p>
-  <p class="src">天氣：Open-Meteo（CC BY 4.0）。通關與禁帶資料附官方來源與查證日期，出發前仍請以官方公告為準。</p>`;
+  return `${pageHead('PROFILE', '我的', '讓清單，更懂你的旅行習慣。')}
+  <div class="card row" style="margin-bottom:16px"><img class="mascot" src="art/mascot.png" alt=""><div><b style="font-size:17px">和 Packmon 一起出發</b><div class="sub" style="margin:4px 0 0">${store.trips.length} 趟行程・${essentials().length} 項常備用品</div></div></div>
+  <div class="cols-2">${tile('#me/staples', 'luggage', '常備清單', '每次新行程，都幫你一起帶上')}${tile('#me/prefs', 'user', '個人打包需求', `${store.prefs.devices.length} 項設備・${store.prefs.needs.length} 項需求・${STYLES[store.prefs.packingStyle][0]}`)}
+  ${tile('#me/account', 'cloud', '帳號與同步', !cloud.configured() ? '這個版本尚未提供' : signed ? `${signed.email}・${sync ? '同步中' : '同步未開啟'}` : '登入後可以和 iPhone 共用行程')}</div>
+  <p class="src" style="margin-top:18px">天氣：Open-Meteo（CC BY 4.0）。通關與禁帶資料附官方來源與查證日期，出發前仍請以官方公告為準。</p>`;
 }
-const backBar = title => `<div class="row between"><a class="icon-btn" href="#me" aria-label="返回">${icon('back')}</a><b>${esc(title)}</b><span style="width:42px"></span></div>`;
+const subHead = (title, subtitle) => `<a class="link" href="#me" style="display:inline-flex;align-items:center;gap:4px;margin-bottom:14px">${icon('back')}我的</a>${pageHead('', title, subtitle)}`;
 function staplesView() {
   const list = essentials();
-  return `${backBar('常備清單')}<h1>常備清單</h1><p class="sub">每次建立新行程，都會自動加進清單；同名的推薦會讓給常備用品。</p>
-  ${list.length ? `<div class="group">${list.map(s => `<div class="toggle-row"><div class="grow"><b>${esc(s.name)} ×${s.quantity}</b><div class="sub" style="margin:2px 0 0;font-size:12px">${CATEGORIES[s.categoryRaw]?.[0] ?? '其他'}</div></div><button class="icon-btn" data-unstaple="${s.id}" aria-label="移除 ${esc(s.name)}">${icon('trash')}</button></div>`).join('')}</div>` : '<div class="card"><p class="sub" style="margin:0">還沒有常備用品。在打包頁的物品選單按「加入常備」，或在這裡新增。</p></div>'}
-  <button class="btn soft" style="margin-top:12px" data-act="add-staple">${icon('plus')}新增常備用品</button>`;
+  return `<div class="narrow">${subHead('常備清單', '每次建立新行程，都會自動加進清單；同名的推薦會讓給常備用品。')}
+  ${list.length ? `<div class="group">${list.map(s => `<div class="gline"><div class="grow"><b>${esc(s.name)} ×${s.quantity}</b><div class="sub" style="margin:2px 0 0;font-size:12px">${CATEGORIES[s.categoryRaw]?.[0] ?? '其他'}</div></div><button class="icon-btn" data-unstaple="${s.id}" aria-label="移除 ${esc(s.name)}">${icon('trash')}</button></div>`).join('')}</div>` : '<div class="card"><p class="sub" style="margin:0">還沒有常備用品。在打包頁的物品選單按「加入常備」，或在這裡新增。</p></div>'}
+  <button class="btn soft" style="margin-top:14px" data-act="add-staple">${icon('plus')}新增常備用品</button></div>`;
 }
 function prefsView() {
   const p = store.prefs;
-  return `${backBar('個人打包需求')}<h1>個人打包需求</h1><p class="sub">這些是新行程的預設值，每趟都能另外調整；已建立的行程不會被改動。</p>
-  <span class="label">你習慣怎麼打包？</span><div class="stack">${Object.entries(STYLES).map(([k, [l, d]]) => `<button class="listrow" data-pstyle="${k}" ${pressed(p.packingStyle === k)} style="${p.packingStyle === k ? 'border-color:var(--accent)' : ''}"><span class="grow"><div class="t">${l}</div><div class="s">${d}</div></span>${p.packingStyle === k ? `<span style="color:var(--accent)">${icon('check')}</span>` : ''}</button>`).join('')}</div>
+  return `<div class="narrow">${subHead('個人打包需求', '這些是新行程的預設值，每趟都能另外調整；已建立的行程不會被改動。')}
+  <span class="label">你習慣怎麼打包？</span><div class="stack">${Object.entries(STYLES).map(([k, [l, d]]) => `<button class="tile" data-pstyle="${k}" ${pressed(p.packingStyle === k)} style="${p.packingStyle === k ? 'border-color:var(--accent)' : ''}"><span class="grow"><div class="t">${l}</div><div class="s">${d}</div></span>${p.packingStyle === k ? `<span style="color:var(--accent)">${icon('check')}</span>` : ''}</button>`).join('')}</div>
   <span class="label">我的常用設備</span><div class="chips">${Object.entries(DEVICES).map(([k, l]) => `<button class="opt" data-pdevice="${k}" ${pressed(p.devices.includes(k))}>${l}</button>`).join('')}</div>
   <span class="label">我的常備需求</span><div class="chips">${Object.entries(NEEDS).map(([k, l]) => `<button class="opt" data-pneed="${k}" ${pressed(p.needs.includes(k))}>${l}</button>`).join('')}</div>
-  <p class="sub" style="margin-top:12px">藥品由你自行決定品項，不會依年齡推測用藥。其他用品可到「常備清單」加入。</p>
-  <button class="btn block" data-act="save-prefs">儲存個人需求</button>`;
+  <p class="sub" style="margin-top:14px">藥品由你自行決定品項，不會依年齡推測用藥。其他用品可到「常備清單」加入。</p>
+  <button class="btn" data-act="save-prefs">儲存個人需求</button></div>`;
 }
 
 // ---------- 帳號與同步 ----------
+const CONFIG_REGION = CONFIG?.region || '未設定';
 let account = { email: '', awaiting: false, busy: false, message: '', conflicts: [], health: null };
 function accountView() {
-  if (!cloud.configured()) return `${backBar('帳號與同步')}<h1>帳號與同步</h1><div class="card"><p class="sub" style="margin:0">這個版本尚未設定雲端服務，資料只存在這個瀏覽器。</p></div>`;
+  const head = subHead('帳號與同步', '和 iPhone 版用同一個帳號，就能共用行程與常備清單。');
+  if (!cloud.configured()) return `<div class="narrow">${head}<div class="card"><p class="sub" style="margin:0">這個版本尚未設定雲端服務，資料只存在這個瀏覽器。</p></div></div>`;
   const s = cloud.session, sync = cloud.syncEnabled(), last = cloud.lastSynced();
   let body;
   if (!s && !account.awaiting) body = `<div class="gh">帳號</div><div class="group"><div style="padding:10px"><input class="field" id="email" type="email" autocomplete="email" placeholder="Email" value="${esc(account.email)}" aria-label="Email" style="border:0;background:transparent"></div>
@@ -317,15 +333,14 @@ function accountView() {
       <div class="row between"><button class="btn ghost" data-resolve="${n}" data-keep="local">${!c.title ? '刪除' : '保留這裡的版本'}</button><button class="btn ghost" data-resolve="${n}" data-keep="remote">${c.remote.deleted ? '刪除' : '使用雲端版本'}</button></div></div>`).join('')}</div>` : ''}
     <div class="group" style="margin-top:12px"><button class="gbtn danger" data-act="delete-account">刪除雲端帳號</button></div>
     <div class="foot">資料存放在 Supabase（${esc(CONFIG_REGION)}）。關閉同步、登出或清除瀏覽器資料都不會刪除雲端帳號。</div>`;
-  return `${backBar('帳號與同步')}<h1>帳號與同步</h1><p class="sub">和 iPhone 版用同一個帳號，就能共用行程與常備清單。</p>${body}${account.message ? `<p class="sub" role="status">${esc(account.message)}</p>` : ''}`;
+  return `<div class="narrow">${head}${body}${account.message ? `<p class="sub" role="status">${esc(account.message)}</p>` : ''}</div>`;
 }
-import { CONFIG } from './config.js';
-const CONFIG_REGION = CONFIG?.region || '未設定';
 async function runAccount(work) {
   account.busy = true; account.message = ''; render();
   try { await work(); } catch (e) { account.message = e.message || '發生錯誤，請稍後再試。'; }
   account.busy = false; render();
 }
+let syncing = false, syncTimer;
 async function synchronize(quiet = false) {
   if (!cloud.session || !cloud.syncEnabled() || syncing) return;
   syncing = true;
@@ -334,8 +349,20 @@ async function synchronize(quiet = false) {
   } catch (e) { if (!quiet) account.message = e.message; }
   finally { syncing = false; }
 }
-let syncing = false, syncTimer;
 const scheduleSync = () => { clearTimeout(syncTimer); syncTimer = setTimeout(() => synchronize(true), 1500); };
+
+// ---------- 吉祥物提醒 ----------
+function mascotTip() {
+  const t = route.page === 'trip' ? findTrip(route.id) : activeTrip();
+  if (!t) return `<b>還沒有行程</b>建立一趟行程，我就開始幫你準備清單。<br><a href="#new">建立行程 →</a>`;
+  const p = progress(t);
+  if (p.remaining) return `<b>${esc(t.name)}還有 ${p.remaining} 件沒裝</b>${status(t)}，一項一項來就好。<br><a href="#trip/${t.id}/pack">繼續打包 →</a>`;
+  const w = weatherSummary(t.packingWeatherRaw ? JSON.parse(t.packingWeatherRaw) : null);
+  if (w && w.reminder !== '出發前再確認天氣') return `<b>${esc(w.reminder)}</b>${w.low != null ? `預報 ${w.low}–${w.high}°C。` : '依當地季節參考。'}<br><a href="#trip/${t.id}/overview">看天氣 →</a>`;
+  const next = nextCheckpoint(t);
+  if (next) return `<b>${esc(cpName(t, next.cp))}還有 ${next.open.length} 件事</b>${esc(next.open[0].title)}<br><a href="#trip/${t.id}/customs">看通關 →</a>`;
+  return `<b>都準備好了！</b>${esc(t.name)}的清單和通關都確認完了，旅途愉快。`;
+}
 
 // ---------- 繪製 ----------
 function render() {
@@ -343,8 +370,18 @@ function render() {
   const views = { trips: homeView, new: newView, search: searchView, knowledge: knowledgeView, me: meView };
   $('#app').innerHTML = t ? tripView(t) : (views[route.page] || homeView)();
   const tab = route.page === 'trip' || route.page === 'new' ? 'trips' : route.page;
-  $('#tabbar').innerHTML = [['trips', 'luggage', '行程'], ['search', 'search', '查詢'], ['knowledge', 'book', '知識'], ['me', 'user', '我的']]
-    .map(([k, ic, l]) => `<a href="#${k}" ${tab === k ? 'aria-current="page"' : ''}>${icon(ic)}${l}</a>`).join('');
+  const nav = [['trips', 'luggage', '行程'], ['search', 'search', '查詢'], ['knowledge', 'book', '知識'], ['me', 'user', '我的']];
+  $('#sidebar-nav').innerHTML = nav.map(([k, ic, l]) => `<a class="nav-link" href="#${k}" ${tab === k ? 'aria-current="page"' : ''}>${icon(ic)}${l}</a>`).join('');
+  $('#tabbar').innerHTML = nav.map(([k, ic, l]) => `<a href="#${k}" ${tab === k ? 'aria-current="page"' : ''}>${icon(ic)}${l}</a>`).join('');
+  const synced = cloud.session && cloud.syncEnabled();
+  $('#sidebar-note').innerHTML = `${icon(synced ? 'cloud' : 'disk')}<span>${synced ? '已同步到雲端' : '清單保存在這台裝置'}<br><small>${synced ? esc(cloud.session.email) : '離線也能繼續打包'}</small></span>`;
+  $('#mobile-note').textContent = synced ? '已同步' : '';
+  // 建立行程與打包頁不顯示吉祥物，避免擋住卡片。
+  const hideMascot = route.page === 'new' || (t && ui.seg === 'pack');
+  $('#mascot').hidden = hideMascot;
+  $('#mascot').setAttribute('aria-expanded', String(ui.bubble && !hideMascot));
+  $('#mascot-bubble').hidden = !ui.bubble || hideMascot;
+  if (ui.bubble && !hideMascot) $('#mascot-bubble').innerHTML = mascotTip();
   ui.lastPacked = null;
 }
 
@@ -352,20 +389,23 @@ function render() {
 const itemOf = id => findTrip(route.id)?.packingItems.find(i => i.id === id);
 function itemSheet(i) {
   const staple = essentials().some(s => normalized(s.name) === normalized(i.name));
-  sheet(`<h3>${esc(i.name)}</h3><div class="group"><button class="gbtn" data-qty="${i.id}">修改數量</button><button class="gbtn" data-staple="${i.id}">${staple ? '移除常備' : '加入常備'}</button><button class="gbtn danger" data-remove="${i.id}">移除物品</button></div>
-    ${i.reasonKey ? `<p style="margin:12px 4px 0;font-size:13px">${esc(i.reasonKey)}</p>` : ''}`);
+  sheet(`<h3>${esc(i.name)}</h3>${i.reasonKey ? `<p>${esc(i.reasonKey)}</p>` : ''}<div class="group"><button class="gbtn" data-qty="${i.id}">修改數量</button><button class="gbtn" data-staple="${i.id}">${staple ? '移除常備' : '加入常備'}</button><button class="gbtn danger" data-remove="${i.id}">移除物品</button></div>
+    <div class="row" style="justify-content:flex-end;margin-top:14px"><button class="btn ghost" data-act="close">關閉</button></div>`);
 }
-function qtySheet(i) { sheet(`<h3>修改數量・${esc(i.name)}</h3><div class="row between" style="margin-bottom:16px"><button class="icon-btn" data-step="-1" aria-label="減少">−</button><b id="qty-v" style="font-size:28px;font-variant-numeric:tabular-nums">${i.quantity}</b><button class="icon-btn" data-step="1" aria-label="增加">${icon('plus')}</button></div><button class="btn block" data-save-qty="${i.id}">儲存</button>`); }
+function qtySheet(i) { sheet(`<h3>修改數量・${esc(i.name)}</h3><div class="row between" style="margin-bottom:18px"><button class="icon-btn" data-step="-1" aria-label="減少">−</button><b id="qty-v" style="font-size:30px;font-variant-numeric:tabular-nums">${i.quantity}</b><button class="icon-btn" data-step="1" aria-label="增加">${icon('plus')}</button></div><div class="row" style="justify-content:flex-end"><button class="btn ghost" data-act="close">取消</button><button class="btn" data-save-qty="${i.id}">儲存</button></div>`); }
 function itemForm(title, action) {
   sheet(`<h3>${esc(title)}</h3><div class="stack"><input class="field" id="f-name" maxlength="40" placeholder="物品名稱" aria-label="物品名稱">
     <select class="field" id="f-cat" aria-label="分類">${Object.entries(CATEGORIES).map(([k, [l]]) => `<option value="${k}" ${k === 'other' ? 'selected' : ''}>${l}</option>`).join('')}</select>
-    <input class="field" id="f-qty" type="number" min="1" max="99" value="1" aria-label="數量"><button class="btn block" data-act="${action}">加入</button></div>`);
+    <input class="field" id="f-qty" type="number" min="1" max="99" value="1" aria-label="數量"><div class="row" style="justify-content:flex-end"><button class="btn ghost" data-act="close">取消</button><button class="btn" data-act="${action}">加入</button></div></div>`);
 }
 const formValue = () => ({ name: $('#f-name').value.trim(), category: $('#f-cat').value, quantity: Math.max(1, Math.min(99, +$('#f-qty').value || 1)) });
 
+dialog().addEventListener('click', e => { if (e.target === dialog()) closeSheet(); });
+$('#mascot').addEventListener('click', () => { ui.bubble = !ui.bubble; render(); });
 document.addEventListener('click', async e => {
+  if (e.target.closest('#mascot')) return;
   const el = e.target.closest('button, [data-act]');
-  if (!el) return;
+  if (!el) { if (ui.bubble && !e.target.closest('#mascot-bubble')) { ui.bubble = false; render(); } return; }
   const d = el.dataset, t = route.page === 'trip' ? findTrip(route.id) : null;
   if (d.act === 'close') return closeSheet();
   // 建立行程
@@ -382,7 +422,7 @@ document.addEventListener('click', async e => {
     if (d.rec) { draft.excluded.has(d.rec) ? draft.excluded.delete(d.rec) : draft.excluded.add(d.rec); return render(); }
     if (d.custom) { draft.custom[+d.custom].include = !draft.custom[+d.custom].include; return render(); }
     if (d.act === 'next-step') { draft.name = $('#d-name').value; draft.step = 2; render(); return window.scrollTo(0, 0); }
-    if (d.act === 'prev-step') { draft.step = 1; return render(); }
+    if (d.act === 'prev-step') { draft.step = 1; render(); return window.scrollTo(0, 0); }
     if (d.act === 'draft-add') return itemForm('新增自訂用品', 'draft-add-save');
     if (d.act === 'draft-add-save') { const v = formValue(); if (!v.name) return toast('請輸入物品名稱'); draft.custom.push({ ...v, staple: false, include: true }); closeSheet(); return render(); }
     if (d.act === 'create') return createTrip();
@@ -390,10 +430,13 @@ document.addEventListener('click', async e => {
   }
   // 行程
   if (t) {
-    if (d.seg) { ui.seg = d.seg; history.replaceState(null, '', `#trip/${t.id}/${d.seg}`); render(); return; }
+    if (d.seg) { ui.seg = d.seg; if (d.cpGo) ui.step = d.cpGo; history.replaceState(null, '', `#trip/${t.id}/${d.seg}`); render(); return; }
     if (d.mode) { store.mode = d.mode; save(); return render(); }
     if (d.filter) { ui.filter = ui.filter === d.filter ? null : d.filter; return render(); }
-    if (d.pack) { const i = itemOf(d.pack); i.isPacked = !i.isPacked; ui.lastPacked = i.isPacked ? i.id : null; if (!progress(t).remaining) setTimeout(() => toast('全部裝好了！出發吧'), 300); return commit(); }
+    if (d.pack) { const i = itemOf(d.pack); i.isPacked = !i.isPacked;
+      const times = (store.packedAt ||= {})[t.id] ||= {};
+      if (i.isPacked) { times[i.id] = Date.now(); ui.lastPacked = i.id; } else delete times[i.id];
+      if (!progress(t).remaining) setTimeout(() => toast('全部裝好了！出發吧'), 300); return commit(); }
     if (d.item) return itemSheet(itemOf(d.item));
     if (d.qty) return qtySheet(itemOf(d.qty));
     if (d.step) { const v = $('#qty-v'); v.textContent = Math.max(1, Math.min(99, +v.textContent + +d.step)); return; }
@@ -404,17 +447,17 @@ document.addEventListener('click', async e => {
     if (d.remove) { const i = itemOf(d.remove);
       if (!i.isCustom) { const names = new Set(t.excludedPackingNamesRaw.split('\n').filter(Boolean)); names.add(i.name); t.excludedPackingNamesRaw = [...names].sort().join('\n');
         if (i.catalogItemID) { const ids = new Set(t.excludedPackingIDsRaw.split('\n').filter(Boolean)); ids.add(i.catalogItemID); t.excludedPackingIDsRaw = [...ids].sort().join('\n'); } }
-      t.packingItems = t.packingItems.filter(x => x !== i); closeSheet(); toast(`已移除 ${i.name}`); return commit(); }
+      t.packingItems = t.packingItems.filter(x => x !== i); delete store.packedAt?.[t.id]?.[i.id]; closeSheet(); toast(`已移除 ${i.name}`); return commit(); }
     if (d.act === 'add-item') return itemForm('新增物品', 'add-item-save');
     if (d.act === 'add-item-save') { const v = formValue(); if (!v.name) return toast('請輸入物品名稱');
       t.packingItems.push({ id: uuid(), name: v.name, categoryRaw: v.category, reasonKey: CUSTOM_REASON, quantity: v.quantity, isPacked: false, isCustom: true, sortIndex: CUSTOM_SORT }); closeSheet(); return commit(); }
     if (d.cp) { ui.step = d.cp; return render(); }
     if (d.rule) { const checks = store.checks[t.id] ||= {}; checks[d.rule] = !checks[d.rule]; save(); return render(); }
-    if (d.act === 'trip-menu') return sheet(`<h3>${esc(t.name)}</h3><div class="group">${t.completedAt ? '<button class="gbtn" data-act="reopen">重新開啟行程</button>' : '<button class="gbtn" data-act="complete">完成行程</button>'}<button class="gbtn danger" data-act="ask-delete">刪除行程</button></div>`);
+    if (d.act === 'trip-menu') return sheet(`<h3>${esc(t.name)}</h3><div class="group">${t.completedAt ? '<button class="gbtn" data-act="reopen">重新開啟行程</button>' : '<button class="gbtn" data-act="complete">完成行程</button>'}<button class="gbtn danger" data-act="ask-delete">刪除行程</button></div><div class="row" style="justify-content:flex-end;margin-top:14px"><button class="btn ghost" data-act="close">關閉</button></div>`);
     if (d.act === 'complete') { t.completedAt = new Date().toISOString(); t.startedAt ||= t.completedAt; t.isClosed = true; closeSheet(); return commit(); }
     if (d.act === 'reopen') { t.completedAt = undefined; t.isClosed = false; closeSheet(); return commit(); }
     if (d.act === 'ask-delete') return confirmSheet('刪除這趟行程？', '行程與打包清單會從這裡移除；有開啟同步時，其他裝置也會一起刪除。', '刪除', 'delete-trip', true);
-    if (d.act === 'delete-trip') { store.trips = store.trips.filter(x => x !== t); delete store.checks[t.id]; closeSheet(); save(); scheduleSync(); return go('trips'); }
+    if (d.act === 'delete-trip') { store.trips = store.trips.filter(x => x !== t); delete store.checks[t.id]; delete store.packedAt?.[t.id]; closeSheet(); save(); scheduleSync(); return go('trips'); }
   }
   // 查詢、知識
   if (d.q) { ui.query = d.q; return render(); }
@@ -459,9 +502,11 @@ document.addEventListener('input', e => {
   if (e.target.id === 'd-name' && draft) draft.name = e.target.value;
   if (e.target.id === 'email') account.email = e.target.value;
 });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && ui.bubble) { ui.bubble = false; render(); } });
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') synchronize(true); });
 
 // ---------- 啟動 ----------
+store.packedAt ||= {};
 await loadData();
 parse();
 render();

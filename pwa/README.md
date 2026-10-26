@@ -15,6 +15,7 @@ scripts/build_pwa_config.sh <project-ref> 新加坡      # 寫入 pwa/js/config.
 
 ```sh
 node pwa/tests/engine-parity.mjs <actual.json>       # 與 iOS 的 2,916 組情境比對（actual.json 由 scripts/PackingCompatibility.swift 產生）
+node pwa/tests/suitcase.mjs                          # 行李箱格子規則（PD-065）
 cd pwa && python3 -m http.server 8766                 # 本機預覽：http://127.0.0.1:8766
 ```
 
@@ -29,6 +30,8 @@ cd pwa && python3 -m http.server 8766                 # 本機預覽：http://12
 `pwa/.assetsignore` 排除測試與範本檔。每次更新請把 `sw.js` 的 `CACHE` 版本加一，已安裝的人下次開啟就會換新版。
 
 ## 與 iOS 的差異
+
+- 網站版面：電腦上左側欄＋內容區，手機上底部分頁（PD-065）。
 
 - 登入狀態存在瀏覽器 localStorage（iOS 存 Keychain）。
 - 沒有建立後的「更新打包建議」review、行李估重、Widget 與通知。

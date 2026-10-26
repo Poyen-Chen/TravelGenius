@@ -15,8 +15,23 @@
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-<main class="app" id="app" tabindex="-1"><p class="sub">載入中…</p></main>
-<nav class="tabbar" id="tabbar" aria-label="分頁"></nav>
+<a class="skip" href="#app">跳到主要內容</a>
+<div class="app-shell">
+  <aside class="sidebar">
+    <a class="brand" href="#trips"><img src="art/mascot.png" alt=""><span>PackSmart<small>你的旅行打包夥伴</small></span></a>
+    <nav id="sidebar-nav" aria-label="主要導覽"></nav>
+    <p class="sidebar-note" id="sidebar-note"></p>
+  </aside>
+  <div class="content-shell">
+    <header class="mobile-brand"><a href="#trips"><img src="art/mascot.png" alt="">PackSmart</a><span id="mobile-note"></span></header>
+    <main id="app" tabindex="-1"><p class="sub">載入中…</p></main>
+    <footer class="page-foot">PackSmart・每一趟，都帶對東西。</footer>
+  </div>
+</div>
+<nav class="tabbar" id="tabbar" aria-label="主要導覽"></nav>
+<div class="mascot-bubble" id="mascot-bubble" role="status" hidden></div>
+<button class="mascot-dock" id="mascot" aria-label="看看 Packmon 的提醒" aria-expanded="false" aria-controls="mascot-bubble"><img src="art/mascot.png" alt=""></button>
+<dialog id="dialog"></dialog>
 <noscript><p class="sub" style="padding:24px">PackSmart 需要啟用 JavaScript。</p></noscript>
 <script type="module" src="js/app.js"></script>
 </body>

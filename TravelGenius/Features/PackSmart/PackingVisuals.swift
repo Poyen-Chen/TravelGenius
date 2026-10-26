@@ -92,24 +92,40 @@ struct PackingCustomizationStrip: View {
     }
 }
 
-/// 打開的行李箱：已打包的物品插圖依序放進箱內，空位代表還沒裝的物品。
+/// 打開的行李箱：已打包的物品插圖依勾選順序放進箱內，空位代表還沒裝的物品。
+/// 規則與 PWA 的 `pwa/js/suitcase.js` 相同（PD-061）：剛勾的那件一定看得到。
 struct SuitcaseProgressView: View {
     let items: [PackingItem]
     let startDate: Date
     @Environment(\.packmonTheme) private var theme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// 這次開啟畫面期間的勾選順序（只在記憶體，不寫入資料）；先依清單順序放入已打包的物品。
+    @State private var order: [UUID] = []
 
     private static let slotLimit = 12
     private var packed: [PackingItem] { items.filter(\.isPacked) }
     private var slotCount: Int { max(1, min(items.count, Self.slotLimit)) }
 
-    /// 物品多於格數時依比例換算，但有裝就至少一格、沒裝完就至少留一格空位。
-    private var filledSlots: Int {
-        guard items.count > Self.slotLimit else { return packed.count }
-        guard !packed.isEmpty else { return 0 }
-        guard packed.count < items.count else { return slotCount }
-        let scaled = Int((Double(packed.count) / Double(items.count) * Double(slotCount)).rounded())
-        return min(max(scaled, 1), slotCount - 1)
+    /// 依勾選順序排列，最新的在最後；不在紀錄裡的照清單順序排在前面。
+    private var packedInOrder: [PackingItem] {
+        let byID = Dictionary(uniqueKeysWithValues: packed.map { ($0.id, $0) })
+        let known = order.compactMap { byID[$0] }
+        return packed.filter { !order.contains($0.id) } + known
+    }
+
+    /// 不超過 12 件時一件一格；超過時打包 11 件以內一件一格，之後放最近的 11 件，最後一格顯示「+K」；全部打包完才 12 格全滿。
+    static func layout<T>(packedInOrder: [T], total: Int) -> (shown: [T], overflow: Int) {
+        let slots = max(1, min(total, slotLimit))
+        if total <= slotLimit || packedInOrder.count < slots || packedInOrder.count == total {
+            return (Array(packedInOrder.suffix(slots)), 0)
+        }
+        let shown = Array(packedInOrder.suffix(slots - 1))
+        return (shown, packedInOrder.count - shown.count)
+    }
+
+    private func syncOrder() {
+        let ids = Set(packed.map(\.id))
+        order = order.filter(ids.contains) + packed.map(\.id).filter { !order.contains($0) }
     }
 
     private var status: String {
@@ -124,7 +140,9 @@ struct SuitcaseProgressView: View {
             lid
             base
         }
-        .animation(reduceMotion ? nil : .spring(response: 0.35, dampingFraction: 0.62), value: packed.map(\.id))
+        .animation(reduceMotion ? nil : .spring(response: 0.35, dampingFraction: 0.62), value: order)
+        .onAppear { order = packed.map(\.id) }
+        .onChange(of: packed.map(\.id)) { syncOrder() }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("打包進度")
         .accessibilityValue("\(packed.count) / \(items.count) 項已打包")
@@ -157,12 +175,19 @@ struct SuitcaseProgressView: View {
 
     private var base: some View {
         let columns = Array(repeating: GridItem(.flexible(), spacing: 6), count: 6)
-        let shown = Array(packed.prefix(filledSlots))
+        let (shown, overflow) = Self.layout(packedInOrder: packedInOrder, total: items.count)
         return LazyVGrid(columns: columns, spacing: 6) {
             ForEach(shown) { item in
                 thumbnail(item).transition(.scale(scale: 0.4).combined(with: .move(edge: .top)).combined(with: .opacity))
             }
-            ForEach(0..<(slotCount - shown.count), id: \.self) { _ in
+            if overflow > 0 {
+                Text("+\(overflow)").font(.subheadline.weight(.black)).monospacedDigit()
+                    .foregroundStyle(theme.colors.secondaryText)
+                    .frame(maxWidth: .infinity).aspectRatio(1, contentMode: .fit)
+                    .background(theme.colors.elevatedSurface.opacity(0.7), in: RoundedRectangle(cornerRadius: 10))
+                    .accessibilityHidden(true)
+            }
+            ForEach(0..<(slotCount - shown.count - (overflow > 0 ? 1 : 0)), id: \.self) { _ in
                 RoundedRectangle(cornerRadius: 10)
                     .strokeBorder(theme.colors.separator, style: StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
                     .aspectRatio(1, contentMode: .fit)
