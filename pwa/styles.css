@@ -155,7 +155,7 @@ h2 { font-weight: 900; font-size: 20px; margin: 0 0 12px; }
 .item.packed { border-color: var(--olive); }
 .item.dim, .trow.dim { opacity: .3; transform: scale(.97); }
 .item .art { position: relative; height: 128px; margin: 10px; border-radius: 12px; background: var(--surface); display: grid; place-items: center; overflow: hidden; }
-.item .art img { width: 72%; height: 72%; object-fit: contain; }
+.item .art img { position: absolute; inset: 0; margin: auto; width: auto; height: auto; max-width: 70%; max-height: 74%; object-fit: contain; }
 .item.packed .art img { opacity: .6; }
 .item .art .fallback { color: var(--muted); display: grid; justify-items: center; gap: 4px; font-size: 12px; }
 .item .art .fallback .icon { width: 36px; height: 36px; }

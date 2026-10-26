@@ -1,6 +1,6 @@
 // 離線快取：安裝時預先快取整個 App（清單由 scripts/build_pwa_assets.sh 產生）。
 // 雲端（Supabase）與天氣（Open-Meteo）是其他網域，一律直接走網路，不快取。
-const CACHE = 'packsmart-pwa-v2';
+const CACHE = 'packsmart-pwa-v3';
 self.addEventListener('install', event => event.waitUntil((async () => {
   const cache = await caches.open(CACHE);
   const files = await (await fetch('precache.json', { cache: 'no-store' })).json();
