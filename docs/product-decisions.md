@@ -497,7 +497,7 @@ This log records accepted product choices that affect behavior, navigation, scop
 - Decision: 打包頁圖片模式以「行李箱」取代文字進度：已打包物品的插圖依序放進打開的行李箱，空位以虛線格表示，箱蓋顯示出發倒數與 N / M；物品超過 12 件時依比例換算格數。每張物品卡在插圖左下顯示最多兩個原因徽章（天氣、這趟安排、你的設定、目的地、常備），清單上方「這趟為你調整了 N 件」可依原因篩選，非相關物品淡出但仍可操作。圖片模式成為新安裝的預設；既有安裝（已完成 onboarding 或已有行程）若從未切換過，啟動時寫入文字模式，維持原本畫面；已選過的使用者維持原選擇。
 - Context: 使用者指出現有版面文字過多，看過五個視覺化概念的可操作原型（personalization-design-spec.md「視覺呈現」）後，選擇先做原因徽章與行李箱進度。
 - Consequences: 徽章來源由推薦引擎依規則與需求所測試的標籤類別推導（weather → 天氣；activity／stay／laundry → 這趟安排；device／need／style → 你的設定；plug／country → 目的地）；`none` 條件不產生徽章，因為因「沒有某標籤」而觸發的規則是未調整的預設（例：沒有洗衣時的衣物無徽章，有洗衣而減量時才標「這趟安排」），常備由既有常備比對判斷；只用於顯示，不寫入 PackingItem、不影響推薦輸出、review 比較或 2,916 組 oracle。以這趟保存的快照重新計算，快照無效時不顯示徽章；自訂且非常備的物品沒有徽章。文字模式、review、回程模式與分享不變。天氣與常備徽章使用元件內固定色，其餘沿用主題 token，沒有新增設計系統 token。
-- App / PWA: 只實作 iOS。PWA 已有自己的圖卡與 3D，原因徽章與行李箱進度適合同步，但需另行決定 PWA 範圍與部署，本次未變更或發布 PWA。
+- App / PWA: 2026-10-26 補上 PWA 對應（見 PD-063）：圖片模式以行李箱取代進度條，物品卡顯示原因徽章，「這趟為你調整了 N 件」可篩選。PWA 的原因分類由推薦說明文字推得，類別與 iOS 相同；文字模式、3D、分包不變。
 - Verification: 新增引擎原因類別測試（基本品無類別、天氣、活動、設備、插座、無洗衣衣物無類別、洗衣衣物為這趟安排），既有 backend／packing（540 組）／compatibility（2,916 組）／weather 回歸、目的地資料與 manifest 檢查通過；Debug App build 通過，模擬器以示範行程確認行李箱、徽章與篩選畫面。尚未做 VoiceOver 與動態字級的人工驗收。
 
 ## PD-062 — Supabase for accounts, cloud sync and admin backend
@@ -510,3 +510,13 @@ This log records accepted product choices that affect behavior, navigation, scop
 - Consequences: 需要隱私權政策、使用者同意、匯出與刪除帳號功能；個資法要求須另請人確認。其他裝置看不到未同意同步的健康類物品。第一版不支援切換帳號。免費方案限制與營運方式見 `docs/supabase-plan.md`。
 - App / PWA: 只實作 iOS。PWA 之後共用同一個 Auth、資料表與 payload version 1，範圍另行決定；本次未變更或發布 PWA。
 - Verification: `supabase/tests` 以 PGlite 執行真正的 migration，驗證 RLS 隔離、直接寫入被拒、CAS 衝突、冪等重試、payload 驗證、健康類物品需同意、管理員名單／MFA／原因／稽核（含查看）、刪除 cascade；Edge Function 以模擬環境驗證只刪本人、授權失敗不刪除：PASS。另以 `supabase start` 的本機完整環境（PostgreSQL 17、Auth、Edge Runtime）執行 `npm run smoke`，以真實使用者 token 驗證同步、隔離、健康類同意、管理員 TOTP MFA 與稽核、Edge Function 刪除帳號，27 項全部通過（2026-10-26）。2026-10-26 部署到雲端測試專案（新加坡 ap-southeast-1，部署前確認為空專案），同一套 27 項實測全部通過，`supabase db lint` 無錯誤。iOS 串接：`scripts/test_cloud_sync.sh` 以兩台模擬裝置驗證跨裝置同步、健康類剔除與保留、同意與撤回、兩種衝突選擇、離線重試、常備用品、刪除、帳號綁定、拒絕 secret key：PASS；模擬器對本機 Supabase 實測 Email 驗證碼登入、同意後上傳、重新安裝後同帳號下載回同一趟行程：通過。健康類同意存在帳號（user metadata），避免裝置間互相剔除。尚未設定自訂 SMTP 與正式專案，也還沒有資料匯出與隱私權政策；iOS 串接與其餘驗收條件見 `docs/supabase-plan.md`。
+
+## PD-063 — PWA hosted on Cloudflare Workers static assets
+
+- Date: 2026-10-26
+- Status: Accepted by user（「Cloudflare Pages」；Cloudflare 已將新 Pages 專案併入 Workers）
+- Decision: PWA 原始碼由正式 Packmon Site v15 的公開靜態檔案取回，放在 `web/`（另有自己的 git 紀錄，主 repo 仍 gitignore）。補上 PD-061 的行李箱進度與原因徽章後，以 Workers 靜態網站部署為 `packsmart`（https://packsmart.pwa-deploy.workers.dev），service worker 快取版本 `packmon-v31-suitcase-reasons`。
+- Context: 原 PWA 由 ChatGPT Sites 發布（packmon.stevenchen841204.chatgpt.site），本工具無法發布到該服務，也找不到其原始碼。使用者要分享最新版給朋友，選擇 Cloudflare。
+- Consequences: 取代 PD-057 中「更新 PWA ＝發布到既有 Packmon Site」的發布位置；chatgpt.site 版本保留不動，兩個網址的瀏覽器資料不互通。`web/.assetsignore` 排除 `.git`。Cloudflare 免費方案下靜態檔案請求不收費。帳號登入與雲端同步尚未接到 PWA。
+- App / PWA: 只變更 PWA。
+- Verification: 本機建立東京行程，勾選 2 件後行李箱顯示 2 張插圖、「天氣」篩選淡出其餘 12 件，無 console 錯誤；正式網址主要檔案 200、`/.git/HEAD` 404、新 service worker 與樣式載入。
