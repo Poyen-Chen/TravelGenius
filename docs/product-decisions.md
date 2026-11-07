@@ -566,7 +566,7 @@ This log records accepted product choices that affect behavior, navigation, scop
 ## PD-068 — Sign in with Apple; Face ID is left to iOS
 
 - Date: 2026-11-07
-- Status: Proposed（使用者要求「設計 App 可以用 Apple 帳號或是 FaceID 登入」「完成他的實作提議」；看過 App 內的 Face ID 開關後改為「用一般常見 App 的設計方式」）。程式已實作，Apple 按鈕預設隱藏；設計見 `docs/design-apple-sign-in.md`（其中 Face ID 解鎖的部分已不採用）
+- Status: Proposed（使用者要求「設計 App 可以用 Apple 帳號或是 FaceID 登入」「完成他的實作提議」；看過 App 內的 Face ID 開關後改為「用一般常見 App 的設計方式」）。程式已實作，Apple 按鈕預設隱藏；設計見 `docs/design-apple-sign-in.md`（App 內 Face ID 解鎖的草案已不採用，文件已同步移除）
 - Decision: iOS 與 PWA 在 Email 6 位數驗證碼之外，可以用 Sign in with Apple 登入。Apple 是 Supabase 的登入身分，由 Supabase 驗證 identity token（簽章、aud、nonce），App 不自己解碼信任其中的 Email。Face ID 不做成 App 內的開關或鎖定畫面：Apple 自己的登入畫面會用 Face ID 或密碼確認；想鎖住 App 的人用 iOS 18 起的系統功能（長按 App 圖示 →「需要 Face ID」）。開場仍有「先略過，試用看看」，登入成功後仍先問要不要開啟同步，登入本身不上傳，健康類物品仍要另外同意。兩個 Supabase 帳號不會自動合併：Apple 分享的 Email 已經有帳號時，登入失敗並請使用者改用驗證碼，不會建立新帳號也不會自動綁定；已登入時可以按「也用 Apple 登入這個帳號」手動綁定，user id 與雲端資料的 owner 不變。v1 不把 Email 綁到只有 Apple 的帳號，也不把 Apple 提供的姓名存進帳號。
 - Supersedes: PD-066 中第一頁只有 Email 的呈現（只在 Apple 按鈕顯示時）。PD-066 的略過試用、登入後才問同步、已完成開場不重跑，PD-062 的登入不等於上傳、健康類同意、不支援切換帳號，PD-067 的一句話說明與三步指引，都仍然有效。
 - Context: 使用者要 Apple 帳號與 Face ID 登入。Face ID 不是帳號，只能解鎖這台手機已存的登入；做成 App 內開關不是使用者熟悉的設計，打包清單也不需要比系統更嚴格的保護，而 App 自己的鎖定畫面只遮畫面、不加密，也遮不到小工具。
