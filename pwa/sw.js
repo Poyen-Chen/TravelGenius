@@ -1,6 +1,6 @@
 // 離線快取：安裝時預先快取整個 App（清單由 scripts/build_pwa_assets.sh 產生）。
 // 雲端（Supabase）與天氣（Open-Meteo）是其他網域，一律直接走網路，不快取。
-const CACHE = 'packsmart-pwa-v4';
+const CACHE = 'packsmart-pwa-v7';
 self.addEventListener('install', event => event.waitUntil((async () => {
   const cache = await caches.open(CACHE);
   const files = await (await fetch('precache.json', { cache: 'no-store' })).json();
@@ -14,6 +14,8 @@ self.addEventListener('activate', event => event.waitUntil((async () => {
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
   if (event.request.method !== 'GET' || url.origin !== self.location.origin) return;
+  // Apple 驗證網域的檔案一律走網路：不放快取，也不退回 index.html，否則驗證會靜默失敗（PD-068）。
+  if (url.pathname.endsWith('/.well-known/apple-developer-domain-association.txt')) return;
   if (event.request.mode === 'navigate') {
     event.respondWith(fetch(event.request).catch(() => caches.match('index.html')));
     return;

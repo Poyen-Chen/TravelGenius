@@ -38,8 +38,8 @@ enum PersonalPackingOptions {
     }
 }
 
+/// 外觀只有淺色（米色）與深色兩種；舊版存的「跟隨系統」視為淺色。
 enum AppAppearance: String, CaseIterable, Identifiable {
-    case system
     case light
     case dark
 
@@ -47,20 +47,12 @@ enum AppAppearance: String, CaseIterable, Identifiable {
 
     static let storageKey = "pref.appearance"
 
+    init(stored raw: String) { self = AppAppearance(rawValue: raw) ?? .light }
+
     var label: String {
         switch self {
-        case .system: "跟隨系統"
-        case .light: "淺色"
+        case .light: "淺色（米色）"
         case .dark: "深色"
-        }
-    }
-
-    /// nil = 跟隨系統
-    var colorScheme: ColorScheme? {
-        switch self {
-        case .system: nil
-        case .light: .light
-        case .dark: .dark
         }
     }
 }

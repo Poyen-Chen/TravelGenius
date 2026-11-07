@@ -36,14 +36,15 @@ struct AccountSyncView: View {
                 Button("同意並開啟") { account.syncEnabled = true; Task { await account.synchronize() } }
                 Button("取消", role: .cancel) {}
             } message: {
-                Text("會上傳行程（名稱、目的地、日期、打包偏好與清單、打包狀態）與常備用品，讓你換手機也能使用。支出與預算不會上傳；「健康」分類的物品預設不上傳。\n\n\(account.dataRegionNote)。授權的 PackSmart 管理員在處理你回報的問題時可以查看，每次查看都會留下紀錄。你可以隨時關閉同步或刪除雲端帳號。")
+                Text("開啟後，行程和行李會在手機與網頁版之間同步。")
             }
             .alert("同步「健康」分類的物品？", isPresented: $confirmingHealth) {
                 Button("同意同步") { Task { await account.setHealthConsent(true) } }
                 Button("取消", role: .cancel) {}
             } message: {
-                Text("藥品等健康類物品可能屬於敏感個人資料。同意後會上傳到雲端，你登入的每台裝置都會看到，授權管理員處理問題時也可能看到。之後關閉，下一次同步會把它們從雲端移除，手機上的仍保留。")
+                Text("藥品等健康物品要另外同意，才會一併同步。")
             }
+            .task(id: account.phase) { await account.refreshLinkedProviders() }
             .confirmationDialog("刪除雲端帳號？", isPresented: $confirmingDelete, titleVisibility: .visible) {
                 Button("刪除雲端帳號與資料", role: .destructive) { Task { await account.deleteAccount() } }
             } message: {
@@ -56,28 +57,35 @@ struct AccountSyncView: View {
         Section {
             switch account.phase {
             case .unconfigured:
-                Label("這個版本尚未設定雲端服務，資料只存在這台手機。", systemImage: "iphone")
+                Label("可以先在這台裝置離線使用。", systemImage: "iphone")
             case .signedOut:
+                if account.showsAppleSignIn {
+                    AppleSignInButton { Task { await account.signInWithApple() } }
+                        .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                }
                 TextField("Email", text: $email)
                     .textContentType(.emailAddress).keyboardType(.emailAddress)
                     .textInputAutocapitalization(.never).autocorrectionDisabled()
                 Button("寄送驗證碼") { Task { await account.sendCode(to: email) } }
                     .disabled(!email.contains("@"))
             case .awaitingCode(let email):
-                Text("輸入寄到 \(email) 的 6 位數驗證碼").font(.footnote).foregroundStyle(theme.colors.secondaryText)
+                Text("驗證碼已寄到這封信。").font(.footnote).foregroundStyle(theme.colors.secondaryText)
                 TextField("驗證碼", text: $code).textContentType(.oneTimeCode).keyboardType(.numberPad)
                 Button("登入") { Task { await account.verify(code: code); code = "" } }
                     .disabled(code.count < 6)
                 Button("重新寄送") { Task { await account.sendCode(to: email) } }
                 Button("改用其他 Email", role: .cancel) { account.cancelCode() }
-            case .signedIn(let email):
-                LabeledContent("已登入", value: email)
+            case .signedIn:
+                LabeledContent("已登入", value: account.accountLabel)
+                if account.showsAppleLink {
+                    Button("也用 Apple 登入這個帳號") { Task { await account.linkApple() } }
+                }
                 Button("登出") { Task { await account.signOut() } }
             }
         } header: {
             Text("帳號")
         } footer: {
-            if case .signedOut = account.phase { Text("不需要密碼。登入不會自動上傳資料，開啟同步後才會上傳。") }
+            if case .signedOut = account.phase { Text("登入不會自動上傳，開啟同步後才會上傳。") }
         }
         .listRowBackground(theme.colors.elevatedSurface)
     }
@@ -139,7 +147,7 @@ struct AccountSyncView: View {
         Section {
             Button("刪除雲端帳號", role: .destructive) { confirmingDelete = true }
         } footer: {
-            Text("\(account.dataRegionNote)。關閉同步、登出或移除 App 都不會刪除雲端帳號。")
+            Text("關閉同步、登出或移除 App 都不會刪除雲端帳號。")
         }
         .listRowBackground(theme.colors.elevatedSurface)
     }

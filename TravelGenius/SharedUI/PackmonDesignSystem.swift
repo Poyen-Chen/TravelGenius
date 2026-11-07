@@ -5,51 +5,14 @@
 
 import SwiftUI
 
-/// 可在執行期間切換的設計系統版本。
-/// 新設計進場時新增一個 case 與對應 token，即可和現行版本並存驗證。
+/// App 只保留結構 C 一套設計；淺色（米色）與深色由「外觀設定」切換，顏色 token 會跟著變。
 enum PackmonThemeID: String, CaseIterable, Identifiable {
-    case current
     case structureC
-    case warmCompanion
-    case trustBlueCTA
 
     static let storageKey = "design.theme.structure-c"
 
     var id: String { rawValue }
-
-    var label: String {
-        switch self {
-        case .current: "現行設計"
-        case .structureC: "結構 C"
-        case .warmCompanion: "暖橘陪伴"
-        case .trustBlueCTA: "信任藍 CTA"
-        }
-    }
-
-    var detail: String {
-        switch self {
-        case .current: "目前上線中的間距、圓角與系統色彩。"
-        case .structureC: "Claude Design 結構 C 的陶土橘與暖米色介面。"
-        case .warmCompanion: "品牌提案 A：暖橘作主要操作色，強化活力與陪伴感。"
-        case .trustBlueCTA: "品牌提案 B：信任藍作主要操作色，暖橘保留品牌識別。"
-        }
-    }
-
-    var isExperimental: Bool {
-        switch self {
-        case .warmCompanion, .trustBlueCTA: true
-        case .current, .structureC: false
-        }
-    }
-
-    var theme: PackmonTheme {
-        switch self {
-        case .current: .current
-        case .structureC: .structureC
-        case .warmCompanion: .warmCompanion
-        case .trustBlueCTA: .trustBlueCTA
-        }
-    }
+    var theme: PackmonTheme { .structureC }
 }
 
 /// 所有可替換的視覺決策集中在這個 value type。
@@ -90,97 +53,41 @@ struct PackmonTheme {
     let radius: Radius
     let colors: Colors
 
-    static let current = PackmonTheme(
-        id: .current,
-        spacing: Spacing(xSmall: 4, small: 8, medium: 16, large: 24, xLarge: 32),
-        radius: Radius(small: 10, medium: 16, large: 24),
-        colors: Colors(
-            accent: .accentColor,
-            accentSoft: Color.accentColor.opacity(0.12),
-            secondaryAccent: .green,
-            warm: .orange,
-            success: .green,
-            warning: .orange,
-            danger: .red,
-            text: .primary,
-            secondaryText: .secondary,
-            canvas: Color(uiColor: .systemGroupedBackground),
-            surface: Color(uiColor: .secondarySystemGroupedBackground),
-            elevatedSurface: Color(uiColor: .systemBackground),
-            separator: Color(uiColor: .separator)
-        )
-    )
-
     /// Claude Design Artifact「結構 C」實際使用的語意 token。
     static let structureC = PackmonTheme(
         id: .structureC,
         spacing: Spacing(xSmall: 4.4, small: 8.8, medium: 17.6, large: 26.4, xLarge: 35.2),
         radius: Radius(small: 8, medium: 16, large: 28),
         colors: Colors(
-            accent: Color(red: 198 / 255, green: 113 / 255, blue: 57 / 255),
-            accentSoft: Color(red: 1, green: 242 / 255, blue: 235 / 255),
-            secondaryAccent: Color(red: 122 / 255, green: 138 / 255, blue: 94 / 255),
-            warm: Color(red: 214 / 255, green: 127 / 255, blue: 72 / 255),
-            success: Color(red: 122 / 255, green: 138 / 255, blue: 94 / 255),
-            warning: Color(red: 214 / 255, green: 127 / 255, blue: 72 / 255),
-            danger: Color(red: 166 / 255, green: 70 / 255, blue: 55 / 255),
-            text: Color(red: 32 / 255, green: 30 / 255, blue: 29 / 255),
-            secondaryText: Color(red: 100 / 255, green: 92 / 255, blue: 80 / 255),
-            canvas: Color(red: 245 / 255, green: 234 / 255, blue: 216 / 255),
-            surface: Color(red: 235 / 255, green: 221 / 255, blue: 197 / 255),
-            elevatedSurface: Color(red: 249 / 255, green: 244 / 255, blue: 237 / 255),
-            separator: Color(red: 32 / 255, green: 30 / 255, blue: 29 / 255).opacity(0.16)
-        )
-    )
-
-    /// 《UI 與品牌視覺建議》提案 A：暖橘承擔品牌與主要操作角色。
-    /// 保留結構 C 的 spacing/radius，讓驗證只比較色彩角色。
-    static let warmCompanion = PackmonTheme(
-        id: .warmCompanion,
-        spacing: structureC.spacing,
-        radius: structureC.radius,
-        colors: Colors(
-            accent: Color(red: 249 / 255, green: 115 / 255, blue: 22 / 255),
-            accentSoft: Color(red: 1, green: 237 / 255, blue: 213 / 255),
-            secondaryAccent: Color(red: 37 / 255, green: 99 / 255, blue: 235 / 255),
-            warm: Color(red: 251 / 255, green: 146 / 255, blue: 60 / 255),
-            success: Color(red: 22 / 255, green: 163 / 255, blue: 74 / 255),
-            warning: Color(red: 245 / 255, green: 158 / 255, blue: 11 / 255),
-            danger: Color(red: 220 / 255, green: 38 / 255, blue: 38 / 255),
-            text: Color(red: 154 / 255, green: 52 / 255, blue: 18 / 255),
-            secondaryText: Color(red: 124 / 255, green: 45 / 255, blue: 18 / 255).opacity(0.76),
-            canvas: Color(red: 1, green: 247 / 255, blue: 237 / 255),
-            surface: Color(red: 1, green: 237 / 255, blue: 213 / 255),
-            elevatedSurface: .white,
-            separator: Color(red: 154 / 255, green: 52 / 255, blue: 18 / 255).opacity(0.16)
-        )
-    )
-
-    /// 《UI 與品牌視覺建議》提案 B：信任藍承擔主要 CTA，暖橘退為品牌強調色。
-    static let trustBlueCTA = PackmonTheme(
-        id: .trustBlueCTA,
-        spacing: structureC.spacing,
-        radius: structureC.radius,
-        colors: Colors(
-            accent: Color(red: 37 / 255, green: 99 / 255, blue: 235 / 255),
-            accentSoft: Color(red: 239 / 255, green: 246 / 255, blue: 1),
-            secondaryAccent: Color(red: 249 / 255, green: 115 / 255, blue: 22 / 255),
-            warm: Color(red: 251 / 255, green: 146 / 255, blue: 60 / 255),
-            success: Color(red: 22 / 255, green: 163 / 255, blue: 74 / 255),
-            warning: Color(red: 245 / 255, green: 158 / 255, blue: 11 / 255),
-            danger: Color(red: 220 / 255, green: 38 / 255, blue: 38 / 255),
-            text: Color(red: 67 / 255, green: 20 / 255, blue: 7 / 255),
-            secondaryText: Color(red: 124 / 255, green: 45 / 255, blue: 18 / 255).opacity(0.76),
-            canvas: Color(red: 1, green: 247 / 255, blue: 237 / 255),
-            surface: Color(red: 1, green: 237 / 255, blue: 213 / 255),
-            elevatedSurface: .white,
-            separator: Color(red: 154 / 255, green: 52 / 255, blue: 18 / 255).opacity(0.16)
+            accent: Color(light: 0xC67139, dark: 0xDE8A52),
+            accentSoft: Color(light: 0xFFF2EB, dark: 0x4A3222),
+            secondaryAccent: Color(light: 0x7A8A5E, dark: 0xA3B386),
+            warm: Color(light: 0xD67F48, dark: 0xE09A62),
+            success: Color(light: 0x7A8A5E, dark: 0xA3B386),
+            warning: Color(light: 0xD67F48, dark: 0xE09A62),
+            danger: Color(light: 0xA64637, dark: 0xE07A6C),
+            text: Color(light: 0x201E1D, dark: 0xF3E9DA),
+            secondaryText: Color(light: 0x645C50, dark: 0xB9A890),
+            canvas: Color(light: 0xF5EAD8, dark: 0x1E1914),
+            surface: Color(light: 0xEBDDC5, dark: 0x2B231B),
+            elevatedSurface: Color(light: 0xF9F4ED, dark: 0x352B21),
+            separator: Color(light: 0x201E1D, dark: 0xF3E9DA).opacity(0.16)
         )
     )
 }
 
+extension Color {
+    /// 淺色（米色）與深色各一個值；深色的數值和 PWA 的深色 token 相同。
+    init(light: UInt32, dark: UInt32) {
+        func color(_ hex: UInt32) -> UIColor {
+            UIColor(red: CGFloat((hex >> 16) & 0xFF) / 255, green: CGFloat((hex >> 8) & 0xFF) / 255, blue: CGFloat(hex & 0xFF) / 255, alpha: 1)
+        }
+        self.init(uiColor: UIColor { $0.userInterfaceStyle == .dark ? color(dark) : color(light) })
+    }
+}
+
 private struct PackmonThemeKey: EnvironmentKey {
-    static let defaultValue = PackmonTheme.current
+    static let defaultValue = PackmonTheme.structureC
 }
 
 extension EnvironmentValues {

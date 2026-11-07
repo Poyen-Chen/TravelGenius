@@ -37,6 +37,9 @@ struct SupabaseConfiguration: Equatable {
 
     /// 本機資料綁定的範圍：同一個專案的同一個帳號。
     func realm(for userID: UUID) -> String { "\(url.host ?? url.absoluteString)|\(userID.uuidString.lowercased())" }
+
+    /// Keychain 裡存登入狀態的 account 名稱。
+    var keychainAccount: String { url.host ?? "supabase" }
 }
 
 struct SupabaseSession: Codable, Equatable {
@@ -53,6 +56,11 @@ enum SupabaseError: LocalizedError, Equatable {
     case rateLimited
     case server(Int, String)
     case offline
+    case appleFailed
+    case appleRateLimited
+    case emailAlreadyUsed
+    case appleIdentityTaken
+    case linkingUnavailable
 
     var errorDescription: String? {
         switch self {
@@ -61,7 +69,20 @@ enum SupabaseError: LocalizedError, Equatable {
         case .rateLimited: "寄送太頻繁，請稍後再試。"
         case .server(let status, _): "雲端服務暫時無法使用（\(status)），請稍後再試。"
         case .offline: "目前沒有網路連線，資料先保存在這台手機。"
+        case .appleFailed: "Apple 登入沒有成功，請再試一次。"
+        case .appleRateLimited: "登入太頻繁，請稍後再試。"
+        case .emailAlreadyUsed: "這個 Email 已經有 PackSmart 帳號，請改用驗證碼登入。"
+        case .appleIdentityTaken: "這個 Apple 帳號已經綁在另一個 PackSmart 帳號上。"
+        case .linkingUnavailable: "暫時無法綁定 Apple。"
         }
+    }
+
+    /// Supabase Auth 錯誤內容裡的 `error_code`（或舊版的 `code`）與 `msg`。內容本身不顯示給使用者。
+    static func authErrorCode(_ body: String) -> (code: String?, message: String?) {
+        guard let object = try? JSONSerialization.jsonObject(with: Data(body.utf8)) as? [String: Any] else { return (nil, nil) }
+        let code = object["error_code"] as? String ?? object["code"] as? String
+        let message = object["msg"] as? String ?? object["message"] as? String
+        return (code, message)
     }
 }
 
@@ -70,13 +91,13 @@ enum SupabaseError: LocalizedError, Equatable {
 final class SupabaseClient {
     let configuration: SupabaseConfiguration
     private let session: URLSession
-    private let keychain: SupabaseSessionStore
+    private let keychain: SessionStoring
     private(set) var current: SupabaseSession?
 
-    init(configuration: SupabaseConfiguration, session: URLSession = .shared, keychain: SupabaseSessionStore? = nil) {
+    init(configuration: SupabaseConfiguration, session: URLSession = .shared, keychain: SessionStoring? = nil) {
         self.configuration = configuration
         self.session = session
-        self.keychain = keychain ?? SupabaseSessionStore(account: configuration.url.host ?? "supabase")
+        self.keychain = keychain ?? SupabaseSessionStore(account: configuration.keychainAccount)
         current = self.keychain.load()
     }
 
@@ -89,21 +110,84 @@ final class SupabaseClient {
     func verify(email: String, code: String) async throws {
         do {
             let data = try await request("auth/v1/verify", json: ["type": "email", "email": email, "token": code], authorized: false)
-            try store(data)
+            try adoptNewSignIn(data)
         } catch SupabaseError.server(let status, _) where [400, 401, 403, 422].contains(status) {
             throw SupabaseError.invalidCode
         }
     }
 
+    // MARK: Auth（Sign in with Apple，PD-068）
+
+    /// Apple 的 identity token 由 Supabase 驗證（簽章、aud、nonce），App 不自己解碼信任其中的 Email 或 sub。
+    func signInWithApple(idToken: String, nonce: String) async throws {
+        do {
+            let data = try await request("auth/v1/token?grant_type=id_token", json: Self.appleBody(idToken: idToken, nonce: nonce, link: false), authorized: false)
+            try adoptNewSignIn(data)
+        } catch SupabaseError.rateLimited {
+            throw SupabaseError.appleRateLimited
+        } catch SupabaseError.server(let status, let body) {
+            throw Self.mapAppleError(status: status, body: body, linking: false)
+        } catch is DecodingError {
+            throw SupabaseError.appleFailed
+        }
+    }
+
+    /// 把 Apple 綁到目前登入的帳號：同一個 user id，user_documents 的 owner 不變。不會自動合併兩個帳號。
+    func linkApple(idToken: String, nonce: String) async throws {
+        guard current != nil else { throw SupabaseError.notSignedIn }
+        do {
+            let data = try await request("auth/v1/token?grant_type=id_token", json: Self.appleBody(idToken: idToken, nonce: nonce, link: true), authorized: true)
+            // 回傳的是同一個帳號的新 token；不是同一個帳號就不採用。
+            if let linked = try? decodeSession(data), linked.userID == current?.userID { persist(linked) }
+        } catch SupabaseError.rateLimited {
+            throw SupabaseError.appleRateLimited
+        } catch SupabaseError.server(let status, let body) {
+            throw Self.mapAppleError(status: status, body: body, linking: true)
+        }
+    }
+
+    /// 帳號已經綁定的登入方式，例如 ["email", "apple"]。
+    func linkedProviders() async throws -> Set<String> {
+        struct User: Decodable {
+            struct Identity: Decodable { let provider: String }
+            let identities: [Identity]?
+        }
+        let data = try await request("auth/v1/user", method: "GET", authorized: true)
+        return Set((try JSONDecoder().decode(User.self, from: data)).identities?.map(\.provider) ?? [])
+    }
+
+    nonisolated static func appleBody(idToken: String, nonce: String, link: Bool) -> [String: Any] {
+        var body: [String: Any] = ["provider": "apple", "id_token": idToken, "nonce": nonce]
+        if link { body["link_identity"] = true }
+        return body
+    }
+
+    nonisolated static func mapAppleError(status: Int, body: String, linking: Bool) -> SupabaseError {
+        let (code, message) = SupabaseError.authErrorCode(body)
+        if code == "over_request_rate_limit" { return .appleRateLimited }
+        if code == "email_exists" || (status == 500 && message?.localizedCaseInsensitiveContains("multiple accounts with the same email") == true) {
+            return .emailAlreadyUsed
+        }
+        if linking, code == "identity_already_exists" { return .appleIdentityTaken }
+        if linking, code == "manual_linking_disabled" { return .linkingUnavailable }
+        if (400..<500).contains(status) { return .appleFailed }
+        return .server(status, "")
+    }
+
+    // MARK: 登出、刪除帳號
+
     func signOut() async {
         if current != nil { _ = try? await request("auth/v1/logout", json: [:], authorized: true) }
-        current = nil
-        keychain.save(nil)
+        clearLocalSession()
     }
 
     /// 刪除雲端帳號與全部雲端資料（delete-account Edge Function）；本機資料保留。
     func deleteAccount() async throws {
         _ = try await request("functions/v1/delete-account", json: [:], authorized: true)
+        clearLocalSession()
+    }
+
+    private func clearLocalSession() {
         current = nil
         keychain.save(nil)
     }
@@ -113,9 +197,15 @@ final class SupabaseClient {
     /// 「同步健康類物品」的同意存在帳號上（user metadata），每台手機讀同一個值。
     /// 若各台手機各自設定，沒同意的手機上傳時會剔除藥品，導致同意的手機收到後被刪掉。
     func healthSyncConsent() async throws -> Bool {
-        struct User: Decodable { let user_metadata: [String: Bool]? }
-        let data = try await request("auth/v1/user", method: "GET", authorized: true)
-        return (try? JSONDecoder().decode(User.self, from: data))?.user_metadata?["health_sync_consent"] ?? false
+        Self.healthConsent(fromUser: try await request("auth/v1/user", method: "GET", authorized: true))
+    }
+
+    /// metadata 裡可能有其他字串（例如登入服務寫入的姓名），只看 health_sync_consent 是不是 JSON true。
+    nonisolated static func healthConsent(fromUser data: Data) -> Bool {
+        guard let user = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let metadata = user["user_metadata"] as? [String: Any],
+              let value = metadata["health_sync_consent"] as? NSNumber else { return false }
+        return CFGetTypeID(value) == CFBooleanGetTypeID() && value.boolValue
     }
 
     func setHealthSyncConsent(_ value: Bool) async throws {
@@ -136,7 +226,8 @@ final class SupabaseClient {
 
     // MARK: 內部
 
-    private func store(_ data: Data) throws {
+    /// token JSON 的唯一解析處。之後的登入沒有回傳 Email 時沿用目前的 Email。
+    func decodeSession(_ data: Data) throws -> SupabaseSession {
         struct Response: Decodable {
             struct User: Decodable { let id: UUID; let email: String? }
             let access_token: String
@@ -145,10 +236,19 @@ final class SupabaseClient {
             let user: User
         }
         let value = try JSONDecoder().decode(Response.self, from: data)
-        current = SupabaseSession(accessToken: value.access_token, refreshToken: value.refresh_token,
-                                  expiresAt: Date().addingTimeInterval(value.expires_in),
-                                  userID: value.user.id, email: value.user.email ?? current?.email ?? "")
-        keychain.save(current)
+        let email = value.user.email.flatMap { $0.isEmpty ? nil : $0 } ?? current?.email ?? ""
+        return SupabaseSession(accessToken: value.access_token, refreshToken: value.refresh_token,
+                               expiresAt: Date().addingTimeInterval(value.expires_in), userID: value.user.id, email: email)
+    }
+
+    /// 新的登入（驗證碼或 Apple）與更新 token 都從這裡寫入 Keychain。
+    private func adoptNewSignIn(_ data: Data) throws {
+        persist(try decodeSession(data))
+    }
+
+    private func persist(_ session: SupabaseSession) {
+        current = session
+        keychain.save(session)
     }
 
     private func validAccessToken() async throws -> String {
@@ -156,10 +256,9 @@ final class SupabaseClient {
         if current.expiresAt > Date().addingTimeInterval(60) { return current.accessToken }
         do {
             let data = try await request("auth/v1/token?grant_type=refresh_token", json: ["refresh_token": current.refreshToken], authorized: false)
-            try store(data)
+            persist(try decodeSession(data))
         } catch SupabaseError.server(let status, _) where (400..<500).contains(status) {
-            self.current = nil
-            keychain.save(nil)
+            clearLocalSession()
             throw SupabaseError.notSignedIn
         }
         return self.current!.accessToken
@@ -190,8 +289,15 @@ final class SupabaseClient {
 
 }
 
-/// 登入狀態存在 Keychain（只限這台裝置），不放 UserDefaults。
-struct SupabaseSessionStore {
+/// 登入狀態的存放處；測試時換成記憶體版本。
+protocol SessionStoring {
+    func load() -> SupabaseSession?
+    /// nil 代表刪除。
+    func save(_ session: SupabaseSession?)
+}
+
+/// 登入狀態存在 Keychain（只限這台裝置），不放 UserDefaults，也不放進 App Group（小工具讀不到）。
+struct SupabaseSessionStore: SessionStoring {
     let account: String
     private let service = "PackSmart.SupabaseSession"
 

@@ -12,7 +12,7 @@ struct OnboardingView: View {
             MascotView(expression: .happy, size: 110)
             Text("先認識你的打包習慣")
                 .font(.largeTitle.weight(.bold)).multilineTextAlignment(.center)
-            Text("選平常旅行會帶的設備與用品，每趟不必重填。之後也能在「我的」調整。")
+            Text("選平常會帶的東西，之後每趟都會帶上。")
                 .foregroundStyle(theme.colors.secondaryText).multilineTextAlignment(.center)
             Spacer()
             Button("設定個人打包需求") { showingPreferences = true }

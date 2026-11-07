@@ -174,8 +174,7 @@ struct ProfileHubView: View {
     @State private var destination: Destination?
     @State private var preferences = UserPreferences.forNewTrips()
     @State private var stapleCount: Int?
-    @AppStorage(AppAppearance.storageKey) private var appearanceRaw = AppAppearance.system.rawValue
-    @AppStorage(PackmonThemeID.storageKey) private var themeRaw = PackmonThemeID.structureC.rawValue
+    @AppStorage(AppAppearance.storageKey) private var appearanceRaw = AppAppearance.light.rawValue
 
     private func refreshSummary() {
         preferences = .forNewTrips()
@@ -201,7 +200,7 @@ struct ProfileHubView: View {
                     }
                     settingsRow(.staples, "常備清單", "每次新行程，都幫你一起帶上", "backpack")
                     settingsRow(.preferences, "個人打包需求", "常用設備、用品與打包習慣", "slider.horizontal.3")
-                    settingsRow(.appearance, "外觀設定", "\((PackmonThemeID(rawValue: themeRaw) ?? .structureC).label)・\((AppAppearance(rawValue: appearanceRaw) ?? .system).label)", "paintpalette")
+                    settingsRow(.appearance, "外觀設定", AppAppearance(stored: appearanceRaw).label, "paintpalette")
                     settingsRow(.account, "帳號與同步", accountSummary, "icloud")
                     Label(account.syncEnabled ? "行程與常備用品會同步到雲端" : "行程與設定保存在這台裝置",
                           systemImage: account.syncEnabled ? "icloud" : "iphone")
@@ -224,7 +223,7 @@ struct ProfileHubView: View {
         switch account.phase {
         case .unconfigured: "這個版本尚未提供"
         case .signedOut, .awaitingCode: "登入後可以換手機繼續使用"
-        case .signedIn(let email): account.syncEnabled ? "\(email)・同步中" : "\(email)・同步未開啟"
+        case .signedIn: account.syncEnabled ? "\(account.accountLabel)・同步中" : "\(account.accountLabel)・同步未開啟"
         }
     }
 

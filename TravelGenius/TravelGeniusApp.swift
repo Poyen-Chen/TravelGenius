@@ -29,7 +29,7 @@ struct TravelGeniusApp: App {
         } catch {
             fatalError("無法建立資料庫：\(error)")
         }
-        _cloudAccount = State(initialValue: CloudAccount(container: container))
+        _cloudAccount = State(initialValue: CloudAccount(container: container, appleProvider: AppleSignInCoordinator()))
         configurePackingImageDefault() // 在 demo 種資料前判斷，demo 行程不算既有安裝
         if ProcessInfo.processInfo.arguments.contains("-seedDemo") {
             DemoSeeder.seedIfNeeded(into: container.mainContext)
@@ -64,14 +64,29 @@ struct TravelGeniusApp: App {
         let arguments = ProcessInfo.processInfo.arguments
         if arguments.contains("-resetOnboarding") {
             defaults.set(false, forKey: "hasOnboarded")
+            defaults.set(false, forKey: "hasCompletedAccountGate")
+            defaults.set(false, forKey: "hasSeenFirstLaunchGuide")
+            defaults.removeObject(forKey: "didApplyStartGuideMigration")
             return
         }
-        guard !defaults.bool(forKey: "hasOnboarded") else { return }
-        let hasDebugArgs = arguments.contains { $0.hasPrefix("-seedDemo") || $0.hasPrefix("-open") || $0.hasPrefix("-show") }
-        let tripCount = (try? container.mainContext.fetchCount(FetchDescriptor<Trip>())) ?? 0
-        if hasDebugArgs || tripCount > 0 {
-            defaults.set(true, forKey: "hasOnboarded")
+        if !defaults.bool(forKey: "hasOnboarded") {
+            let hasDebugArgs = arguments.contains { $0.hasPrefix("-seedDemo") || $0.hasPrefix("-open") || $0.hasPrefix("-show") }
+            let tripCount = (try? container.mainContext.fetchCount(FetchDescriptor<Trip>())) ?? 0
+            if hasDebugArgs || tripCount > 0 {
+                defaults.set(true, forKey: "hasOnboarded")
+            }
         }
+        migrateStartGuideIfNeeded(defaults)
+    }
+
+    /// 這次改版前就完成 onboarding 的安裝視為看過行程頁指引，避免被新卡片打斷。
+    private func migrateStartGuideIfNeeded(_ defaults: UserDefaults) {
+        let key = "didApplyStartGuideMigration"
+        guard !defaults.bool(forKey: key) else { return }
+        if defaults.bool(forKey: "hasOnboarded") {
+            defaults.set(true, forKey: "hasSeenFirstLaunchGuide")
+        }
+        defaults.set(true, forKey: key)
     }
 
     var body: some Scene {

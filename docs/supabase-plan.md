@@ -196,7 +196,7 @@ flowchart LR
 
 ## 待團隊決定
 
-1. **登入方式**：只用 Email 驗證碼（建議先這樣），還是也加 Apple 登入？
+1. **登入方式**：只用 Email 驗證碼（建議先這樣），還是也加 Apple 登入？——已由 PD-068 回答：保留 Email 驗證碼，另加 Sign in with Apple；App 不另做 Face ID 鎖定，交給 iOS 的「需要 Face ID」。Apple 按鈕要等真正的 Apple Developer team、bundle id 與網頁正式網址才會打開。
 2. **誰當 Dashboard 擁有者、誰當支援管理員**？
 3. **自訂用品可以標記為私密嗎**？要的話需要新增欄位。
 4. **法規確認**：誰負責確認個資法的要求，以及撰寫隱私權政策？

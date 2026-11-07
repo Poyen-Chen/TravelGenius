@@ -93,43 +93,25 @@ struct PreferenceSettingsView: View {
 struct AppearanceSettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.packmonTheme) private var theme
-    @AppStorage(AppAppearance.storageKey) private var appearanceRaw = AppAppearance.system.rawValue
-    @AppStorage(PackmonThemeID.storageKey) private var designThemeRaw = PackmonThemeID.structureC.rawValue
+    @AppStorage(AppAppearance.storageKey) private var appearanceRaw = AppAppearance.light.rawValue
 
     var body: some View {
         NavigationStack {
             Form {
-                Section("外觀") {
-                    Picker("外觀", selection: $appearanceRaw) {
+                Section {
+                    Picker("外觀", selection: Binding(get: { AppAppearance(stored: appearanceRaw).rawValue }, set: { appearanceRaw = $0 })) {
                         ForEach(AppAppearance.allCases) { option in
                             Text(option.label).tag(option.rawValue)
                         }
                     }
                     .pickerStyle(.segmented)
                     .labelsHidden()
-                }
-                .listRowBackground(theme.colors.elevatedSurface)
-
-                Section {
-                    ForEach(PackmonThemeID.allCases) { themeID in
-                        Button {
-                            designThemeRaw = themeID.rawValue
-                        } label: {
-                            DesignThemeOptionRow(
-                                themeID: themeID,
-                                isSelected: designThemeRaw == themeID.rawValue
-                            )
-                        }
-                        .buttonStyle(.plain)
-                    }
                 } header: {
-                    Text("設計驗證")
+                    Text("外觀")
                 } footer: {
-                    Text("切換後會立即套用。兩個品牌提案都是測試選項，不代表已定案；導航、內容與資料不會跟著改變。")
+                    Text("切換後立即套用。")
                 }
                 .listRowBackground(theme.colors.elevatedSurface)
-
-
             }
             .scrollContentBackground(.hidden)
             .background(theme.colors.canvas)
@@ -137,54 +119,5 @@ struct AppearanceSettingsView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("完成") { dismiss() } } }
         }
-    }
-}
-
-private struct DesignThemeOptionRow: View {
-    let themeID: PackmonThemeID
-    let isSelected: Bool
-
-    private var colors: PackmonTheme.Colors { themeID.theme.colors }
-
-    var body: some View {
-        HStack(spacing: 12) {
-            HStack(spacing: -5) {
-                Circle().fill(colors.accent)
-                Circle().fill(colors.secondaryAccent)
-                Circle().fill(colors.canvas)
-                    .overlay { Circle().stroke(.secondary.opacity(0.28), lineWidth: 0.5) }
-            }
-            .frame(width: 54, height: 24)
-            .accessibilityHidden(true)
-
-            VStack(alignment: .leading, spacing: 3) {
-                HStack(spacing: 6) {
-                    Text(themeID.label)
-                        .font(.subheadline.weight(.semibold))
-                    if themeID.isExperimental {
-                        Text("實驗")
-                            .font(.caption2.weight(.bold))
-                            .foregroundStyle(colors.accent)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(colors.accentSoft, in: Capsule())
-                    }
-                }
-                Text(themeID.detail)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-
-            Spacer(minLength: 4)
-
-            Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                .foregroundStyle(isSelected ? colors.accent : Color.secondary)
-                .imageScale(.large)
-        }
-        .padding(.vertical, 4)
-        .contentShape(Rectangle())
-        .accessibilityElement(children: .combine)
-        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }

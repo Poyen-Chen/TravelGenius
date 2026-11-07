@@ -98,8 +98,8 @@ Studio 的 SQL Editor 以最高權限執行，會繞過 RLS 與管理員檢查�
    - `Region`：顯示在同意說明的資料地區，例如「新加坡」。
 2. **登入信要有 6 位數驗證碼**：App 用驗證碼登入，不處理登入連結。
    - 本機：`config.toml` 已指定 `supabase/templates/login-code.html`。
-   - 雲端：Dashboard → Authentication → Emails → Templates，把 **Magic link** 和 **Confirm signup** 的內容換成 `supabase/templates/login-code.html`（主旨「PackSmart 登入驗證碼」）。
-3. 雲端內建寄信只能寄給專案成員、每小時 2 封；給其他人測試前要設定自訂 SMTP。
+   - 雲端：專案 `vjhclgfhdiaykamvthpb` 已套用同一份範本，主旨「PackSmart 登入驗證碼」，驗證碼長度 6。寄件者是已設定的 Gmail SMTP。免費方案若改回 Supabase 預設寄信，範本會再次鎖住。
+3. 沒有自訂 SMTP 時，內建寄信只能寄給專案成員、每小時 2 封。這個專案已改走自訂 SMTP，額度為每小時 30 封。
 
 沒有 `Supabase.plist` 時，「我的 → 帳號與同步」會顯示「這個版本尚未設定雲端服務」，App 照舊只用本機資料。
 

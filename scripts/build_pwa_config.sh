@@ -8,7 +8,7 @@ import json, sys
 keys = json.load(sys.stdin)
 key = next(k['api_key'] for k in keys if k['type'] == 'publishable')
 assert key.startswith('sb_publishable_')
-cfg = {'url': f'https://$ref.supabase.co', 'publishableKey': key, 'region': '$region'}
+cfg = {'url': f'https://$ref.supabase.co', 'publishableKey': key, 'region': '$region', 'appleServicesID': '', 'appleRedirectURI': ''}
 open('pwa/js/config.js', 'w').write('// 由 scripts/build_pwa_config.sh 產生；勿提交。\nexport const CONFIG = ' + json.dumps(cfg, ensure_ascii=False) + ';\n')
 "
 echo "wrote pwa/js/config.js for $ref"
