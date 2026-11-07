@@ -76,6 +76,20 @@ h2 { font-weight: 900; font-size: 20px; margin: 0 0 12px; }
 .tile .t { font-weight: 800; font-size: 16px; }
 .tile .s { color: var(--muted); font-size: 13px; font-family: var(--body); margin-top: 3px; line-height: 1.5; }
 .tile .chev { margin-left: auto; color: var(--muted); }
+.account-gate-panel { max-width: 420px; margin: 8vh auto 0; text-align: center; }
+.account-gate-panel .mascot { width: 110px; height: 110px; margin: 0 auto 16px; display: block; }
+.account-gate-panel .subtitle { white-space: pre-line; }
+.account-gate-panel .stack { text-align: left; margin-top: 22px; }
+/* Apple 官方樣式：黑底白字（深色模式白底黑字），不套 Packmon 配色（PD-068）。 */
+.apple-btn { display: flex; width: 100%; min-height: 48px; align-items: center; justify-content: center; gap: 8px; border: 0; border-radius: 12px; background: #000; color: #fff; font: 600 16px/1 -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif; cursor: pointer; margin-bottom: 10px; }
+.apple-btn:disabled { opacity: .5; }
+@media (prefers-color-scheme: dark) { .apple-btn { background: #fff; color: #000; } }
+.start-guide { position: fixed; z-index: 25; left: 260px; bottom: 24px; width: min(420px, calc(100vw - 360px)); background: var(--elevated); border: 1px solid var(--line); border-radius: 18px; padding: 16px; box-shadow: var(--shadow); }
+.start-guide p { margin: 10px 0 14px; font-family: var(--font); font-weight: 800; font-size: 17px; line-height: 1.45; }
+.start-guide .btn.ghost { padding: 6px 12px; }
+body.start-guide-on .content-shell { padding-bottom: 220px; }
+body.account-gate .sidebar, body.account-gate .tabbar, body.account-gate .page-foot, body.account-gate .mobile-brand, body.account-gate .mascot-dock { display: none !important; }
+body.account-gate .app-shell { display: block; }
 .empty { text-align: center; padding: 32px 16px; }
 .empty .mascot { width: 110px; height: 110px; margin: 0 auto 10px; display: block; }
 
@@ -227,6 +241,7 @@ dialog::backdrop { background: rgba(30, 20, 10, .4); }
 @media (max-width: 1000px) {
   .app-shell { grid-template-columns: 184px minmax(0, 1fr); }
   .sidebar { padding: 30px 14px; }
+  .start-guide { left: 208px; width: min(420px, calc(100vw - 300px)); }
   .brand { font-size: 18px; }
   .brand img { width: 36px; height: 36px; }
   .content-shell { padding: 32px 24px 24px; }
@@ -256,6 +271,9 @@ dialog::backdrop { background: rgba(30, 20, 10, .4); }
   .card-grid { gap: 10px; }
   .item .art { height: 108px; margin: 8px; }
   .action-bar { bottom: calc(76px + env(safe-area-inset-bottom, 0px)); }
+  .start-guide { left: 12px; right: 12px; width: auto; bottom: calc(92px + env(safe-area-inset-bottom, 0px)); }
+  body.start-guide-on .content-shell { padding-bottom: calc(280px + env(safe-area-inset-bottom, 0px)); }
+  body.start-guide-on .mascot-dock, body.start-guide-on .mascot-bubble { display: none; }
   .mascot-dock { right: 16px; bottom: calc(92px + env(safe-area-inset-bottom, 0px)); width: 58px; height: 58px; }
   .mascot-bubble { right: 16px; bottom: calc(160px + env(safe-area-inset-bottom, 0px)); max-width: calc(100% - 32px); }
   .toast { bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }

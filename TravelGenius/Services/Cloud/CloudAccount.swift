@@ -3,6 +3,7 @@ import Observation
 import SwiftData
 
 /// App 層的帳號與同步狀態。未登入或未開啟同步時，什麼都不上傳，App 行為和以前相同（PD-062）。
+/// Apple 與 Email 驗證碼是登入身分。App 不另做 Face ID 鎖定，交給 iOS 的「需要 Face ID」（PD-068）。
 @MainActor @Observable
 final class CloudAccount {
     enum Phase: Equatable {
@@ -17,6 +18,8 @@ final class CloudAccount {
     private(set) var lastSyncedAt: Date?
     private(set) var conflicts: [CloudSyncConflict] = []
     private(set) var healthConsent = false
+    /// nil：還不知道（尚未讀到或讀取失敗），連結按鈕先不顯示。
+    private(set) var appleLinked: Bool?
     var message: String?
 
     /// 每台手機各自決定要不要同步；健康類的同意則跟著帳號（見 SupabaseClient.healthSyncConsent）。
@@ -30,21 +33,41 @@ final class CloudAccount {
     private let container: ModelContainer
     private let defaults: UserDefaults
     private let client: SupabaseClient?
+    private let appleProvider: AppleIdentityProviding?
 
-    init(container: ModelContainer, configuration: SupabaseConfiguration? = .load(), defaults: UserDefaults = .standard) {
+    init(container: ModelContainer, configuration: SupabaseConfiguration? = .load(), defaults: UserDefaults = .standard,
+         session: URLSession = .shared, keychain: SessionStoring? = nil, appleProvider: AppleIdentityProviding? = nil) {
         self.container = container
         self.defaults = defaults
+        self.appleProvider = appleProvider
         // iOS 移除 App 後 Keychain 仍會保留；重新安裝後的第一次啟動清掉舊的登入，避免「刪了 App 還是登入中」。
         if let configuration, !defaults.bool(forKey: Self.installedKey) {
-            SupabaseSessionStore(account: configuration.url.host ?? "supabase").save(nil)
+            (keychain ?? SupabaseSessionStore(account: configuration.keychainAccount)).save(nil)
         }
         defaults.set(true, forKey: Self.installedKey)
-        client = configuration.map { SupabaseClient(configuration: $0) }
+        client = configuration.map { SupabaseClient(configuration: $0, session: session, keychain: keychain) }
         lastSyncedAt = defaults.object(forKey: "cloud.sync.lastSyncedAt") as? Date
         refreshPhase()
     }
 
     var dataRegionNote: String { "資料存放在 Supabase（\(client?.configuration.region ?? "未設定")）" }
+
+    /// 給使用者看的帳號名稱：Apple 的轉寄地址或空白顯示成「Apple 帳號」。
+    var accountLabel: String {
+        guard case .signedIn(let email) = phase else { return "" }
+        return Self.accountLabel(for: email)
+    }
+
+    nonisolated static func accountLabel(for email: String) -> String {
+        if email.isEmpty || email.lowercased().hasSuffix("@privaterelay.appleid.com") { return "Apple 帳號" }
+        return email
+    }
+
+    var showsAppleSignIn: Bool { AppleSignInFeature.isEnabled && appleProvider != nil }
+    var showsAppleLink: Bool {
+        guard showsAppleSignIn, case .signedIn = phase else { return false }
+        return appleLinked == false
+    }
 
     private func refreshPhase() {
         guard let client else { phase = .unconfigured; return }
@@ -52,7 +75,7 @@ final class CloudAccount {
         else if case .awaitingCode = phase {} else { phase = .signedOut }
     }
 
-    // MARK: 登入
+    // MARK: 登入（Email 驗證碼）
 
     func sendCode(to email: String) async {
         let email = email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
@@ -68,17 +91,52 @@ final class CloudAccount {
         guard let client, case .awaitingCode(let email) = phase else { return }
         await perform {
             try await client.verify(email: email, code: code.trimmingCharacters(in: .whitespacesAndNewlines))
+            didSignIn(email: client.current?.email ?? email)
             healthConsent = (try? await client.healthSyncConsent()) ?? false
-            phase = .signedIn(email: email)
             message = nil
         }
     }
 
     func cancelCode() { phase = .signedOut; message = nil }
 
+    // MARK: 登入（Sign in with Apple）
+
+    func signInWithApple() async {
+        guard let client, let appleProvider else { return }
+        await perform {
+            let identity = try await appleProvider.requestIdentity()
+            try await client.signInWithApple(idToken: identity.idToken, nonce: identity.rawNonce)
+            didSignIn(email: client.current?.email ?? "")
+            healthConsent = (try? await client.healthSyncConsent()) ?? false
+            message = nil
+        }
+    }
+
+    /// 已登入時把 Apple 也綁到這個帳號；失敗時不登出、不刪任何帳號。
+    func linkApple() async {
+        guard let client, let appleProvider, case .signedIn = phase else { return }
+        await perform {
+            let identity = try await appleProvider.requestIdentity()
+            try await client.linkApple(idToken: identity.idToken, nonce: identity.rawNonce)
+            appleLinked = true
+            message = "已可以用 Apple 登入這個帳號。"
+        }
+    }
+
+    func refreshLinkedProviders() async {
+        guard showsAppleSignIn, let client, case .signedIn = phase else { return }
+        appleLinked = (try? await client.linkedProviders()).map { $0.contains("apple") }
+    }
+
+    private func didSignIn(email: String) {
+        appleLinked = nil
+        phase = .signedIn(email: email)
+    }
+
     func signOut() async {
         await client?.signOut()
         syncEnabled = false
+        appleLinked = nil
         conflicts = []
         phase = .signedOut
     }
@@ -90,6 +148,7 @@ final class CloudAccount {
             try await client.deleteAccount()
             CloudSyncEngine.resetState()
             syncEnabled = false
+            appleLinked = nil
             conflicts = []
             lastSyncedAt = nil
             defaults.removeObject(forKey: "cloud.sync.lastSyncedAt")
@@ -150,6 +209,6 @@ final class CloudAccount {
         defer { isWorking = false; refreshPhase() }
         do { try await work() }
         catch SupabaseError.notSignedIn { phase = .signedOut; message = SupabaseError.notSignedIn.errorDescription }
-        catch { message = error.localizedDescription }
+        catch { message = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription }
     }
 }

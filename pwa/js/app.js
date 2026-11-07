@@ -4,8 +4,9 @@ import { DATA, loadData, generate, reasonKindsFor, weatherSummary, country, citi
 import { weatherRequest, fetchWeather, FAILURE } from './weather.js';
 import { store, save, uuid, essentials, normalized, trip as findTrip, sortedItems, progress, compact } from './store.js';
 import { suitcaseSlots } from './suitcase.js';
-import { CONFIG } from './config.js';
 import * as cloud from './cloud.js';
+import { makeAppleNonce, APPLE_MESSAGES } from './auth.js';
+import { CONFIG } from './config.js';
 
 // ---------- 小工具 ----------
 const $ = s => document.querySelector(s);
@@ -66,7 +67,7 @@ function homeView() {
   const active = activeTrip(), others = [...store.trips].filter(t => t !== active).sort((a, b) => b.startDate.localeCompare(a.startDate));
   const tools = `<section><h2>不用建立行程也能用</h2><div class="stack">
     ${tile('#search', 'search', '能不能帶？', '查海關、檢疫與航空限制')}${tile('#knowledge', 'book', '禮儀圖鑑', '出發前先看當地眉角')}${tile('#me/staples', 'luggage', '常備清單', '設定每次旅行都會帶的用品')}</div></section>`;
-  const onboard = !store.onboarded ? `<a class="tile" href="#me/prefs"><img class="mascot" src="art/mascot.png" alt=""><span class="grow"><div class="t">先認識你的打包習慣</div><div class="s">選平常會帶的設備與用品，之後每趟不必重填</div></span><span class="chev">${icon('chev')}</span></a>` : '';
+  const onboard = !store.onboarded ? `<a class="tile" href="#me/prefs"><img class="mascot" src="art/mascot.png" alt=""><span class="grow"><div class="t">先認識你的打包習慣</div><div class="s">選平常會帶的東西，之後每趟都會帶上。</div></span><span class="chev">${icon('chev')}</span></a>` : '';
   const head = pageHead('MY TRIPS', '我的行程', '依目的地、天氣和你的習慣，推薦這趟真正要帶的東西。', `<a class="btn" href="#new">${icon('plus')}新行程</a>`);
   if (!active) return `${head}<div class="home"><div class="stack"><div class="card empty"><img class="mascot" src="art/mascot.png" alt=""><h2 style="margin:4px 0 6px">還沒有行程</h2><p class="sub">查詢與圖鑑照樣能用，建立行程後我才開始準備清單。</p><a class="btn" href="#new">${icon('plus')}建立第一個行程</a></div></div><div class="stack">${onboard}${tools}</div></div>`;
   const p = progress(active);
@@ -288,7 +289,7 @@ function meView() {
   return `${pageHead('PROFILE', '我的', '讓清單，更懂你的旅行習慣。')}
   <div class="card row" style="margin-bottom:16px"><img class="mascot" src="art/mascot.png" alt=""><div><b style="font-size:17px">和 Packmon 一起出發</b><div class="sub" style="margin:4px 0 0">${store.trips.length} 趟行程・${essentials().length} 項常備用品</div></div></div>
   <div class="cols-2">${tile('#me/staples', 'luggage', '常備清單', '每次新行程，都幫你一起帶上')}${tile('#me/prefs', 'user', '個人打包需求', `${store.prefs.devices.length} 項設備・${store.prefs.needs.length} 項需求・${STYLES[store.prefs.packingStyle][0]}`)}
-  ${tile('#me/account', 'cloud', '帳號與同步', !cloud.configured() ? '這個版本尚未提供' : signed ? `${signed.email}・${sync ? '同步中' : '同步未開啟'}` : '登入後可以和 iPhone 共用行程')}</div>
+  ${tile('#me/account', 'cloud', '帳號與同步', !cloud.configured() ? '這個版本尚未提供' : signed ? `${esc(cloud.accountLabel(signed.email))}・${sync ? '同步中' : '同步未開啟'}` : '登入後可以和 iPhone 共用行程')}</div>
   <p class="src" style="margin-top:18px">天氣：Open-Meteo（CC BY 4.0）。通關與禁帶資料附官方來源與查證日期，出發前仍請以官方公告為準。</p>`;
 }
 const subHead = (title, subtitle) => `<a class="link" href="#me" style="display:inline-flex;align-items:center;gap:4px;margin-bottom:14px">${icon('back')}我的</a>${pageHead('', title, subtitle)}`;
@@ -309,19 +310,23 @@ function prefsView() {
 }
 
 // ---------- 帳號與同步 ----------
-const CONFIG_REGION = CONFIG?.region || '未設定';
-let account = { email: '', awaiting: false, busy: false, message: '', conflicts: [], health: null };
+const ACCOUNT_GATE_KEY = 'packsmart.accountGate';
+const START_GUIDE_KEY = 'packsmart.startGuide';
+const START_GUIDE_STEPS = ['先建立一趟行程。', '清單會依目的地和天氣準備，把已打包的物品勾起來。', '查詢看能不能帶，知識看當地禮儀。'];
+let account = { email: '', awaiting: false, busy: false, message: '', conflicts: [], health: null, gate: null, justFinishedGate: false, guideStep: 0, appleLinked: null, appleNonce: null };
+const finishAccountGate = () => { try { localStorage.setItem(ACCOUNT_GATE_KEY, 'done'); } catch {} account.justFinishedGate = true; account.gate = null; };
+const finishStartGuide = () => { try { localStorage.setItem(START_GUIDE_KEY, 'done'); } catch {} account.justFinishedGate = false; };
 function accountView() {
   const head = subHead('帳號與同步', '和 iPhone 版用同一個帳號，就能共用行程與常備清單。');
-  if (!cloud.configured()) return `<div class="narrow">${head}<div class="card"><p class="sub" style="margin:0">這個版本尚未設定雲端服務，資料只存在這個瀏覽器。</p></div></div>`;
+  if (!cloud.configured()) return `<div class="narrow">${head}<div class="card"><p class="sub" style="margin:0">可以先在這台裝置離線使用。</p></div></div>`;
   const s = cloud.session, sync = cloud.syncEnabled(), last = cloud.lastSynced();
   let body;
-  if (!s && !account.awaiting) body = `<div class="gh">帳號</div><div class="group"><div style="padding:10px"><input class="field" id="email" type="email" autocomplete="email" placeholder="Email" value="${esc(account.email)}" aria-label="Email" style="border:0;background:transparent"></div>
-    <button class="gbtn" data-act="send-code" ${account.busy ? 'disabled' : ''}>寄送驗證碼</button></div><div class="foot">不需要密碼。登入不會自動上傳資料，開啟同步後才會上傳。</div>`;
-  else if (!s) body = `<div class="gh">帳號</div><div class="group"><div class="gline muted">輸入寄到 ${esc(account.email)} 的 6 位數驗證碼</div>
+  if (!s && !account.awaiting) body = `<div class="gh">帳號</div>${appleButton()}<div class="group"><div style="padding:10px"><input class="field" id="email" type="email" autocomplete="email" placeholder="Email" value="${esc(account.email)}" aria-label="Email" style="border:0;background:transparent"></div>
+    <button class="gbtn" data-act="send-code" ${account.busy ? 'disabled' : ''}>寄送驗證碼</button></div><div class="foot">登入不會自動上傳，開啟同步後才會上傳。</div>`;
+  else if (!s) body = `<div class="gh">帳號</div><div class="group"><div class="gline muted">驗證碼已寄到這封信。</div>
     <div style="padding:10px"><input class="field" id="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="驗證碼" aria-label="驗證碼" style="border:0;background:transparent"></div>
     <button class="gbtn" data-act="verify" ${account.busy ? 'disabled' : ''}>登入</button><button class="gbtn" data-act="send-code" ${account.busy ? 'disabled' : ''}>重新寄送</button><button class="gbtn" data-act="change-email">改用其他 Email</button></div>`;
-  else body = `<div class="gh">帳號</div><div class="group"><div class="gline"><span>已登入</span><span class="v">${esc(s.email)}</span></div><button class="gbtn" data-act="sign-out">登出</button></div>
+  else body = `<div class="gh">帳號</div><div class="group"><div class="gline"><span>已登入</span><span class="v">${esc(cloud.accountLabel(s.email))}</span></div>${cloud.appleEnabled() && account.appleLinked === false ? `<button class="gbtn" data-act="apple-link" ${account.busy ? 'disabled' : ''}>也用 Apple 登入這個帳號</button>` : ''}<button class="gbtn" data-act="sign-out">登出</button></div>
     <div class="gh">同步</div><div class="group">
       <div class="gline"><span>雲端同步</span><button class="switch" role="switch" aria-checked="${sync}" aria-label="雲端同步" data-act="toggle-sync" ${account.busy ? 'disabled' : ''}></button></div>
       <div class="gline"><span>同步「健康」分類的物品</span><button class="switch" role="switch" aria-checked="${account.health === true}" aria-label="同步健康類物品" data-act="toggle-health" ${sync && !account.busy ? '' : 'disabled'}></button></div>
@@ -332,7 +337,7 @@ function accountView() {
       <div class="sub" style="margin:4px 0 8px">${c.remote.deleted ? '另一台裝置刪除了它，這裡則修改過。' : !c.title ? '這裡刪除了它，另一台裝置則修改過。' : '兩邊都修改過。'}</div>
       <div class="row between"><button class="btn ghost" data-resolve="${n}" data-keep="local">${!c.title ? '刪除' : '保留這裡的版本'}</button><button class="btn ghost" data-resolve="${n}" data-keep="remote">${c.remote.deleted ? '刪除' : '使用雲端版本'}</button></div></div>`).join('')}</div>` : ''}
     <div class="group" style="margin-top:12px"><button class="gbtn danger" data-act="delete-account">刪除雲端帳號</button></div>
-    <div class="foot">資料存放在 Supabase（${esc(CONFIG_REGION)}）。關閉同步、登出或清除瀏覽器資料都不會刪除雲端帳號。</div>`;
+    <div class="foot">關閉同步、登出或清除瀏覽器資料都不會刪除雲端帳號。</div>`;
   return `<div class="narrow">${head}${body}${account.message ? `<p class="sub" role="status">${esc(account.message)}</p>` : ''}</div>`;
 }
 async function runAccount(work) {
@@ -340,6 +345,33 @@ async function runAccount(work) {
   try { await work(); } catch (e) { account.message = e.message || '發生錯誤，請稍後再試。'; }
   account.busy = false; render();
 }
+// ---------- Sign in with Apple（PD-068；網頁版沒有本機解鎖） ----------
+const APPLE_LOGO = '<svg viewBox="0 0 14 17" width="14" height="17" aria-hidden="true"><path fill="currentColor" d="M11.6 9c0-2 1.7-3 1.8-3.1-1-1.4-2.5-1.6-3-1.6-1.3-.1-2.5.8-3.1.8-.7 0-1.6-.8-2.7-.8C3.2 4.3 1.9 5.1 1.2 6.4c-1.5 2.6-.4 6.4 1.1 8.5.7 1 1.5 2.2 2.6 2.1 1-.1 1.4-.7 2.7-.7s1.6.7 2.7.7c1.1 0 1.8-1 2.5-2.1.8-1.2 1.1-2.3 1.1-2.4 0 0-2.3-.9-2.3-3.5zM9.5 2.9c.6-.7 1-1.7.9-2.7-.8 0-1.9.6-2.5 1.3-.5.6-1 1.6-.9 2.6.9.1 1.9-.5 2.5-1.2z"/></svg>';
+const appleButton = () => cloud.appleEnabled() ? `<button class="apple-btn" data-act="apple-sign-in" ${account.busy ? 'disabled' : ''}>${APPLE_LOGO}<span>使用 Apple 登入</span></button>` : '';
+let appleScript;
+/// 事先載入 Apple JS 並準備好下一組 nonce，點按鈕時才能直接開彈出視窗（不被瀏覽器擋）。
+function prepareApple() {
+  if (!cloud.appleEnabled()) return;
+  appleScript ||= new Promise((resolve, reject) => { const tag = document.createElement('script');
+    tag.src = 'https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js'; tag.onload = resolve; tag.onerror = reject; document.head.append(tag); }).catch(() => { appleScript = null; });
+  if (!account.appleNonce) makeAppleNonce().then(n => { account.appleNonce ||= n; });
+}
+async function appleIdentity() {
+  // 每次點擊都用新的一組 nonce；用過就丟掉並準備下一組。
+  const nonce = account.appleNonce; account.appleNonce = null; prepareApple();
+  if (!nonce || !window.AppleID) throw Object.assign(new Error(APPLE_MESSAGES.appleIncomplete), { code: 'appleIncomplete' });
+  window.AppleID.auth.init({ clientId: CONFIG.appleServicesID, scope: 'name email', redirectURI: CONFIG.appleRedirectURI || `${location.origin}${location.pathname}`, nonce: nonce.hashed, usePopup: true });
+  let result;
+  try { result = await window.AppleID.auth.signIn(); } catch { throw new Error(APPLE_MESSAGES.appleIncomplete); }
+  const idToken = result?.authorization?.id_token; // 姓名（result.user）直接丟掉，不寫進帳號。
+  if (!idToken) throw new Error(APPLE_MESSAGES.appleIncomplete);
+  return { idToken, nonce: nonce.raw };
+}
+async function refreshAppleLink() {
+  if (!cloud.appleEnabled() || !cloud.session) { account.appleLinked = null; return; }
+  account.appleLinked = await cloud.linkedProviders().then(p => p.has('apple')).catch(() => null);
+}
+
 let syncing = false, syncTimer;
 async function synchronize(quiet = false) {
   if (!cloud.session || !cloud.syncEnabled() || syncing) return;
@@ -365,16 +397,49 @@ function mascotTip() {
 }
 
 // ---------- 繪製 ----------
+function startGuideCard() {
+  if (!account.justFinishedGate || route.page !== 'trips') return '';
+  try { if (localStorage.getItem(START_GUIDE_KEY) === 'done') return ''; } catch {}
+  const step = Math.min(account.guideStep, START_GUIDE_STEPS.length - 1);
+  const last = step === START_GUIDE_STEPS.length - 1;
+  return `<aside class="start-guide" aria-label="開始使用"><div class="row between"><span class="eyebrow">${step + 1} / ${START_GUIDE_STEPS.length}</span><button class="btn ghost" data-act="guide-skip">略過</button></div><p>${START_GUIDE_STEPS[step]}</p><button class="btn block" data-act="${last ? 'guide-done' : 'guide-next'}">${last ? '開始使用' : '下一步'}</button></aside>`;
+}
+function accountGateView() {
+  // Apple 按鈕顯示時才改這句（PD-068）。
+  let title = '先建立你的帳號', subtitle = cloud.appleEnabled() ? '用 Apple 或 Email 登入，換手機也能找回行程。' : '用 Email 收驗證碼，換手機也能找回行程。', fields = '';
+  if (account.gate === 'unconfigured') { title = '先在這個瀏覽器試用'; subtitle = '可以先在這台裝置離線使用。'; }
+  else if (account.gate === 'code') { title = '輸入驗證碼'; subtitle = '驗證碼已寄到這封信。'; fields = `<input class="field" id="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="驗證碼" aria-label="驗證碼">`; }
+  else if (account.gate === 'sync') { title = '開啟雲端同步？'; subtitle = '開啟後，行程和行李會在手機與網頁版之間同步。'; }
+  else fields = `${appleButton()}<input class="field" id="email" type="email" autocomplete="email" placeholder="Email" aria-label="Email" value="${esc(account.email)}">`;
+  const buttons = account.gate === 'unconfigured' ? `<button class="btn block" data-act="gate-done">繼續</button>`
+    : account.gate === 'sync' ? `<button class="btn block" data-act="gate-sync" ${account.busy ? 'disabled' : ''}>同意並開啟</button><button class="btn ghost block" data-act="gate-done">先登入，稍後再同步</button>`
+    : account.gate === 'code' ? `<button class="btn block" data-act="verify" ${account.busy ? 'disabled' : ''}>登入</button><button class="btn ghost block" data-act="send-code" ${account.busy ? 'disabled' : ''}>重新寄送</button><button class="btn ghost block" data-act="change-email">改用其他 Email</button>${cloud.appleEnabled() ? '<button class="btn ghost block" data-act="apple-instead">改用 Apple 登入</button>' : ''}<button class="btn ghost block" data-act="gate-done">先略過，試用看看</button>`
+    : `<button class="btn block" data-act="send-code" ${account.busy ? 'disabled' : ''}>寄送驗證碼</button><button class="btn ghost block" data-act="gate-done">先略過，試用看看</button>`;
+  return `<div class="account-gate-panel"><img class="mascot" src="art/mascot.png" alt=""><h1>${title}</h1><p class="subtitle">${esc(subtitle)}</p><div class="stack">${fields}${buttons}</div>${account.message ? `<p class="sub" role="status">${esc(account.message)}</p>` : ''}</div>`;
+}
 function render() {
+  document.body.classList.toggle('account-gate', Boolean(account.gate));
+  document.body.classList.remove('start-guide-on');
+  if (account.gate) {
+    $('#app').innerHTML = accountGateView();
+    $('#sidebar-nav').innerHTML = '';
+    $('#tabbar').innerHTML = '';
+    $('#sidebar-note').textContent = '';
+    $('#mobile-note').textContent = '';
+    $('#mascot').hidden = true;
+    $('#mascot-bubble').hidden = true;
+    return;
+  }
   const t = route.page === 'trip' ? findTrip(route.id) : null;
   const views = { trips: homeView, new: newView, search: searchView, knowledge: knowledgeView, me: meView };
-  $('#app').innerHTML = t ? tripView(t) : (views[route.page] || homeView)();
+  $('#app').innerHTML = (t ? tripView(t) : (views[route.page] || homeView)()) + startGuideCard();
+  document.body.classList.toggle('start-guide-on', Boolean($('#app .start-guide')));
   const tab = route.page === 'trip' || route.page === 'new' ? 'trips' : route.page;
   const nav = [['trips', 'luggage', '行程'], ['search', 'search', '查詢'], ['knowledge', 'book', '知識'], ['me', 'user', '我的']];
   $('#sidebar-nav').innerHTML = nav.map(([k, ic, l]) => `<a class="nav-link" href="#${k}" ${tab === k ? 'aria-current="page"' : ''}>${icon(ic)}${l}</a>`).join('');
   $('#tabbar').innerHTML = nav.map(([k, ic, l]) => `<a href="#${k}" ${tab === k ? 'aria-current="page"' : ''}>${icon(ic)}${l}</a>`).join('');
   const synced = cloud.session && cloud.syncEnabled();
-  $('#sidebar-note').innerHTML = `${icon(synced ? 'cloud' : 'disk')}<span>${synced ? '已同步到雲端' : '清單保存在這台裝置'}<br><small>${synced ? esc(cloud.session.email) : '離線也能繼續打包'}</small></span>`;
+  $('#sidebar-note').innerHTML = `${icon(synced ? 'cloud' : 'disk')}<span>${synced ? '已同步到雲端' : '清單保存在這台裝置'}<br><small>${synced ? esc(cloud.accountLabel(cloud.session.email)) : '離線也能繼續打包'}</small></span>`;
   $('#mobile-note').textContent = synced ? '已同步' : '';
   // 建立行程與打包頁不顯示吉祥物，避免擋住卡片。
   const hideMascot = route.page === 'new' || (t && ui.seg === 'pack');
@@ -473,18 +538,27 @@ document.addEventListener('click', async e => {
     store.library.push({ id: uuid(), name: v.name, categoryRaw: v.category, quantity: v.quantity, isEssential: true, sortIndex: store.library.length, useCount: 0, lastUsedAt: new Date().toISOString() }); closeSheet(); return commit(); }
   if (d.unstaple) { const s = store.library.find(x => x.id === d.unstaple); s.isEssential = false; return commit(); }
   // 帳號
-  if (d.act === 'send-code') { const email = (route.sub === 'account' && $('#email')?.value || account.email).trim().toLowerCase();
+  if (d.act === 'guide-next') { account.guideStep += 1; return render(); }
+  if (d.act === 'guide-done' || d.act === 'guide-skip') { finishStartGuide(); return render(); }
+  if (d.act === 'gate-done') { finishAccountGate(); return render(); }
+  if (d.act === 'gate-sync') { cloud.setSyncEnabled(true); return runAccount(async () => { account.health = await cloud.healthConsent(); await synchronize(); if (!account.message) finishAccountGate(); }); }
+  if (d.act === 'send-code') { const email = ($('#email')?.value || account.email).trim().toLowerCase();
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { account.message = '請輸入正確的 Email。'; return render(); }
-    return runAccount(async () => { await cloud.sendCode(email); account.email = email; account.awaiting = true; account.message = `驗證碼已寄到 ${email}。`; }); }
+    return runAccount(async () => { await cloud.sendCode(email); account.email = email; account.awaiting = true; if (account.gate) account.gate = 'code'; account.message = `驗證碼已寄到 ${email}。`; }); }
   if (d.act === 'verify') { const code = $('#code').value.trim(); if (!/^\d{6}$/.test(code)) { account.message = '請輸入 6 位數驗證碼。'; return render(); }
-    return runAccount(async () => { await cloud.verify(account.email, code); account.awaiting = false; account.health = await cloud.healthConsent().catch(() => null); }); }
-  if (d.act === 'change-email') { account.awaiting = false; account.message = ''; return render(); }
-  if (d.act === 'sign-out') return runAccount(async () => { await cloud.signOut(); account.conflicts = []; account.health = null; });
+    return runAccount(async () => { await cloud.verify(account.email, code); account.awaiting = false; account.health = await cloud.healthConsent().catch(() => null); await refreshAppleLink(); if (account.gate) { account.gate = 'sync'; account.message = ''; } }); }
+  if (d.act === 'apple-sign-in' || d.act === 'apple-instead') {
+    if (d.act === 'apple-instead') { account.awaiting = false; if (account.gate) account.gate = 'email'; }
+    return runAccount(async () => { await cloud.signInWithApple(await appleIdentity()); account.awaiting = false;
+      account.health = await cloud.healthConsent().catch(() => null); await refreshAppleLink(); if (account.gate) { account.gate = 'sync'; account.message = ''; } }); }
+  if (d.act === 'apple-link') return runAccount(async () => { await cloud.linkApple(await appleIdentity()); account.appleLinked = true; account.message = APPLE_MESSAGES.linked; });
+  if (d.act === 'change-email') { account.awaiting = false; account.message = ''; if (account.gate) account.gate = 'email'; return render(); }
+  if (d.act === 'sign-out') return runAccount(async () => { await cloud.signOut(); account.conflicts = []; account.health = null; account.appleLinked = null; });
   if (d.act === 'toggle-sync') { if (cloud.syncEnabled()) { cloud.setSyncEnabled(false); return render(); }
-    return confirmSheet('開啟雲端同步？', `會上傳行程（名稱、目的地、日期、打包偏好與清單、打包狀態）與常備用品，讓你在 iPhone 和網頁版都能使用。「健康」分類的物品預設不上傳。\n\n資料存放在 Supabase（${CONFIG_REGION}）。授權的 PackSmart 管理員在處理你回報的問題時可以查看，每次查看都會留下紀錄。你可以隨時關閉同步或刪除雲端帳號。`, '同意並開啟', 'enable-sync'); }
+    return confirmSheet('開啟雲端同步？', '開啟後，行程和行李會在手機與網頁版之間同步。', '同意並開啟', 'enable-sync'); }
   if (d.act === 'enable-sync') { closeSheet(); cloud.setSyncEnabled(true); return runAccount(async () => { account.health = await cloud.healthConsent(); await synchronize(); account.message ||= '已開啟同步。'; }); }
   if (d.act === 'toggle-health') { if (account.health) return runAccount(async () => { await cloud.setHealthConsent(false); account.health = false; await synchronize(); });
-    return confirmSheet('同步「健康」分類的物品？', '藥品等健康類物品可能屬於敏感個人資料。同意後會上傳到雲端，你登入的每台裝置都會看到，授權管理員處理問題時也可能看到。之後關閉，下一次同步會把它們從雲端移除，裝置上的仍保留。', '同意同步', 'enable-health'); }
+    return confirmSheet('同步「健康」分類的物品？', '藥品等健康物品要另外同意，才會一併同步。', '同意同步', 'enable-health'); }
   if (d.act === 'enable-health') { closeSheet(); return runAccount(async () => { await cloud.setHealthConsent(true); account.health = true; await synchronize(); }); }
   if (d.act === 'sync-now') return runAccount(() => synchronize());
   if (d.resolve) { const c = account.conflicts[+d.resolve]; return runAccount(async () => { await cloud.resolve(c, d.keep === 'local'); account.conflicts.splice(+d.resolve, 1); }); }
@@ -507,10 +581,16 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
 
 // ---------- 啟動 ----------
 store.packedAt ||= {};
+try {
+  if (localStorage.getItem(ACCOUNT_GATE_KEY) === 'done' || cloud.session) localStorage.setItem(ACCOUNT_GATE_KEY, 'done');
+  else account.gate = cloud.configured() ? 'email' : 'unconfigured';
+} catch { account.gate = null; }
 await loadData();
 parse();
 render();
 account.health = cloud.session ? await cloud.healthConsent().catch(() => null) : null;
+prepareApple();
+refreshAppleLink().then(() => { if (account.appleLinked === false && route.page === 'me') render(); });
 synchronize(true);
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
   // 新版 service worker 接手時重新載入一次，畫面才會用到新版的樣式與程式。

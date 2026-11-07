@@ -6,13 +6,13 @@
 import SwiftUI
 import SwiftData
 
-/// 首次啟動顯示 onboarding，完成後進入主畫面；
+/// 新安裝先顯示帳號開場，略過或完成後才進入 onboarding；完成後進入主畫面。
 /// 外觀設定以 UIWindow 層級套用（sheet／fullScreenCover 不繼承 preferredColorScheme，
 /// 視窗覆蓋才能讓所有呈現層一致變色）
 struct RootGateView: View {
     @AppStorage("hasOnboarded") private var hasOnboarded = false
-    @AppStorage("hasSeenFirstLaunchGuide") private var hasSeenFirstLaunchGuide = false
-    @AppStorage(AppAppearance.storageKey) private var appearanceRaw = AppAppearance.system.rawValue
+    @AppStorage("hasCompletedAccountGate") private var hasCompletedAccountGate = false
+    @AppStorage(AppAppearance.storageKey) private var appearanceRaw = AppAppearance.light.rawValue
     @AppStorage(PackmonThemeID.storageKey) private var designThemeRaw = PackmonThemeID.structureC.rawValue
 
     private var designTheme: PackmonThemeID {
@@ -23,22 +23,14 @@ struct RootGateView: View {
         Group {
             if hasOnboarded {
                 RootTabView()
+            } else if !hasCompletedAccountGate {
+                AccountGateView {
+                    hasCompletedAccountGate = true
+                }
             } else {
                 OnboardingView {
                     hasOnboarded = true
                 }
-            }
-        }
-        .fullScreenCover(
-            isPresented: Binding(
-                get: { hasOnboarded && !hasSeenFirstLaunchGuide },
-                set: { isPresented in
-                    if !isPresented { hasSeenFirstLaunchGuide = true }
-                }
-            )
-        ) {
-            FirstLaunchGuideView {
-                hasSeenFirstLaunchGuide = true
             }
         }
         .onAppear { applyAppearance() }
@@ -48,12 +40,7 @@ struct RootGateView: View {
     }
 
     private func applyAppearance() {
-        let appearance = AppAppearance(rawValue: appearanceRaw) ?? .system
-        let style: UIUserInterfaceStyle = switch appearance {
-        case .system: .unspecified
-        case .light: .light
-        case .dark: .dark
-        }
+        let style: UIUserInterfaceStyle = AppAppearance(stored: appearanceRaw) == .dark ? .dark : .light
         for scene in UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene }) {
             for window in scene.windows {
                 window.overrideUserInterfaceStyle = style
@@ -68,6 +55,7 @@ struct RootTabView: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(AppState.self) private var appState
     @Environment(MascotState.self) private var mascot
+    @AppStorage("hasSeenFirstLaunchGuide") private var hasSeenFirstLaunchGuide = false
     @Query private var trips: [Trip]
 
     @State private var selection: AppTab = {
@@ -100,7 +88,7 @@ struct RootTabView: View {
                 .tag(AppTab.profile)
         }
         .overlay {
-            if !mascot.isDockHidden {
+            if !mascot.isDockHidden, hasSeenFirstLaunchGuide || selection != .trips {
                 FloatingMascotDock(onExpand: speakTrivia)
             }
         }

@@ -540,3 +540,47 @@ This log records accepted product choices that affect behavior, navigation, scop
 - Consequences: 剛勾的物品一定出現在行李箱；格數不會因比例換算而沒有變化。iOS 重新開啟打包頁時順序回到清單順序。PWA 的推薦引擎、天氣、資料與同步不變。
 - App / PWA: 兩邊都改行李箱規則；網站版面只改 PWA。
 - Verification: `node pwa/tests/suitcase.mjs`（20 件亂序逐一勾選、8 件、全滿）與 iOS `layout` 函式獨立執行相同情境：PASS。瀏覽器 26 件行程依序勾 15 件，每件都出現在最後一格，第 12 件起顯示 +1～+4；390／1024／1920 寬度無水平捲動，八個頁面皆正常；模擬器 13 件示範行程勾選護照與信用卡，依序出現在第 6、7 格。backend、packing、cloud sync 回歸與 2,916 組引擎比對：PASS。
+
+## PD-066 — First launch asks for an account, with a try-first skip
+
+- Date: 2026-11-06
+- Status: Accepted by user（「一開始用這個 App 就做帳號和驗證碼的設定」，並保留「略過先試用」；驗證碼成功後要接著問是否開啟雲端同步）
+- Decision: 新安裝的第一頁是 Email 與 6 位數驗證碼，同一頁可「先略過，試用看看」。驗證碼成功後詢問是否開啟雲端同步；同意才上傳，選「先登入，稍後再同步」只保留登入。略過後進入原本的打包習慣與導覽，之後仍可從「我的 → 帳號與同步」登入。已完成 onboarding 的安裝不重跑這頁。網頁版第一次進站顯示同一段，略過記在該瀏覽器；已登入則直接進主畫面。登入本身仍不上傳，健康類物品仍要另外同意。
+- Supersedes: PD-062 中帳號只放在使用後的「我的 → 帳號與同步」、第一次打開不會提到帳號的呈現。未登入可離線使用、登入不等於同意同步，仍然有效。
+- Context: 帳號放在「我的」裡，使用者建立行程後才知道要登入，也容易以為登入就會寫進 Supabase。
+- Consequences: 沒有雲端設定的版本不擋路，說明後繼續。既有安裝的行程與登入狀態不變。
+- App / PWA: iOS 與 PWA 都加這段開場。iOS 在打包習慣之前；PWA 沒有打包習慣開場，只加帳號頁。
+- Verification: iOS `xcodebuild`（iPhone 17 模擬器）BUILD SUCCEEDED。清空後的 iPhone 17 模擬器第一頁是「先建立你的帳號」，有 Email、寄送驗證碼與「先略過，試用看看」。網頁版以無痕瀏覽器走完：空白 Email 被拒絕、驗證碼後出現同步詢問、選「先登入，稍後再同步」進入行程且重新整理不再出現開場、略過進入行程、已有登入狀態直接進主畫面、「我的」仍有帳號與同步；390 與 1280 寬度沒有水平捲動。雲端寄信在網頁檢查中被攔截，沒有真的寄出驗證碼；iOS 模擬器沒有點完登入。
+
+## PD-067 — Onboarding copy is one sentence, and new users get a three-step trip guide
+
+- Date: 2026-11-06
+- Status: Accepted by user（「onboarding 的介面敘述更簡潔順暢，比如後台 supabase（新加坡）就不用提，大部分敘述都用一句話帶過。另外，一開始新用戶打開 App 要有指引」）
+- Decision: 開場與「我的 → 帳號與同步」的同步、健康類同意說明各用一句話，不再提到 Supabase、新加坡、管理員或上傳欄位。新用戶進入行程頁後，底部出現可略過的三步卡片：建立行程、依目的地和天氣勾選清單、用查詢與知識。最後一步是「開始使用」。這段取代原本三頁全螢幕導覽。已完成 onboarding 的安裝在這次更新第一次啟動時視為看過，不會被打斷。網頁版只在這次造訪才完成帳號開場的新訪客顯示同一段，看完記在這個瀏覽器。
+- Supersedes: PD-066 中略過帳號後進入原本三頁功能導覽的呈現。帳號開場、略過試用、登入後才問同步，仍然有效。
+- Context: 開場說明把後台與資料地區寫進給使用者看的句子，第一次使用也缺少落在行程頁上的短指引。
+- Consequences: 健康類物品仍要另外同意才會同步。登入本身仍不上傳。沒有雲端設定時仍不擋路。既有安裝直接進主畫面。
+- App / PWA: iOS 與 PWA 用同一組句子與三步卡片。iOS 仍在帳號開場之後有打包習慣頁；PWA 沒有那一頁，打包習慣只留在「我的」入口的一句說明。
+- Verification: iOS `xcodebuild`（iPhone 17 模擬器）BUILD SUCCEEDED。已把 `hasOnboarded` 設好的安裝直接進入「我的行程」，沒有帳號開場，也沒有三步卡片。清空後的 iPhone 17 第一頁是「先建立你的帳號」，說明是「用 Email 收驗證碼，換手機也能找回行程。」，畫面沒有 Supabase。UI 測試點過「先略過，試用看看」後看到「選平常會帶的東西，之後每趟都會帶上。」，再略過後依序出現三步，最後「開始使用」；重新開啟停在「我的行程」，開場與卡片都不再出現。同步詢問那一句沒有在 iOS 點到，因為那要寄出真的驗證碼；同一句在網頁版的開場與「帳號與同步」確認框都看過。網頁版以無痕瀏覽器走完：驗證碼、同步詢問、三步卡片、略過、重新整理不再出現、已完成開場或已登入的瀏覽器直接進主畫面；健康類同意是「藥品等健康物品要另外同意，才會一併同步。」390 與 1280 寬度沒有水平捲動。雲端寄信在網頁檢查中被攔截，沒有真的寄出驗證碼。
+
+## PD-068 — Sign in with Apple; Face ID is left to iOS
+
+- Date: 2026-11-07
+- Status: Proposed（使用者要求「設計 App 可以用 Apple 帳號或是 FaceID 登入」「完成他的實作提議」；看過 App 內的 Face ID 開關後改為「用一般常見 App 的設計方式」）。程式已實作，Apple 按鈕預設隱藏；設計見 `docs/design-apple-sign-in.md`（其中 Face ID 解鎖的部分已不採用）
+- Decision: iOS 與 PWA 在 Email 6 位數驗證碼之外，可以用 Sign in with Apple 登入。Apple 是 Supabase 的登入身分，由 Supabase 驗證 identity token（簽章、aud、nonce），App 不自己解碼信任其中的 Email。Face ID 不做成 App 內的開關或鎖定畫面：Apple 自己的登入畫面會用 Face ID 或密碼確認；想鎖住 App 的人用 iOS 18 起的系統功能（長按 App 圖示 →「需要 Face ID」）。開場仍有「先略過，試用看看」，登入成功後仍先問要不要開啟同步，登入本身不上傳，健康類物品仍要另外同意。兩個 Supabase 帳號不會自動合併：Apple 分享的 Email 已經有帳號時，登入失敗並請使用者改用驗證碼，不會建立新帳號也不會自動綁定；已登入時可以按「也用 Apple 登入這個帳號」手動綁定，user id 與雲端資料的 owner 不變。v1 不把 Email 綁到只有 Apple 的帳號，也不把 Apple 提供的姓名存進帳號。
+- Supersedes: PD-066 中第一頁只有 Email 的呈現（只在 Apple 按鈕顯示時）。PD-066 的略過試用、登入後才問同步、已完成開場不重跑，PD-062 的登入不等於上傳、健康類同意、不支援切換帳號，PD-067 的一句話說明與三步指引，都仍然有效。
+- Context: 使用者要 Apple 帳號與 Face ID 登入。Face ID 不是帳號，只能解鎖這台手機已存的登入；做成 App 內開關不是使用者熟悉的設計，打包清單也不需要比系統更嚴格的保護，而 App 自己的鎖定畫面只遮畫面、不加密，也遮不到小工具。
+- Consequences: 打開 Apple 按鈕前需要真正的 Apple Developer team、bundle id、Services ID 與已驗證的網頁網域；在那之前不加 Sign in with Apple entitlement，`com.example.TravelGenius` 不能列為 Apple client id。Supabase Dashboard 要先確認自動綁定關閉、手動綁定開啟，Client IDs 依序是 Services ID、真正的 bundle id，再以非空的 secret 啟用 Apple；Apple client secret 約六個月要換一次。用「隱藏我的電子郵件」且還沒綁定的人可能有兩個雲端帳號，App 會說明，不會合併資料。iOS 17 的使用者沒有系統層級的 App 鎖。
+- App / PWA: 兩邊都有 Apple 登入（iOS 由 Info.plist 的 `PackSmartAppleSignInEnabled` 控制，沒有就是關；PWA 由 `CONFIG.appleServicesID` 控制，空白時隱藏）並保留 Email 驗證碼；兩邊都能手動綁定 Apple。兩邊都沒有 App 內的 Face ID 控制項。iOS 仍有打包習慣頁，PWA 沒有。
+- Implementation: iOS——`AppleIdentity.swift`（nonce：raw 給 Supabase、SHA-256 hex 給 Apple；`AppleIdentityProviding`）、`Services/AppleSignInCoordinator.swift`（唯一 import AuthenticationServices 的檔案，官方按鈕）、`SupabaseClient`（`signInWithApple`、`linkApple`、`linkedProviders`、`error_code` 對應、`decodeSession`、健康同意讀取容許 metadata 裡有字串）、`CloudAccount`（`accountLabel`、`showsAppleLink`）、開場與「帳號與同步」的 Apple 按鈕與綁定按鈕。PWA——`pwa/js/auth.js`、`cloud.js` 保留 `error_code`、Apple JS 彈出視窗（每次點擊用新的 nonce）、service worker 對 `/.well-known/apple-developer-domain-association.txt` 直接走網路。
+- Verification: `scripts/test_cloud_sync.sh` 新增 Apple 測試：nonce 已知值與 URL-safe、Apple 登入請求的路徑／沒有 Authorization／JSON 只有 provider、id_token、raw nonce、錯誤代號對應（email_exists 含 500、綁定衝突只在綁定時、未開啟手動綁定、其他 4xx、5xx）、失敗保留原登入、綁定帶目前 token 與 link_identity、沒登入不送出、metadata 混有字串仍讀到健康同意且藥品照常上傳、過期 token 更新後存回、Apple 登入不等於開啟同步、登出清除：PASS。`node pwa/tests/cloud-auth.mjs`（請求內容、nonce、「Apple 帳號」顯示、錯誤代號、網頁版沒有 Face ID 字樣、網域驗證檔不快取也不退回 index.html）：PASS。iOS `xcodebuild` BUILD SUCCEEDED；模擬器覆蓋安裝後既有登入與兩趟雲端行程都在。真正的 Apple 登入要等真的 team 與 bundle id 才能在裝置上測。
+
+## PD-069 — Appearance is beige light or dark only
+
+- Date: 2026-11-07
+- Status: Accepted by user（「介面顏色幫我改成深色和淺色（米色）兩種就好，其他拿掉」）
+- Decision: iOS「外觀設定」只剩「淺色（米色）」與「深色」兩個選項。拿掉「跟隨系統」與「設計驗證」裡的現行設計、暖橘陪伴、信任藍 CTA；App 只保留結構 C 一套設計。結構 C 的顏色 token 改成淺色、深色各一組，深色數值與 PWA 的深色 token 相同。新安裝預設淺色（米色）；舊版存的「跟隨系統」或其他設計一律視為淺色與結構 C。
+- Supersedes: 「外觀設定」可切換多套設計驗證主題與「跟隨系統」的設定。
+- Consequences: 選深色時畫面背景、卡片與文字都換成深色 token；之前選深色時米色背景不變的問題一併解決。不再隨 iPhone 的深色模式自動切換。
+- App / PWA: 只改 iOS。PWA 仍依瀏覽器的淺色／深色設定顯示同一組顏色。
+- Verification: iOS `xcodebuild` BUILD SUCCEEDED。另一台測試模擬器以示範行程檢查深色的首頁、行程總覽、打包頁（行李箱與物品卡）、「我的」與外觀設定，切換到淺色（米色）後立即套用。

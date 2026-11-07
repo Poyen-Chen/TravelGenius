@@ -10,6 +10,7 @@ struct TripListView: View {
     @Environment(\.modelContext) private var context
     @Environment(\.packmonTheme) private var theme
     @Environment(AppState.self) private var appState
+    @AppStorage("hasSeenFirstLaunchGuide") private var hasSeenFirstLaunchGuide = false
     @Query(sort: \Trip.createdAt, order: .reverse) private var trips: [Trip]
     @State private var sheet: SheetDestination?
     @State private var pendingDeletion: Trip?
@@ -59,6 +60,13 @@ struct TripListView: View {
                 PackmonRemovalSheet(title: "刪除這趟行程？", name: trip.name,
                     message: "行程與其中的打包清單會一起刪除，這個動作無法復原。",
                     actionTitle: "刪除行程", remove: deletePendingTrip)
+            }
+            .safeAreaInset(edge: .bottom, spacing: 8) {
+                if navigationPath.isEmpty, !hasSeenFirstLaunchGuide {
+                    FirstLaunchGuideView { hasSeenFirstLaunchGuide = true }
+                        .padding(.horizontal, theme.spacing.medium)
+                        .padding(.bottom, 6)
+                }
             }
             .onAppear { if appState.consumeCreateTripLaunchRequest() { sheet = .create } }
             .onChange(of: navigationPath) { _, path in

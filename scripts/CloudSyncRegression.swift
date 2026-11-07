@@ -180,5 +180,173 @@ import SwiftData
         check(SupabaseConfiguration(url: URL(string: "https://x.supabase.co")!, publishableKey: "sb_publishable_abc") != nil, "接受 publishable key")
 
         print("跨裝置同步、健康類剔除與保留、同意與撤回、衝突（兩種選擇）、離線重試、常備用品、刪除、帳號綁定、拒絕 secret key：PASS")
+
+        try await appleSignIn(a: a, cloud: cloud)
+        print("Apple 登入 nonce／請求內容／錯誤對應、綁定 Apple、健康同意讀取、更新 token、登入不等於同步、登出清除：PASS")
     }
+
+    // MARK: PD-068 Sign in with Apple
+
+    @MainActor static func appleSignIn(a: Device, cloud: FakeCloud) async throws {
+        let configuration = SupabaseConfiguration(url: URL(string: "https://x.supabase.co")!, publishableKey: "sb_publishable_abc")!
+        let alice = UUID()
+        let fixture = tokenJSON(user: alice, email: "alice@example.com")
+
+        // nonce：已知字串的 SHA-256；raw 是 URL-safe；送給 Apple 的是 hash；亂數失敗會丟錯而不是當掉。
+        check(AppleNonceMaker.hash("abc") == "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad", "SHA-256 hex")
+        let nonce = try AppleNonceMaker.make()
+        check(nonce.raw.range(of: "^[A-Za-z0-9_-]+$", options: .regularExpression) != nil, "raw nonce 是 URL-safe")
+        check(nonce.hashed == AppleNonceMaker.hash(nonce.raw) && nonce.hashed != nonce.raw, "Apple 收到的是 hash")
+        check((try? AppleNonceMaker.make(random: { _ in errSecParam })) == nil, "亂數失敗時丟錯")
+
+        // Apple 登入：路徑、沒有 Authorization、JSON 只有 provider／id_token／nonce；成功後存進 Keychain。
+        let store = MemoryStore()
+        StubProtocol.reset { _ in (200, fixture) }
+        var client = SupabaseClient(configuration: configuration, session: StubProtocol.session, keychain: store)
+        try await client.signInWithApple(idToken: "apple-token", nonce: nonce.raw)
+        var sent = StubProtocol.requests[0]
+        check(sent.url?.path == "/auth/v1/token" && sent.url?.query == "grant_type=id_token", "Apple 登入的路徑")
+        check(sent.value(forHTTPHeaderField: "Authorization") == nil, "Apple 登入不帶 Authorization")
+        var body = StubProtocol.json(sent)
+        check(Set(body.keys) == ["provider", "id_token", "nonce"] && body["provider"] as? String == "apple", "Apple 登入的內容")
+        check(body["nonce"] as? String == nonce.raw, "送給 Supabase 的是 raw nonce")
+        check(!body.keys.contains { ["secret", "client_secret", "key", "access_token"].contains($0) }, "沒有 secret")
+        check(store.saved?.userID == alice && store.saved?.accessToken == "access-alice", "Apple 登入後存進 Keychain")
+
+        // 錯誤對應：Email 已有帳號、綁定衝突只在綁定時、未開啟手動綁定、其他 4xx、5xx。
+        let body401 = #"{"error_code":"email_exists","msg":"x"}"#
+        check(SupabaseClient.mapAppleError(status: 422, body: body401, linking: false) == .emailAlreadyUsed, "email_exists")
+        check(SupabaseClient.mapAppleError(status: 500, body: body401, linking: false) == .emailAlreadyUsed, "500 的 email_exists")
+        let taken = #"{"error_code":"identity_already_exists"}"#
+        check(SupabaseClient.mapAppleError(status: 422, body: taken, linking: true) == .appleIdentityTaken, "綁定衝突")
+        check(SupabaseClient.mapAppleError(status: 422, body: taken, linking: false) == .appleFailed, "登入時不用綁定衝突的句子")
+        check(SupabaseClient.mapAppleError(status: 422, body: #"{"error_code":"manual_linking_disabled"}"#, linking: true) == .linkingUnavailable, "未開啟手動綁定")
+        check(SupabaseClient.mapAppleError(status: 400, body: #"{"error_code":"bad_jwt"}"#, linking: false) == .appleFailed, "其他 4xx")
+        check(SupabaseClient.mapAppleError(status: 503, body: "", linking: false) == .server(503, ""), "5xx")
+        check(SupabaseError.appleFailed.errorDescription != SupabaseError.invalidCode.errorDescription, "Apple 失敗不顯示驗證碼錯誤")
+
+        // 失敗不動既有登入。
+        let kept = MemoryStore()
+        kept.saved = session(alice, "alice@example.com")
+        StubProtocol.reset { _ in (400, #"{"error_code":"bad_jwt"}"#) }
+        client = SupabaseClient(configuration: configuration, session: StubProtocol.session, keychain: kept)
+        do { try await client.signInWithApple(idToken: "t", nonce: "n"); check(false, "400 應失敗") }
+        catch SupabaseError.appleFailed {}
+        check(kept.saved?.userID == alice, "失敗時保留原本的登入")
+
+        // 綁定：帶目前的 Authorization 與 link_identity；沒有登入時不送出。
+        StubProtocol.reset { _ in (200, fixture) }
+        try await client.linkApple(idToken: "t", nonce: "n")
+        sent = StubProtocol.requests[0]
+        body = StubProtocol.json(sent)
+        check(sent.value(forHTTPHeaderField: "Authorization") == "Bearer stored", "綁定帶目前的 token")
+        check(body["link_identity"] as? Bool == true && body["access_token"] == nil, "綁定的內容")
+        StubProtocol.reset { _ in (422, taken) }
+        do { try await client.linkApple(idToken: "t", nonce: "n"); check(false, "衝突應失敗") }
+        catch SupabaseError.appleIdentityTaken {}
+        check(kept.saved?.userID == alice, "綁定失敗不登出")
+        let nobody = SupabaseClient(configuration: configuration, session: StubProtocol.session, keychain: MemoryStore())
+        StubProtocol.reset { _ in (200, fixture) }
+        do { try await nobody.linkApple(idToken: "t", nonce: "n"); check(false, "沒登入不能綁定") } catch SupabaseError.notSignedIn {}
+        check(StubProtocol.requests.isEmpty, "沒登入時不送出綁定")
+
+        // 健康同意：metadata 有字串時仍讀到 true，下一次同步不會剔除藥品。
+        let mixed = Data(#"{"user_metadata":{"health_sync_consent":true,"full_name":"Alice"}}"#.utf8)
+        check(SupabaseClient.healthConsent(fromUser: mixed), "metadata 混有字串仍讀到同意")
+        check(!SupabaseClient.healthConsent(fromUser: Data(#"{"user_metadata":{"health_sync_consent":1}}"#.utf8)), "不是 bool 就當沒同意")
+        check(!SupabaseClient.healthConsent(fromUser: Data(#"{"user_metadata":{}}"#.utf8)), "沒有就當沒同意")
+        let medicineTrip = Trip(name: "大阪", countryCode: "JP", startDate: .now, endDate: .now.addingTimeInterval(86_400),
+                                homeCurrencyCode: "TWD", localCurrencyCode: "JPY", totalBudget: 0, tripType: .leisure)
+        a.context.insert(medicineTrip)
+        a.context.insert(PackingItem(name: "胃藥", category: .health, reasonKey: "自訂", isCustom: true, trip: medicineTrip))
+        try a.context.save()
+        _ = try await a.engine(cloud, health: SupabaseClient.healthConsent(fromUser: mixed)).synchronize()
+        check(cloud.documents[CloudDocumentKey(kind: .trip, id: medicineTrip.id)]!.payload!.trip!.packingItems.contains { $0.name == "胃藥" },
+              "同意讀對時藥品照常上傳")
+
+        // 過期時先更新 token，新的 token 存回 Keychain。
+        let refreshStore = MemoryStore()
+        refreshStore.saved = session(alice, "alice@example.com", expired: true)
+        StubProtocol.reset { _ in (200, fixture) }
+        client = SupabaseClient(configuration: configuration, session: StubProtocol.session, keychain: refreshStore)
+        _ = try await client.linkedProviders()
+        check(StubProtocol.requests.first?.url?.query == "grant_type=refresh_token", "過期時先更新 token")
+        check(refreshStore.saved?.accessToken == "access-alice", "更新後存回 Keychain")
+
+        // CloudAccount：Apple 登入後問同步前不會開啟同步；登出清除登入。
+        let defaults = UserDefaults(suiteName: "cloud-account-\(UUID().uuidString)")!
+        defaults.set(true, forKey: "cloud.installed")
+        let accountStore = MemoryStore()
+        StubProtocol.reset { request in request.url?.path == "/auth/v1/user" ? (200, #"{"user_metadata":{}}"#) : (200, fixture) }
+        let account = CloudAccount(container: a.container, configuration: configuration, defaults: defaults,
+                                   session: StubProtocol.session, keychain: accountStore, appleProvider: FakeApple())
+        check(account.phase == .signedOut, "一開始未登入")
+        await account.signInWithApple()
+        check(account.phase == .signedIn(email: "alice@example.com") && !account.syncEnabled, "Apple 登入不等於開啟同步")
+        check(account.message == nil, "登入成功沒有錯誤訊息")
+        await account.signOut()
+        check(accountStore.saved == nil && account.phase == .signedOut, "登出清除登入")
+
+        // Apple 的轉寄地址顯示成「Apple 帳號」。
+        check(CloudAccount.accountLabel(for: "x@privaterelay.appleid.com") == "Apple 帳號" && CloudAccount.accountLabel(for: "") == "Apple 帳號", "轉寄地址")
+        check(CloudAccount.accountLabel(for: "alice@example.com") == "alice@example.com", "一般 Email 照常顯示")
+    }
+
+    static func session(_ user: UUID, _ email: String, expired: Bool = false) -> SupabaseSession {
+        SupabaseSession(accessToken: "stored", refreshToken: "refresh", expiresAt: expired ? .distantPast : .distantFuture, userID: user, email: email)
+    }
+
+    static func tokenJSON(user: UUID, email: String) -> String {
+        #"{"access_token":"access-alice","refresh_token":"refresh-alice","expires_in":3600,"user":{"id":"\#(user.uuidString)","email":"\#(email)"}}"#
+    }
+}
+
+/// 記憶體裡的 Keychain。
+final class MemoryStore: SessionStoring {
+    var saved: SupabaseSession?
+    func load() -> SupabaseSession? { saved }
+    func save(_ session: SupabaseSession?) { saved = session }
+}
+
+@MainActor struct FakeApple: AppleIdentityProviding {
+    func requestIdentity() async throws -> AppleIdentity { AppleIdentity(idToken: "apple-token", rawNonce: "raw") }
+}
+
+/// 攔截 URLSession，記錄請求並回傳固定內容。
+final class StubProtocol: URLProtocol {
+    nonisolated(unsafe) static var requests: [URLRequest] = []
+    nonisolated(unsafe) static var handler: (URLRequest) -> (Int, String) = { _ in (500, "") }
+    static let session: URLSession = {
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [StubProtocol.self]
+        return URLSession(configuration: configuration)
+    }()
+
+    static func reset(_ handler: @escaping (URLRequest) -> (Int, String)) {
+        requests = []
+        self.handler = handler
+    }
+
+    static func json(_ request: URLRequest) -> [String: Any] {
+        var data = request.httpBody ?? Data()
+        if data.isEmpty, let stream = request.httpBodyStream {
+            stream.open()
+            var buffer = [UInt8](repeating: 0, count: 4096)
+            while stream.hasBytesAvailable { let n = stream.read(&buffer, maxLength: buffer.count); if n <= 0 { break }; data.append(buffer, count: n) }
+            stream.close()
+        }
+        return (try? JSONSerialization.jsonObject(with: data) as? [String: Any]) ?? [:]
+    }
+
+    override class func canInit(with request: URLRequest) -> Bool { true }
+    override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
+    override func startLoading() {
+        Self.requests.append(request)
+        let (status, body) = Self.handler(request)
+        let response = HTTPURLResponse(url: request.url!, statusCode: status, httpVersion: nil, headerFields: nil)!
+        client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+        client?.urlProtocol(self, didLoad: Data(body.utf8))
+        client?.urlProtocolDidFinishLoading(self)
+    }
+    override func stopLoading() {}
 }

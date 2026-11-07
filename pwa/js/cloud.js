@@ -2,6 +2,8 @@
 // 使用同一個 Supabase、同一個 payload version 1，所以 iPhone 與網頁版讀寫同一趟行程。
 import { CONFIG } from './config.js';
 import { store, save, compact } from './store.js';
+import { appleIdTokenRequest, appleErrorKey, APPLE_MESSAGES } from './auth.js';
+export { accountLabel } from './auth.js';
 
 const SESSION_KEY = 'packsmart.session';
 const STATE_KEY = 'packsmart.cloud.state';
@@ -10,14 +12,17 @@ const read = key => { try { return JSON.parse(localStorage.getItem(key) || 'null
 const write = (key, value) => { try { value == null ? localStorage.removeItem(key) : localStorage.setItem(key, JSON.stringify(value)); } catch {} };
 
 export const configured = () => Boolean(CONFIG?.url && CONFIG?.publishableKey && !CONFIG.publishableKey.startsWith('sb_secret_'));
+/// Apple 登入按鈕：要設定 Services ID 才顯示（PD-068）。網址還沒確定前保持空白。
+export const appleEnabled = () => configured() && typeof CONFIG.appleServicesID === 'string' && CONFIG.appleServicesID.length > 0;
 export let session = read(SESSION_KEY);
 export const syncEnabled = () => read(SYNC_KEY) === true;
 export const setSyncEnabled = value => write(SYNC_KEY, value);
 
 export class CloudError extends Error {}
-const messages = { offline: '目前沒有網路連線，資料先保存在這台裝置。', notSignedIn: '請先登入。', invalidCode: '驗證碼錯誤或已過期，請重新輸入或重新寄送。',
+const messages = { ...APPLE_MESSAGES, offline: '目前沒有網路連線，資料先保存在這台裝置。', notSignedIn: '請先登入。', invalidCode: '驗證碼錯誤或已過期，請重新輸入或重新寄送。',
   rateLimited: '寄送太頻繁，請稍後再試。', differentAccount: '這台裝置的資料已經和另一個帳號同步過。第一版不支援切換帳號，請用原本的帳號登入。' };
-const fail = (code, status) => { const e = new CloudError(messages[code] || `雲端服務暫時無法使用（${status}），請稍後再試。`); e.code = code; throw e; };
+const makeError = (code, status) => { const e = new CloudError(messages[code] || `雲端服務暫時無法使用（${status}），請稍後再試。`); e.code = code; return e; };
+const fail = (code, status) => { throw makeError(code, status); };
 
 async function request(path, { method = 'POST', json, authorized = false } = {}) {
   const headers = { apikey: CONFIG.publishableKey, 'Content-Type': 'application/json' };
@@ -25,9 +30,15 @@ async function request(path, { method = 'POST', json, authorized = false } = {})
   let response;
   try { response = await fetch(`${CONFIG.url}/${path}`, { method, headers, body: method === 'GET' ? undefined : JSON.stringify(json ?? {}), signal: AbortSignal.timeout(20000) }); }
   catch { fail('offline'); }
-  if (response.status === 429) fail('rateLimited');
-  if (!response.ok) { const e = new CloudError(`雲端服務暫時無法使用（${response.status}），請稍後再試。`); e.status = response.status; throw e; }
   const text = await response.text();
+  if (response.status === 429) { const e = makeError('rateLimited', 429); e.status = 429; throw e; }
+  if (!response.ok) {
+    // 保留 error_code，才分得出「Email 已有帳號」和「Apple 設定錯誤」；內容本身不顯示給使用者。
+    let body = null; try { body = JSON.parse(text); } catch {}
+    const e = new CloudError(`雲端服務暫時無法使用（${response.status}），請稍後再試。`);
+    e.status = response.status; e.errorCode = body?.error_code ?? body?.code ?? null; e.msg = body?.msg ?? body?.message ?? null;
+    throw e;
+  }
   return text ? JSON.parse(text) : null;
 }
 
@@ -48,6 +59,26 @@ export const sendCode = email => request('auth/v1/otp', { json: { email, create_
 export async function verify(email, code) {
   try { storeSession(await request('auth/v1/verify', { json: { type: 'email', email, token: code } }), email); }
   catch (e) { if ([400, 401, 403, 422].includes(e.status)) fail('invalidCode'); throw e; }
+}
+/// Sign in with Apple：identity token 由 Supabase 驗證；瀏覽器只送 provider、id_token、nonce。
+export async function signInWithApple({ idToken, nonce }) {
+  const { path, json } = appleIdTokenRequest({ idToken, nonce });
+  try { storeSession(await request(path, { json })); }
+  catch (e) { const key = e.code === 'offline' ? null : appleErrorKey(e, false); if (key) fail(key); throw e; }
+}
+/// 把 Apple 綁到目前登入的帳號：同一個 user id，雲端資料的 owner 不變；失敗不登出、不刪帳號。
+export async function linkApple({ idToken, nonce }) {
+  if (!session) fail('notSignedIn');
+  const { path, json } = appleIdTokenRequest({ idToken, nonce, link: true });
+  let value;
+  try { value = await request(path, { json, authorized: true }); }
+  catch (e) { const key = e.code === 'offline' || e.code === 'notSignedIn' ? null : appleErrorKey(e, true); if (key) fail(key); throw e; }
+  if (value?.access_token && value.user?.id === session?.userID) storeSession(value);
+}
+/// 帳號已經綁定的登入方式，例如 ['email', 'apple']。
+export async function linkedProviders() {
+  const user = await request('auth/v1/user', { method: 'GET', authorized: true });
+  return new Set((user?.identities || []).map(i => i.provider));
 }
 export async function signOut() {
   if (session) await request('auth/v1/logout', { authorized: true }).catch(() => {});
